@@ -8,12 +8,18 @@ CXXFLAGS = $(CPPFLAGS) -Wextra -Wall -pipe -ggdb -fvisibility=hidden -O3 -fno-st
 
 LIBS=-L$(GECODE_HOME)/lib -lgecodekernel -lgecodesearch -lgecodeint -lgecodeminimodel  -lgecodesupport  #-lGecodeExplorer
 
+OBJS=alignmentScorePropagator/NEq.o
+
 MAIN=RNAalignment
 
-all: $(MAIN)
+all: subdirs $(MAIN) 
+
+subdirs:
+	make -C alignmentScorePropagator
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@  $<
 
 $(MAIN): $(MAIN).o
-	$(CXX)  -o $@ $< $(CXXFLAGS) $(LIBS)
+	$(CXX)  -o $@ $< $(OBJS) $(CXXFLAGS) $(LIBS)
+

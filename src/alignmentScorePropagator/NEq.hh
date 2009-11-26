@@ -5,8 +5,6 @@
 #include <gecode/int.hh>
 #include <gecode/search.hh>
 
-#include <biu/LatticeFrame.hh>
-
 typedef Gecode::BinaryPropagator<Gecode::Int::IntView, Gecode::Int::PC_INT_DOM> GC_BinProp;
 
 class NEq : public GC_BinProp {
@@ -18,16 +16,16 @@ protected:
     using GC_BinProp::x1;
     
     /// Constructor for cloning \a p
-    NEq(Gecode::Space* home, bool share, NEq& p);
+    NEq(Gecode::Space& home, bool share, NEq& p);
 
     /// Constructor for posting \a p
-    NEq(Gecode::Space* home,
+    NEq(Gecode::Space& home,
 	Gecode::Int::IntView x0,
 	Gecode::Int::IntView x1);
 
 public:
     /// post a binary neighbor constraint
-    static Gecode::ExecStatus post(Gecode::Space* home,
+    static Gecode::ExecStatus post(Gecode::Space& home,
 				   Gecode::Int::IntView x0,
 				   Gecode::Int::IntView x1);
 	    
@@ -43,4 +41,3 @@ public:
 
 
 #endif /*NEQ_HH_*/
-
