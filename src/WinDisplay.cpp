@@ -2,6 +2,7 @@
 #include <iostream>
 #include <gecode/minimodel.hh>
 #include <gecode/search.hh>
+#include <gecode/set.hh>
 
 using namespace cimg_library;
 using namespace std;
@@ -19,10 +20,17 @@ class WinDisplay {
   int img_x;
   int img_y;  
 
+  char* title;
+
 public: 
   WinDisplay(int var, int dom){   
+    WinDisplay(var,dom,"Untitled");
+  }
+
+  WinDisplay(int var, int dom, char* t){   
     int min_win_size=200;
 
+    title=t;
     nvariables=var;
     domain_size=dom;
     scalex=1;
@@ -58,7 +66,7 @@ public:
   void display(){
 
     if (main_disp.is_empty() || main_disp.is_closed())
-      main_disp=CImgDisplay(imageOut,"Bitmap",0);
+      main_disp=CImgDisplay(imageOut,title,0);
     main_disp.display(imageOut);  
   }
 
@@ -140,11 +148,53 @@ public:
 	}
       }      
     }
-    
+
 
 
     display();    
   }
+
+  void update(SetVarArray H){
+    const unsigned char green[] = { 64,255,32 }, blue[] = { 128,200,255}, red[] = { 255,0,0 }, white[] = { 255,255,255 };
+    // clean image
+    for (int i=0;i<img_x;i++){
+      for(int j=0;j<img_y;j++){
+	rgb(i,j,0,0,0);
+      }
+    }
+
+    // set variables (red=outside set, grey in the lattice, green in the set
+    for (int i=0;i<H.size();i++){
+      for (int j=0;j<domain_size;j++){
+	int r=100,g=100,b=100;
+	
+	if (H[i].contains(j)) {g=200;r=0;b=40;}
+	if (H[i].notContains(j)) {g=10;r=200;b=10;}
+       	
+	for (int dx=0;dx<scalex;dx++){	    
+	  for (int dy=0;dy<scaley;dy++){	    
+	    //	  for (int k=-1;k<2;k++){
+	    int x,y;
+	    x=j*scalex+dx;
+	    y=i*scaley+dy;
+	    if (x>0 && y>0 && x<img_x && y<img_y){
+	      rgb(x,y,r,g,b);
+	    }	    
+	  }
+	}
+
+	imageOut.draw_text(j*scalex,
+			   i*scaley,
+			   "i=%d",
+			   white,
+			   0,1,4,i);
+
+      }      
+    }
+    display();    
+  }
+    
+
 
   void close(){
     cout << "close (wait 1 sec)\n";
