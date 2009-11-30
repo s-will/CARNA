@@ -1,18 +1,19 @@
-GECODE_HOME=/home/mmann/Software/gecode/3.0.2
-GECODE_SRC_HOME=/home/mmann/Software/src/gecode-3.0.2
+GECODE_HOME=/usr/local/
+GECODE_SRC_HOME=/usr/local/include/gecode
 
 CPPFLAGS=-I$(GECODE_SRC_HOME)
 
 CXX = g++
 CXXFLAGS = $(CPPFLAGS) -Wextra -Wall -pipe -ggdb -fvisibility=hidden -O3 -fno-strict-aliasing -ffast-math $(CXXUSR)
 
-LIBS=-L$(GECODE_HOME)/lib -lgecodekernel -lgecodesearch -lgecodeint -lgecodeminimodel  -lgecodesupport  #-lGecodeExplorer
+LIBS=-L$(GECODE_HOME)/lib -lgecodekernel -lgecodesearch -lgecodeint -lgecodeminimodel  -lgecodesupport  -lgecodegist #-lGecodeExplorer
 
 OBJS=alignmentScorePropagator/NEq.o
 
 MAIN=RNAalignment
+EXAMPLE=exampleVisualization
 
-all: subdirs $(MAIN) 
+all: subdirs $(MAIN) $(EXAMPLE)
 
 subdirs:
 	make -C alignmentScorePropagator
@@ -22,4 +23,7 @@ subdirs:
 
 $(MAIN): $(MAIN).o
 	$(CXX)  -o $@ $< $(OBJS) $(CXXFLAGS) $(LIBS)
+
+$(EXAMPLE): WinDisplay.o $(EXAMPLE).o
+	$(CXX)  -o $@ WinDisplay.o $(EXAMPLE).o $(CXXFLAGS) $(LIBS)
 
