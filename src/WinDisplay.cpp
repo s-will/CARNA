@@ -13,8 +13,8 @@ class WinDisplay {
   CImg<unsigned char> imageOut; 
   CImgDisplay main_disp;
 
-  int nvariables;
-  int domain_size;
+  int nRows;
+  int nCols;
   int scalex;
   int scaley;
   int img_x;
@@ -22,29 +22,32 @@ class WinDisplay {
 
   char* title;
 
+  
+
+
 public: 
-  WinDisplay(int var, int dom){   
-    WinDisplay(var,dom,"Untitled");
+  WinDisplay(int Rows, int Cols){   
+    WinDisplay(Rows,Cols,"Untitled");
   }
 
-  WinDisplay(int var, int dom, char* t){   
+  WinDisplay(int Rows, int Cols, char* t){   
     int min_win_size=200;
 
     title=t;
-    nvariables=var;
-    domain_size=dom;
+    nRows=Rows;
+    nCols=Cols;
     scalex=1;
     scaley=1;
     img_x=0;
     img_y=0;    
-    if (var<min_win_size){
-      scalex=min_win_size/var;
+    if (Cols<min_win_size){
+      scalex=min_win_size/Cols;
     }
-    if (dom<min_win_size){
-      scaley=min_win_size/dom;
+    if (Rows<min_win_size){
+      scaley=min_win_size/Rows;
     }
-    img_x=var*scalex;
-    img_y=dom*scaley;
+    img_x=Cols*scalex;
+    img_y=Rows*scaley;
 
     imageOut = CImg<>(img_x,img_y,1,3,0);
     cout << "allocating image: " << img_x << " " << img_y << "\n";
@@ -58,7 +61,8 @@ public:
    }
 
   ~WinDisplay(){
-    //    cout << "calling destructor\n";
+    cout << "calling destructor\n";
+    close();
     //delete imageOut;
     //delete main_disp;
   }
@@ -70,7 +74,8 @@ public:
     main_disp.display(imageOut);  
   }
 
-  void update(IntVarArray q){
+  void update(IntVarArray M, IntVarArray G, SetVarArray H){
+    const unsigned char green[] = { 64,255,32 }, blue[] = { 128,200,255}, red[] = { 255,0,0 }, white[] = { 255,255,255 };
 
     // clean image
     for (int i=0;i<img_x;i++){
@@ -79,7 +84,7 @@ public:
       }
     }
 
-    // for each domain value paint green block if it is in the current domain
+    /*    // for each domain value paint green block if it is in the current domain
     for (int i=0;i<q.size();i++){
       for (int j=0;j<domain_size;j++){
 
@@ -92,12 +97,13 @@ public:
       }
 
     }
+    */
 
 
     // idea of drawing edges for variable M
-    for (int i=0;i<q.size();i++){
-      for (int j=0;j<domain_size;j++){
-	if (q[i].in(j)){
+    for (int i=0;i<nRows;i++){
+      for (int j=0;j<nCols;j++){
+	if (M[i].in(j)){
 	  for (int dx=0;dx<scalex;dx++){	    
 	    for (int k=-1;k<2;k++){
 	      int x,y;
@@ -114,9 +120,9 @@ public:
     }
 
     // variables G
-    for (int i=0;i<q.size();i++){
-      for (int j=0;j<domain_size;j++){
-	if (q[i].in(j)){
+    for (int i=0;i<nRows;i++){
+      for (int j=0;j<nCols;j++){
+	if (G[i].in(j)){
 	  for (int dx=0;dx<scalex;dx++){	    
 	    for (int k=-1;k<2;k++){
 	      int x,y;
@@ -132,16 +138,19 @@ public:
     }
 
     // variables H
-    for (int i=0;i<q.size();i++){
-      for (int j=0;j<domain_size;j++){
-	if (q[i].in(j)){
+    for (int i=0;i<nRows;i++){
+      for (int j=0;j<nCols;j++){
+	int r=100,g=100,b=100;
+	
+	if (H[i].contains(j)) {g=200;r=0;b=40;}
+	if (!H[i].notContains(j)){ //{g=10;r=200;b=10;}
 	  for (int dx=0;dx<scalex;dx++){	    
 	    for (int k=-1;k<2;k++){
 	      int x,y;
 	      x=j*scalex-dx+scalex/2;
 	      y=i*scaley+   scalex/2+k;
 	      if (x>0 && y>0 && x<img_x && y<img_y){
-		rgb(x,y,100,100,100);
+		rgb(x,y,r,g,b);
 	      }
 	    }	    
 	  }
@@ -150,52 +159,17 @@ public:
     }
 
 
-
-    display();    
-  }
-
-  void update(SetVarArray H){
-    const unsigned char green[] = { 64,255,32 }, blue[] = { 128,200,255}, red[] = { 255,0,0 }, white[] = { 255,255,255 };
-    // clean image
-    for (int i=0;i<img_x;i++){
-      for(int j=0;j<img_y;j++){
-	rgb(i,j,0,0,0);
-      }
+    for (int i=0;i<nRows;i++){
+      imageOut.draw_text(0*scalex,
+			 i*scaley,
+			 "i=%d",
+			 white,
+			 0,1,4,i);
     }
-
-    // set variables (red=outside set, grey in the lattice, green in the set
-    for (int i=0;i<H.size();i++){
-      for (int j=0;j<domain_size;j++){
-	int r=100,g=100,b=100;
-	
-	if (H[i].contains(j)) {g=200;r=0;b=40;}
-	if (H[i].notContains(j)) {g=10;r=200;b=10;}
-       	
-	for (int dx=0;dx<scalex;dx++){	    
-	  for (int dy=0;dy<scaley;dy++){	    
-	    //	  for (int k=-1;k<2;k++){
-	    int x,y;
-	    x=j*scalex+dx;
-	    y=i*scaley+dy;
-	    if (x>0 && y>0 && x<img_x && y<img_y){
-	      rgb(x,y,r,g,b);
-	    }	    
-	  }
-	}
-
-	imageOut.draw_text(j*scalex,
-			   i*scaley,
-			   "i=%d",
-			   white,
-			   0,1,4,i);
-
-      }      
-    }
-    display();    
-  }
     
-
-
+    display();    
+  }
+  
   void close(){
     cout << "close (wait 1 sec)\n";
     if (!main_disp.is_empty() && !main_disp.is_closed()) {
