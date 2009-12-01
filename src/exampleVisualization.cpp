@@ -29,6 +29,7 @@ protected:
   SetVarArray H;
 
   // used as temp variables, maybe they can be removed with better constraint posting
+
   BoolVarArray b;
   IntVarArray card;
   
