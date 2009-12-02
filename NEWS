@@ -1,0 +1,11 @@
+we have autoconf/automake!
+  use
+    aclocal
+    autoconf
+    automake --add-missing
+  for generating configure script and preparing Makefile(s)
+
+  run
+    ./configure --prefix=$my-favorite-install-path
+    make
+    # make install # (optionally)
