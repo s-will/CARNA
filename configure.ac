@@ -94,6 +94,12 @@ AC_ARG_VAR(GECODE_SRC_HOME,[Home of GECODE source (contains headers)])
 AC_MSG_RESULT([$GECODE_SRC_HOME])
 
 
+AC_MSG_CHECKING([whether CImg is installed])
+AC_CHECK_HEADER(CImg.h,
+	[],
+        [AC_MSG_ERROR([Please install CImg library])],	
+	[])
+
 ####################
 # Static linking
 #
