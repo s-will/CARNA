@@ -71,10 +71,12 @@ AC_ARG_ENABLE([debug],
 AC_MSG_RESULT($debuger)
 if test x"$debuger" = x"yes"; then
     AC_DEFINE([DEBUG])
-    CPPFLAGS="$CPPFLAGS -g -Wall -Wno-deprecated"
+    CPPFLAGS="$CPPFLAGS -g -Wall"
 else
     AC_DEFINE([NDEBUG])
 fi
+
+CPPFLAGS="$CPPFLAGS -Wno-deprecated"
 
 ## where are GECODE libs and includes
 ##
@@ -134,7 +136,7 @@ AC_TYPE_SIZE_T
 
 AC_CONFIG_FILES([Makefile])
 
-AC_FUNC_MALLOC
+#AC_FUNC_MALLOC
 
 
 AC_OUTPUT([src/Makefile])
