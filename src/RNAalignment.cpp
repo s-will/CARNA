@@ -1,9 +1,16 @@
 #include <gecode/minimodel.hh>
 #include <gecode/search.hh>
 
-// #include "alignmentScorePropagator/scoreAlignment.hh"
+#include <rna_data.hh>
+
+#include "alignmentScorePropagator/alignment_score.hh"
 
 using namespace Gecode;
+
+//! parameters for the alignment.
+//! currently a dummy class
+class AlignmentParams {
+};
 
 /**
  * \brief %RNA Alignment
@@ -27,16 +34,16 @@ protected:
 public:
     RNAalignment(const RnaData &rna_data_R,const RnaData &rna_data_S,AlignmentParams &alignment_params)
 	:
-	n(rna_data_R.size()),
-	m(rna_data_R.size()),
+	n(rna_data_R.get_sequence().length()),
+	m(rna_data_R.get_sequence().length()),
 	undef(m+1),
 	M(*this,n+1,1,m+1), // assume that undef is m+1! // we only need M_1,...,M_n ==> ignore M_0
 	G(*this,n+1,0,m+1), // ignore G_0 as for M
 	H(*this,n+1,IntSet::empty,1,m,0) // here, we want H_0(!)...H_n
     {
 	//ignore M_0, G_0
-	M[0]=undef;
-	G[0]=undef;
+      rel(*this,M[0],IRT_EQ,undef);
+      rel(*this,G[0],IRT_EQ,undef);
 		
 	scoreAlignment::post(*this,rna_data_R,rna_data_S,alignment_params,M,G,H,Score);
 	
@@ -51,7 +58,8 @@ public:
     }
 
     /// Constructor for cloning \a s
-    RNAalignment(bool share, RNAalignment& s) : Space(share,s) {
+  RNAalignment(bool share, RNAalignment& s) : 
+    n(s.n),m(s.m),undef(s.undef),Space(share,s) {
 	M.update(*this, share, s.M);
 	G.update(*this, share, s.G);
 	H.update(*this, share, s.H);
@@ -66,7 +74,7 @@ public:
     /// Print solution
     virtual void
     print(std::ostream& out) const {
-	out << "RNAalignment::print: printing not supported yet."
+      out << "RNAalignment::print: printing not supported yet.";
     }
 };
 
@@ -80,6 +88,10 @@ main(int argc, char* argv[]) {
       Get RnaData objects and AlignmentParams similar to LocARNA
     */
     
+  RnaData rna_data_R();
+  RnaData rna_data_S();
+  AlignmentParams alignment_params();
+
     RNAalignment* s = new RNAalignment(rna_data_R,rna_data_S,alignment_params);
     DFS<RNAalignment> e(s);
     

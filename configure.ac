@@ -71,7 +71,7 @@ AC_ARG_ENABLE([debug],
 AC_MSG_RESULT($debuger)
 if test x"$debuger" = x"yes"; then
     AC_DEFINE([DEBUG])
-    CPPFLAGS="$CPPFLAGS -g -Wall"
+    CPPFLAGS="$CPPFLAGS -g -Wall -Wno-deprecated"
 else
     AC_DEFINE([NDEBUG])
 fi
@@ -94,11 +94,20 @@ AC_ARG_VAR(GECODE_SRC_HOME,[Home of GECODE source (contains headers)])
 AC_MSG_RESULT([$GECODE_SRC_HOME])
 
 
+GECODE_LIBFLAGS="-lgecodekernel -lgecodesearch -lgecodeint -lgecodeintset -lgecodeminimodel  -lgecodesupport  -lgecodegist"
+
+LDFLAGS="$LDFLAGS $GECODE_LIBFLAGS"
+
+
+#####################
+## Check for CImg library
+
 AC_MSG_CHECKING([whether CImg is installed])
 AC_CHECK_HEADER(CImg.h,
 	[],
         [AC_MSG_ERROR([Please install CImg library])],	
 	[])
+
 
 ####################
 # Static linking
