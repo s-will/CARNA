@@ -3,7 +3,7 @@
 
 #include <LocARNA/rna_data.hh>
 
-#include "alignmentScorePropagator/alignment_score.hh"
+#include "alignment_score.hh"
 
 using namespace Gecode;
 
