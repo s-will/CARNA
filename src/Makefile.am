@@ -4,8 +4,9 @@ exampleVisualization_SOURCES = exampleVisualization.cpp  \
 	WinDisplay.cpp 
 
 RNAalignment_SOURCES = RNAalignment.cpp \
-	rna_data.cc rna_data.hh sequence.hh sequence.cc \
-	alphabet.hh alphabet.icc \
-	matrices.hh sparse_matrix.hh
+	LocARNA/rna_data.cc LocARNA/rna_data.hh \
+	LocARNA/sequence.hh LocARNA/sequence.cc \
+	LocARNA/alphabet.hh LocARNA/alphabet.icc \
+	LocARNA/matrices.hh LocARNA/sparse_matrix.hh
         #alignmentScorePropagator/Neq.cc alignmentScorePropagator/Neq.hh 
 

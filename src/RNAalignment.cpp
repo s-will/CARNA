@@ -1,7 +1,7 @@
 #include <gecode/minimodel.hh>
 #include <gecode/search.hh>
 
-#include <rna_data.hh>
+#include <LocARNA/rna_data.hh>
 
 #include "alignmentScorePropagator/alignment_score.hh"
 
@@ -45,7 +45,8 @@ public:
       rel(*this,M[0],IRT_EQ,undef);
       rel(*this,G[0],IRT_EQ,undef);
 		
-	scoreAlignment::post(*this,rna_data_R,rna_data_S,alignment_params,M,G,H,Score);
+	AlignmentScore::post(*this,rna_data_R,rna_data_S,alignment_params,
+			     M,G,H,Score);
 	
 	// presumably reasonable: first enumerate M, then the rest
 	branch(*this, M, INT_VAR_SIZE_MAX, INT_VAL_MED); // suggestion: split largest domain
