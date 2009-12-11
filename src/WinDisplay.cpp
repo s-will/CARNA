@@ -69,8 +69,8 @@ public:
 
   void display(){
 
-    //if (main_disp.is_empty() || main_disp.is_closed())
-    if (main_disp.is_closed) // the above line is not compiling (change in current CImg version?. What is correct, Ale?
+    if (main_disp.is_empty() || main_disp.is_closed())
+      //if (main_disp.is_closed) // the above line is not compiling (change in current CImg version?. What is correct, Ale?
       main_disp=CImgDisplay(imageOut,title,0);
     main_disp.display(imageOut);  
   }
@@ -173,8 +173,8 @@ public:
   
   void close(){
     cout << "close (wait 1 sec)\n";
-    //if (!main_disp.is_empty() && !main_disp.is_closed()) {
-    if (! main_disp.is_closed) // the above line is not compiling (change in current CImg version?. What is correct, Ale? 
+    if (!main_disp.is_empty() && !main_disp.is_closed()) {
+      //if (! main_disp.is_closed) // the above line is not compiling (change in current CImg version?. What is correct, Ale? 
       for (int i=0;i<10;i++){
 	main_disp.wait(100);
       }

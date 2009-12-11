@@ -96,7 +96,7 @@ AC_ARG_VAR(GECODE_SRC_HOME,[Home of GECODE source (contains headers)])
 AC_MSG_RESULT([$GECODE_SRC_HOME])
 
 
-GECODE_LIBFLAGS="-lgecodekernel -lgecodesearch -lgecodeint -lgecodeintset -lgecodeminimodel  -lgecodesupport  -lgecodegist"
+GECODE_LIBFLAGS="-lgecodekernel -lgecodesearch -lgecodeint -lgecodeset -lgecodeminimodel  -lgecodesupport  -lgecodegist"
 
 LDFLAGS="$LDFLAGS $GECODE_LIBFLAGS"
 
@@ -109,6 +109,19 @@ AC_CHECK_HEADER(CImg.h,
 	[],
         [AC_MSG_ERROR([Please install CImg library])],	
 	[])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+     [[#include <CImg.h>
+     #ifndef cimg_version 
+     # error cimg not defined
+     #endif
+     #if cimg_version != 132
+     # error wrong version
+     #endif
+     ]])],
+                        [],
+                        AC_MSG_ERROR([Wrong CImg version please use 132]))
+
 
 
 ####################
