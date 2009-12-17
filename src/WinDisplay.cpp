@@ -1,8 +1,8 @@
-#include <CImg.h>
 #include <iostream>
 #include <gecode/minimodel.hh>
 #include <gecode/search.hh>
 #include <gecode/set.hh>
+#include <CImg.h>
 
 using namespace cimg_library;
 using namespace std;
