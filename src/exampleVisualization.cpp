@@ -145,7 +145,7 @@ main(int argc, char* argv[]) {
   RNAalignment* s = new RNAalignment(10,10);
   Gist::Print<RNAalignment> p("Node explorer");
   Gist::Options o;
-  o.inspect.click=&p;
+  o.inspect.click(&p);
 
   Gist::dfs(s,o);
 
