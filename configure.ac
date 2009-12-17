@@ -82,7 +82,7 @@ CPPFLAGS="$CPPFLAGS -Wno-deprecated"
 ##
 
 AC_MSG_CHECKING([Where are GECODE libs])
-if test "$GECODE_HOME" = "" ; then
+if test "$GECODE_HOME" != "" ; then
    LDFLAGS="$LDFLAGS -L$GECODE_HOME/lib"
 fi
 AC_ARG_VAR(GECODE_HOME,[Home of GECODE installation (includes libs)])
