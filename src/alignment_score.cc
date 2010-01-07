@@ -1,12 +1,13 @@
 #include "alignment_score.hh"
-#include "LocARNA/rna_data.hh"
+#include "LocARNA/arc_matches.hh"
 
 //#include <iostream>
 
 
 AlignmentScore::AlignmentScore(Gecode::Space& home,
-			       const RnaData &rna_data_S_,
-			       const RnaData &rna_data_R_,
+			       const Sequence &seqA_,
+			       const Sequence &seqB_, 
+			       const ArcMatches &arc_matches_,
 			       const AlignerParams &params_,
 			       const Scoring &scoring_,
 			       IntViewArray &M_,
@@ -15,8 +16,9 @@ AlignmentScore::AlignmentScore(Gecode::Space& home,
 			       Gecode::Int::IntView &Score_
 			       )
     : Propagator(home),
-      rna_data_S(rna_data_S_),
-      rna_data_R(rna_data_R_),
+      seqA(seqA_),
+      seqB(seqB_),
+      arc_matches(arc_matches_),
       params(params_),
       scoring(scoring_),
       M(M_),
@@ -24,14 +26,21 @@ AlignmentScore::AlignmentScore(Gecode::Space& home,
       H(H_),
       Score(Score_)
 {
+    // subscribe the propagator to any variable change 
+    M.subscribe(home,*this,Gecode::Int::PC_INT_DOM);
+    G.subscribe(home,*this,Gecode::Int::PC_INT_DOM);
+    H.subscribe(home,*this,Gecode::Set::PC_SET_ANY);
+    Score.subscribe(home,*this,Gecode::Int::PC_INT_BND);
+    
 }
 
 AlignmentScore::AlignmentScore(Gecode::Space& home,
 			       bool share,
 			       AlignmentScore& p) :
     Propagator(home,share,p),
-    rna_data_R(p.rna_data_R),
-    rna_data_S(p.rna_data_S),
+    seqA(p.seqA),
+    seqB(p.seqB),
+    arc_matches(p.arc_matches),
     params(p.params),
     scoring(p.scoring)
 {
@@ -44,8 +53,9 @@ AlignmentScore::AlignmentScore(Gecode::Space& home,
 Gecode::ExecStatus
 AlignmentScore::
 post(Gecode::Space& home,
-     const RnaData &rna_data_S,
-     const RnaData &rna_data_R,
+     const Sequence &seqA,
+     const Sequence &seqB,
+     const ArcMatches &arc_matches,
      const AlignerParams &params,
      const Scoring &scoring,
      Gecode::IntVarArray &M,
@@ -54,30 +64,33 @@ post(Gecode::Space& home,
      Gecode::IntVar &Score
      )
 {
-    if ( false /*simple_fail_test*/ ) {
-	return Gecode::ES_FAILED;
-    } else {
-	// translate vars/var arrays to views/view arrays
-      
-	Gecode::Int::IntView ScoreView = Score;
-      
-	Gecode::VarArgArray<Gecode::IntVar> MArg = M;
-	IntViewArray MView = IntViewArray(home,MArg);
+    std::cout << "AlignmentScore::post"<<std::endl;
 
-	Gecode::VarArgArray<Gecode::IntVar> GArg = G;
-	IntViewArray GView = IntViewArray(home, GArg);
+    // the post method converts Vars to Views and constructs a new propagator
+    // in the home-space
 
-	Gecode::VarArgArray<Gecode::SetVar> HArg = H;
-	SetViewArray HView = SetViewArray(home, HArg);
+    // translate vars/var arrays to views/view arrays
+	
+    Gecode::Int::IntView ScoreView = Score;
       
-	new (home) AlignmentScore(home,
-				  rna_data_S,
-				  rna_data_R,
-				  params,
-				  scoring,
-				  MView,GView,HView,
-				  ScoreView);
-    }
+    Gecode::VarArgArray<Gecode::IntVar> MArg = M;
+    IntViewArray MView = IntViewArray(home,MArg);
+    
+    Gecode::VarArgArray<Gecode::IntVar> GArg = G;
+    IntViewArray GView = IntViewArray(home, GArg);
+    
+    Gecode::VarArgArray<Gecode::SetVar> HArg = H;
+    SetViewArray HView = SetViewArray(home, HArg);
+	
+    new (home) AlignmentScore(home,
+			      seqA,
+			      seqB,
+			      arc_matches,
+			      params,
+			      scoring,
+			      MView,GView,HView,
+			      ScoreView);
+
     return Gecode::ES_OK;
 }
 
@@ -88,24 +101,54 @@ AlignmentScore::copy(Gecode::Space& home, bool share) {
 
 Gecode::PropCost
 AlignmentScore::cost(const Gecode::Space& home, const Gecode::ModEventDelta& med) const {
-    return Gecode::PropCost::linear(Gecode::PropCost::HI,
-				    rna_data_S.get_sequence().length()
-				    *rna_data_R.get_sequence().length()
+    return Gecode::PropCost::linear(Gecode::PropCost::LO,
+				    seqA.length() * seqB.length()
 				    );
 }
 
 
-score_t
+infty_score_t
 AlignmentScore::ub_match(size_type i, size_type j) const {
+    //std::cout << "AlignmentScore::ub_match"<<std::endl;
   
     // compute upper bound for the contribution of matching positions i
-    // and j of respective sequences R and S
+    // and j of respective sequences A and B
     // by summing over all possible base pair matchs
     //
     // when selecting a certain structure: maximize over possible base pair matchs
     // when not selecting one single structure: make use of the fact that
     // there is at most one alignment edge per base ==> each arc can be matched at most once
   
+    infty_score_t bound=(infty_score_t)0;
+    
+    // NOTE: there are different possibilities to enumerate the possible arc-matches.
+    // traversing the arc-matches is good for theoretical complexity,
+    // since we assume this is limited by a constant
+
+	
+    // for all pairs of arcs in A and B that have right ends i and j, respectively
+    //
+    for(ArcMatchIdxVec::const_iterator it=arc_matches.common_right_end_list(i,j).begin();
+	arc_matches.common_right_end_list(i,j).end() != it; ++it ) {
+	
+	const ArcMatch &am = arc_matches.arcmatch(*it);
+
+	if ( match_allowed(am.arcA().left(),am.arcB().left()) ) { // if the left ends of arcs arcA and arcB can match 
+	    bound += scoring.arcmatch(am);
+	}
+    }
+   
+    // same for common left ends
+    for(ArcMatchIdxVec::const_iterator it=arc_matches.common_left_end_list(i,j).begin();
+	arc_matches.common_left_end_list(i,j).end() != it; ++it ) {	
+	const ArcMatch &am = arc_matches.arcmatch(*it);
+ 
+	if ( match_allowed(am.arcA().right(),am.arcB().right()) ) { // if the right ends of arcs arcA and arcB can match 
+	    bound += scoring.arcmatch(am);
+	}
+    }
+    
+    return bound;
 }
 
 
@@ -115,12 +158,12 @@ AlignmentScore::all_vars_fixed() const {
     // otherwise return true
     
     //M
-    for (size_type i=0; i<M.size(); ++i) {
+    for (size_type i=1; i<M.size(); ++i) {
 	if (!M[i].assigned()) return false;
     }
 
     //G
-    for (size_type i=0; i<G.size(); ++i) {
+    for (size_type i=1; i<G.size(); ++i) {
 	if (!G[i].assigned()) return false;
     }
     
@@ -138,6 +181,8 @@ AlignmentScore::all_vars_fixed() const {
 Gecode::ExecStatus
 AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 
+    std::cout << "AlignmentScore::propagate"<<std::endl;
+
     // ----------------------------------------
     // Propagation strategy:
     //
@@ -154,11 +199,9 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 
     Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
   
-    const Sequence &seqR=rna_data_R.get_sequence();
-    const Sequence &seqS=rna_data_S.get_sequence();
   
-    const int n=seqR.length();
-    const int m=seqS.length();
+    const int n=seqA.length();
+    const int m=seqB.length();
   
 
     // ----------------------------------------
@@ -187,7 +230,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
   
     // recurse
     for(size_type i=1; i<=n; i++) {
-	for(size_type j=1; j<=m; i++) {
+	for(size_type j=1; j<=m; j++) {
 	    if (match_allowed(i,j)) {
 		Fwd(i,j) = Fwd(i-1,j-1) + ub_match(i,j);
 	    }
@@ -245,7 +288,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	    //
   
 	    for(size_type i=1; i<=n; i++) {
-		for(size_type j=1; j<=m; i++) {      
+		for(size_type j=1; j<=m; j++) {      
 		    // prune M variable for match i~j
 		    infty_score_t ubm = Fwd(i-1,j-1)+ub_match(i,j)+Bwd(i,j);
 

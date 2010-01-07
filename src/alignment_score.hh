@@ -18,8 +18,9 @@ public:
 
 private:
     
-    const RnaData &rna_data_S;
-    const RnaData &rna_data_R;
+    const Sequence &seqA;
+    const Sequence &seqB;
+    const ArcMatches &arc_matches;
     const AlignerParams &params;
     const Scoring &scoring;
     IntViewArray M;
@@ -37,8 +38,9 @@ protected:
 
     /// Constructor for posting \a p
     AlignmentScore(Gecode::Space& home,
-		   const RnaData &rna_data_S,
-		   const RnaData &rna_data_R,
+		   const Sequence &seqA,
+		   const Sequence &seqB, 
+		   const ArcMatches &arcmatches,
 		   const AlignerParams &params,
 		   const Scoring &scoring,
 		   IntViewArray &M,
@@ -50,7 +52,7 @@ protected:
 
     //! upper bound for the contribution of matching positions i
     //! and j of respective sequences R and S
-    score_t
+    infty_score_t
     ub_match(size_type i, size_type j) const;
 
 
@@ -90,8 +92,9 @@ protected:
 public:
     //! post a binary neighbor constraint
     static Gecode::ExecStatus post(Gecode::Space& home,
-				   const RnaData &rna_data_S,
-				   const RnaData &rna_data_R,
+				   const Sequence &seqA,
+				   const Sequence &seqB,
+				   const ArcMatches &arc_matches,
 				   const AlignerParams &params,
 				   const Scoring &scoring,
 				   Gecode::IntVarArray &M,

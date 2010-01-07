@@ -17,6 +17,8 @@ using namespace Gecode;
 
 using namespace std;
 
+typedef std::vector<int>::size_type size_type;
+
 const std::string 
 VERSION_STRING = (std::string)PACKAGE_STRING; 
 
@@ -249,21 +251,23 @@ protected:
     IntVar Score;
 
 public:
-    RNAalignment(const RnaData &rna_data_R,const RnaData &rna_data_S,const AlignerParams &aligner_params, const Scoring &scoring)
+    RNAalignment(const Sequence &seqA, const Sequence &seqB, const ArcMatches &arcmatches,const AlignerParams &aligner_params, const Scoring &scoring)
 	:
-	n(rna_data_R.get_sequence().length()),
-	m(rna_data_R.get_sequence().length()),
+	n(seqA.length()),
+	m(seqB.length()),
 	undef(m+1),
 	M(*this,n+1,1,m+1), // assume that undef is m+1! // we only need M_1,...,M_n ==> ignore M_0
 	G(*this,n+1,0,m+1), // ignore G_0 as for M
-	H(*this,n+1,IntSet::empty,1,m,0) // here, we want H_0(!)...H_n
+	H(*this,n+1,IntSet::empty,1,m,0), // here, we want H_0(!)...H_n
+	Score(*this,Gecode::Int::Limits::min,Gecode::Int::Limits::max)
     {
 	//ignore M_0, G_0
 	rel(*this,M[0],IRT_EQ,undef);
 	rel(*this,G[0],IRT_EQ,undef);
 		
-	AlignmentScore::post(*this,rna_data_R,rna_data_S,aligner_params,scoring,
+	AlignmentScore::post(*this,seqA,seqB,arcmatches,aligner_params,scoring,
 			     M,G,H,Score);
+	
 	
 	// presumably reasonable: first enumerate M, then the rest
 	branch(*this, M, INT_VAR_SIZE_MAX, INT_VAL_MED); // suggestion: split largest domain
@@ -277,10 +281,11 @@ public:
 
     /// Constructor for cloning \a s
     RNAalignment(bool share, RNAalignment& s) : 
-	n(s.n),m(s.m),undef(s.undef),Space(share,s) {
+	Space(share,s),n(s.n),m(s.m),undef(s.undef) {
 	M.update(*this, share, s.M);
 	G.update(*this, share, s.G);
 	H.update(*this, share, s.H);
+	Score.update(*this,share,s.Score);
     }
 
     /// Perform copying during cloning
@@ -292,7 +297,24 @@ public:
     /// Print solution
     virtual void
     print(std::ostream& out) const {
-	out << "RNAalignment::print: printing not supported yet.";
+	for (size_type i=1; i<M.size(); ++i) {
+	    out <<M[i]<<" ";
+	}
+	out<<std::endl;
+	
+	//G
+	for (size_type i=1; i<G.size(); ++i) {
+	    out <<G[i]<<" ";
+	}
+	out<<std::endl;
+	
+	//H
+	for (size_type i=0; i<H.size(); ++i) {
+	    out <<H[i]<<" ";
+	}
+	out<<std::endl;
+	
+	out << "Score: "<<Score<<endl;
     }
 };
 
@@ -301,7 +323,6 @@ public:
  */
 int
 main(int argc, char* argv[]) {    
-    typedef std::vector<int>::size_type size_type;
     
     // ----------------------------------------
     // BEGIN process options
@@ -486,7 +507,7 @@ main(int argc, char* argv[]) {
 				 seq_constraints
 				 );
     
-    RNAalignment* s = new RNAalignment(rnadataA,rnadataB,aligner_params,scoring);
+    RNAalignment* s = new RNAalignment(seqA,seqB,*arc_matches,aligner_params,scoring);
     
     
     DFS<RNAalignment> e(s);
