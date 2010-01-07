@@ -81,6 +81,12 @@ protected:
 	return H[i].contains((int)j); // is j potentially a member of the set G[i]
     }
 
+    //! used for testing whether propagator can be deleted
+    //! @returns whether all vars are fixed
+    bool
+    all_vars_fixed() const;
+
+
 public:
     //! post a binary neighbor constraint
     static Gecode::ExecStatus post(Gecode::Space& home,

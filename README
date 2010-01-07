@@ -2,5 +2,4 @@ installed gecode:
 /home/mmann/Software/gecode/3.0.2
 /home/mmann/Software/src/gecode-3.0.2
 
-SVN IMPORT TODO
 svn import http://cmt.math.unipr.it/svn/constraintRnaAlignment

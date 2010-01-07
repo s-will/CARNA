@@ -109,6 +109,31 @@ AlignmentScore::ub_match(size_type i, size_type j) const {
 }
 
 
+bool
+AlignmentScore::all_vars_fixed() const {
+    // test all variable views and return false as soon as one is not fixed/assigned
+    // otherwise return true
+    
+    //M
+    for (size_type i=0; i<M.size(); ++i) {
+	if (!M[i].assigned()) return false;
+    }
+
+    //G
+    for (size_type i=0; i<G.size(); ++i) {
+	if (!G[i].assigned()) return false;
+    }
+    
+    //H
+    for (size_type i=0; i<H.size(); ++i) {
+	if (!H[i].assigned()) return false;
+    }
+
+
+    return true;
+}
+
+
 
 Gecode::ExecStatus
 AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
@@ -207,10 +232,10 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 		if (match_allowed(i+1,j+1)) {
 		    Bwd(i,j) = Bwd(i+1,j+1) + ub_match(i+1,j+1); // match i+1 ~ j+1 (!)
 		}
-		if (deletion_allowed(i+1,j+1)) {
+		if (deletion_allowed(i+1,j)) {
 		    Bwd(i,j) = std::max(Bwd(i,j), Bwd(i+1,j)+scoring.gapA(i+1,j));
 		}
-		if (insertion_allowed(i+1,j+1)) {
+		if (insertion_allowed(i,j+1)) {
 		    Bwd(i,j) = std::max(Bwd(i,j), Bwd(i,j+1)+scoring.gapB(i,j+1));
 		}
 	    }
@@ -223,20 +248,23 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 		for(size_type j=1; j<=m; i++) {      
 		    // prune M variable for match i~j
 		    infty_score_t ubm = Fwd(i-1,j-1)+ub_match(i,j)+Bwd(i,j);
-		    if (ubm < Score.min()) {
-			ret |= M[i].nq(j);
+
+		    infty_score_t score_min = (infty_score_t) Score.min();
+		    
+		    if (ubm < score_min) {
+			ret |= M[i].nq(home,(int)j);
 		    }
 
 		    // prune G variable for gap i~- (deletion of i between j and j+1)
-		    infty_score_t ubd = Fwd(i-1,j) + gamma + Bwd(i,j);
-		    if (ubd < Score.min()) {
-			ret |= G[i].nq(j);
+		    infty_score_t ubd = Fwd(i-1,j) + scoring.gapA(i+1,j) + Bwd(i,j);
+		    if (ubd < score_min) {
+			ret |= G[i].nq(home,(int)j);
 		    }
       
 		    // prune H variable for gap -~j (insertion of j between i and i+1)
-		    infty_score_t ubi = Fwd(i,j-1) + gamma + Bwd(i,j);
-		    if (ubi < Score.min()) {
-			ret |= H[i].exclude(j);
+		    infty_score_t ubi = Fwd(i,j-1) + scoring.gapB(i,j+1) + Bwd(i,j);
+		    if (ubi < score_min) {
+			ret |= H[i].exclude(home,(int)j);
 		    }
 		}
 	    }
@@ -246,9 +274,11 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	    // can the propagator be subsumed before all vars are fixed and is it efficiently detectable?
   
 	    // test whether all vars fixed, then subsume
-	    if ( all_vars_fix ) {
+	    if ( all_vars_fixed() ) {
 		return ES_SUBSUMED(*this,dispose(home)); 
 	    }
   
 	    return Gecode::ES_FIX;
 	}
+    }
+}
