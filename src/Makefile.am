@@ -11,4 +11,3 @@ RNAalignment_SOURCES = RNAalignment.cpp \
 	alignment_score.hh alignment_score.cc
 
 #Propagator_example/Neq.cc Propagator_example/Neq.hh 
-
