@@ -24,7 +24,8 @@ AlignmentScore::AlignmentScore(Gecode::Space& home,
       M(M_),
       G(G_),
       H(H_),
-      Score(Score_)
+      Score(Score_),
+      undef(seqB.length()+1)
 {
     // subscribe the propagator to any variable change 
     M.subscribe(home,*this,Gecode::Int::PC_INT_DOM);
@@ -42,7 +43,8 @@ AlignmentScore::AlignmentScore(Gecode::Space& home,
     seqB(p.seqB),
     arc_matches(p.arc_matches),
     params(p.params),
-    scoring(p.scoring)
+    scoring(p.scoring),
+    undef(p.undef)
 {
     M.update(home,share,p.M);
     G.update(home,share,p.G);
@@ -81,7 +83,7 @@ post(Gecode::Space& home,
     
     Gecode::VarArgArray<Gecode::SetVar> HArg = H;
     SetViewArray HView = SetViewArray(home, HArg);
-	
+    
     new (home) AlignmentScore(home,
 			      seqA,
 			      seqB,
@@ -90,7 +92,7 @@ post(Gecode::Space& home,
 			      scoring,
 			      MView,GView,HView,
 			      ScoreView);
-
+    
     return Gecode::ES_OK;
 }
 
@@ -181,7 +183,7 @@ AlignmentScore::all_vars_fixed() const {
 Gecode::ExecStatus
 AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 
-    std::cout << "AlignmentScore::propagate"<<std::endl;
+    std::cout << "AlignmentScore::propagate " <<std::endl;
 
     // ----------------------------------------
     // Propagation strategy:
@@ -195,14 +197,34 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     // of matrix entries Fwd(i-1,j-1)+ub_mach(i,j)+Bwd(i,j) yields the upper bound for match i~j.
     //
     // ----------------------------------------
-
-
-    Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
   
   
     const int n=seqA.length();
     const int m=seqB.length();
-  
+
+    std::cout << "Matches:    " << M << std::endl;
+    std::cout << "Deletions:  " << G << std::endl;
+    std::cout << "Insertions: " << H << std::endl;
+    std::cout << "Score:      " << Score << std::endl;
+    
+
+    // ----------------------------------------
+    // simple consistency
+    // 
+    
+    // if a match is fixed, this restricts deletions and insertions
+    for (size_type i=1; i<=n; i++) {
+	if (M[i].assigned() && M[i].val()!=undef) {
+	    GECODE_ME_CHECK(G[i].eq(home,undef));
+	    for (size_type i2=1; i2<i; i2++) {
+		GECODE_ME_CHECK(M[i2].le(home,M[i].val()));
+	    }
+	    for (size_type i2=i+1; i2<=n; i2++) {
+		GECODE_ME_CHECK(M[i2].gr(home,M[i].val()));
+	    }
+	}
+    }
+
 
     // ----------------------------------------
     // Forward algorithm
@@ -221,7 +243,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	    Fwd(i,0) = Fwd(i-1,0) + scoring.gapA(i,0);
 	}
     }
-  
+    
     for(size_type j=1; j<=m; j++) {
 	if (insertion_allowed(0,j)) {
 	    Fwd(0,j) = Fwd(0,j-1)  + scoring.gapB(0,j);
@@ -241,87 +263,107 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 		Fwd(i,j) = std::max(Fwd(i,j),Fwd(i,j-1)+scoring.gapB(i,j));
 	    }
 	}
-  
-	// ----------------------------------------
-	// Backward algorithm
-	//
-  
-	Matrix<infty_score_t> Bwd(n+1,m+1); 
-	// Bwd(i,j) := max score of a alignment R[i+1..n], S[j+1..m]
-  
-	// init with "invalid" value negative infinity
-	Bwd.fill(infty_score_t::neg_infty);
+    }
+    
+    std::cout << "Fwd"<<std::endl<<Fwd <<std::endl;
+    
+    // the forward algorithm yields an upper bound
+    // ==> constrain the score variable
+    if (Fwd(n,m).is_finite()) {	
+	GECODE_ME_CHECK(Score.lq(home,(int)Fwd(n,m).finite_value()));
+    } else {
+	std::cout << "infinite upper bound"<<std::endl;
+	return Gecode::ES_FAILED;
+    }
 
-	// initialize
-	Bwd(n,m)=(infty_score_t)0;
-	for(size_type i=n; i>0;) { // for i=n-1 downto 0
-	    --i;
-	    if (deletion_allowed(i+1,m)) {
-		Bwd(i,m) = Bwd(i-1,m) + scoring.gapA(i+1,m);
-	    }
-	}
-	for(size_type j=m; j>0;) { // for j=m-1 downto 0
-	    --j;
-	    if (insertion_allowed(n,j+1)) {
-		Bwd(n,j) = Bwd(n,j-1) + scoring.gapB(n,j+1);
-	    }
-	}
-  
-	// recurse
-	for(size_type i=n; i>0;) { // for i=n-1 downto 0
-	    --i;
-	    for(size_type j=m; j>0;) { // for j=m-1 downto 0
-		--j;
-		if (match_allowed(i+1,j+1)) {
-		    Bwd(i,j) = Bwd(i+1,j+1) + ub_match(i+1,j+1); // match i+1 ~ j+1 (!)
-		}
-		if (deletion_allowed(i+1,j)) {
-		    Bwd(i,j) = std::max(Bwd(i,j), Bwd(i+1,j)+scoring.gapA(i+1,j));
-		}
-		if (insertion_allowed(i,j+1)) {
-		    Bwd(i,j) = std::max(Bwd(i,j), Bwd(i,j+1)+scoring.gapB(i,j+1));
-		}
-	    }
-  
-	    // ----------------------------------------
-	    // Combine matrices and prune
-	    //
-  
-	    for(size_type i=1; i<=n; i++) {
-		for(size_type j=1; j<=m; j++) {      
-		    // prune M variable for match i~j
-		    infty_score_t ubm = Fwd(i-1,j-1)+ub_match(i,j)+Bwd(i,j);
-
-		    infty_score_t score_min = (infty_score_t) Score.min();
-		    
-		    if (ubm < score_min) {
-			ret |= M[i].nq(home,(int)j);
-		    }
-
-		    // prune G variable for gap i~- (deletion of i between j and j+1)
-		    infty_score_t ubd = Fwd(i-1,j) + scoring.gapA(i+1,j) + Bwd(i,j);
-		    if (ubd < score_min) {
-			ret |= G[i].nq(home,(int)j);
-		    }
-      
-		    // prune H variable for gap -~j (insertion of j between i and i+1)
-		    infty_score_t ubi = Fwd(i,j-1) + scoring.gapB(i,j+1) + Bwd(i,j);
-		    if (ubi < score_min) {
-			ret |= H[i].exclude(home,(int)j);
-		    }
-		}
-	    }
-  
-	    GECODE_ME_CHECK(ret);
-  
-	    // can the propagator be subsumed before all vars are fixed and is it efficiently detectable?
-  
-	    // test whether all vars fixed, then subsume
-	    if ( all_vars_fixed() ) {
-		return ES_SUBSUMED(*this,dispose(home)); 
-	    }
-  
-	    return Gecode::ES_FIX;
+    // ----------------------------------------
+    // Backward algorithm
+    //
+    
+    Matrix<infty_score_t> Bwd(n+1,m+1); 
+    // Bwd(i,j) := max score of a alignment R[i+1..n], S[j+1..m]
+    
+    // init with "invalid" value negative infinity
+    Bwd.fill(infty_score_t::neg_infty);
+    
+    // initialize
+    Bwd(n,m)=(infty_score_t)0;
+    for(size_type i=n; i>0;) { // for i=n-1 downto 0
+	--i;
+	if (deletion_allowed(i+1,m)) {
+	    Bwd(i,m) = Bwd(i-1,m) + scoring.gapA(i+1,m);
 	}
     }
+    for(size_type j=m; j>0;) { // for j=m-1 downto 0
+	--j;
+	if (insertion_allowed(n,j+1)) {
+	    Bwd(n,j) = Bwd(n,j-1) + scoring.gapB(n,j+1);
+	}
+    }
+    
+    // recurse
+    for(size_type i=n; i>0;) { // for i=n-1 downto 0
+	--i;
+	for(size_type j=m; j>0;) { // for j=m-1 downto 0
+	    --j;
+	    if (match_allowed(i+1,j+1)) {
+		Bwd(i,j) = Bwd(i+1,j+1) + ub_match(i+1,j+1); // match i+1 ~ j+1 (!)
+	    }
+	    if (deletion_allowed(i+1,j)) {
+		Bwd(i,j) = std::max(Bwd(i,j), Bwd(i+1,j)+scoring.gapA(i+1,j));
+	    }
+	    if (insertion_allowed(i,j+1)) {
+		Bwd(i,j) = std::max(Bwd(i,j), Bwd(i,j+1)+scoring.gapB(i,j+1));
+	    }
+	}
+    }
+
+    std::cout << "Bwd"<<std::endl<<Bwd <<std::endl;
+    
+    // ----------------------------------------
+    // Combine matrices and prune
+    //
+    
+    Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
+    
+    for(size_type i=1; i<=n; i++) {
+	for(size_type j=1; j<=m; j++) {      
+	    infty_score_t score_min = (infty_score_t) Score.min();
+	    
+	    // prune M variable for match i~j
+	    if (match_allowed(i,j)) {
+		infty_score_t ubm = Fwd(i-1,j-1)+ub_match(i,j)+Bwd(i,j);
+		
+		if (ubm < score_min) {
+		    ret |= M[i].nq(home,(int)j);
+		}
+	    }
+		
+	    // prune G variable for gap i~- (deletion of i between j and j+1)
+	    if (deletion_allowed(i,j)) {
+		infty_score_t ubd = Fwd(i-1,j) + scoring.gapA(i+1,j) + Bwd(i,j);
+		if (ubd < score_min) {
+		    ret |= G[i].nq(home,(int)j);
+		}
+	    }
+	    
+	    // prune H variable for gap -~j (insertion of j between i and i+1)
+	    if (insertion_allowed(i,j)) {
+		infty_score_t ubi = Fwd(i,j-1) + scoring.gapB(i,j+1) + Bwd(i,j);
+		if (ubi < score_min) {
+		    ret |= H[i].exclude(home,(int)j);
+		}
+	    }
+	}
+    }
+
+    GECODE_ME_CHECK(ret);
+    
+    // test whether all vars fixed, then subsume (can we subsume earlier?)
+    if ( all_vars_fixed() ) {
+	return ES_SUBSUMED(*this,dispose(home)); 
+    }
+    
+    return Gecode::me_modified(ret)?Gecode::ES_NOFIX:Gecode::ES_FIX;
 }
+

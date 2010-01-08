@@ -257,14 +257,14 @@ public:
 	m(seqB.length()),
 	undef(m+1),
 	M(*this,n+1,1,m+1), // assume that undef is m+1! // we only need M_1,...,M_n ==> ignore M_0
-	G(*this,n+1,0,m+1), // ignore G_0 as for M
-	H(*this,n+1,IntSet::empty,1,m,0), // here, we want H_0(!)...H_n
+	G(*this,n+1,0,m+1), // ignore 0 as done for M
+	H(*this,n+1,IntSet::empty,1,m,0), // here, we want H_0(!)...H_n, init such that empty sets allowed, maximal sets are {1..m}
 	Score(*this,Gecode::Int::Limits::min,Gecode::Int::Limits::max)
     {
-	//ignore M_0, G_0
+	//ignore M_0
 	rel(*this,M[0],IRT_EQ,undef);
 	rel(*this,G[0],IRT_EQ,undef);
-		
+
 	AlignmentScore::post(*this,seqA,seqB,arcmatches,aligner_params,scoring,
 			     M,G,H,Score);
 	
@@ -297,24 +297,15 @@ public:
     /// Print solution
     virtual void
     print(std::ostream& out) const {
-	for (size_type i=1; i<M.size(); ++i) {
-	    out <<M[i]<<" ";
-	}
-	out<<std::endl;
-	
-	//G
-	for (size_type i=1; i<G.size(); ++i) {
-	    out <<G[i]<<" ";
-	}
-	out<<std::endl;
-	
-	//H
-	for (size_type i=0; i<H.size(); ++i) {
-	    out <<H[i]<<" ";
-	}
-	out<<std::endl;
-	
-	out << "Score: "<<Score<<endl;
+	std::cout << "SOLUTION" << std::endl;
+	std::cout << "Matches:    " << M << std::endl;
+	std::cout << "Deletions:  " << G << std::endl;
+	std::cout << "Insertions: " << H << std::endl;
+	std::cout << "Score:      " << Score << std::endl;
+    }
+
+    virtual void constrain(const RNAalignment& t) {
+	rel(*this,Score,IRT_GR,t.Score);
     }
 };
 
@@ -510,14 +501,12 @@ main(int argc, char* argv[]) {
     RNAalignment* s = new RNAalignment(seqA,seqB,*arc_matches,aligner_params,scoring);
     
     
-    DFS<RNAalignment> e(s);
+    BAB<RNAalignment> e(s);
     
-    RNAalignment* ex = e.next();
-    if (ex != NULL) {
+    RNAalignment* ex;
+    while ((ex = e.next()) && (ex != NULL)) {
 	ex->print(std::cout);
 	delete ex;
-    } else {
-	std::cout << "No solution" << std::endl;
     }
     
     return 0;

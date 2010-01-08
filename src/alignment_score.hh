@@ -28,10 +28,9 @@ private:
     SetViewArray H;
     Gecode::Int::IntView Score;
     
-
-protected:
+    const int undef;
     
-  
+protected:
   
     /// Constructor for cloning \a p
     AlignmentScore(Gecode::Space& home, bool share, AlignmentScore& p);
@@ -55,7 +54,6 @@ protected:
     infty_score_t
     ub_match(size_type i, size_type j) const;
 
-
     //! test whether a match is allowed by the constraint store
     //! @params i position in sequence 1
     //! @params j position in sequence 2
@@ -71,7 +69,7 @@ protected:
     //! @returns whether the insertion j between i and i+1 is allowed
     bool
     insertion_allowed(size_type i,size_type j) const {
-	return G[i].in((int)j); // is j a member of G[i]
+	return  ! H[i].notContains((int)j); // is j potentially a member of the set G[i]
     }
 
     //! test whether a deletion is allowed by the constraint store
@@ -80,7 +78,7 @@ protected:
     //! @returns whether the deletion of of i between j and j+1 is allowed
     bool
     deletion_allowed(size_type i,size_type j) const {
-	return H[i].contains((int)j); // is j potentially a member of the set G[i]
+	return G[i].in((int)j); // is j a member of G[i]
     }
 
     //! used for testing whether propagator can be deleted
