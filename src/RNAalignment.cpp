@@ -269,8 +269,16 @@ public:
 			     M,G,H,Score);
 	
 	
-	// presumably reasonable: first enumerate M, then the rest
-	branch(*this, M, INT_VAR_SIZE_MAX, INT_VAL_MED); // suggestion: split largest domain
+	//  first enumerate M, then the rest
+	
+	// resort M vector, such that we start enumerating in the middle
+	// Ideally sort like balanced binary tree in array
+	IntVarArgs M_resorted(M.size());
+        for (size_type i=0; i<M.size(); i++) { 
+	    M_resorted[i] = M[(i+M.size()/2)%M.size()];
+	}
+	
+	branch(*this, M_resorted, INT_VAR_SIZE_MAX, INT_VAL_MED); // suggestion: split largest domain
 	branch(*this, G, INT_VAR_SIZE_MAX, INT_VAL_MED);
 
 	// we should show: here, the H variables are already fixed
@@ -304,8 +312,9 @@ public:
 	std::cout << "Score:      " << Score << std::endl;
     }
 
-    virtual void constrain(const RNAalignment& t) {
-	rel(*this,Score,IRT_GR,t.Score);
+    virtual void constrain(const Space& _best) {
+	const RNAalignment& best = static_cast<const RNAalignment&>(_best);
+	rel(*this,Score,IRT_GR,best.Score);
     }
 };
 

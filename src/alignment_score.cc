@@ -66,7 +66,6 @@ post(Gecode::Space& home,
      Gecode::IntVar &Score
      )
 {
-    std::cout << "AlignmentScore::post"<<std::endl;
 
     // the post method converts Vars to Views and constructs a new propagator
     // in the home-space
@@ -174,7 +173,6 @@ AlignmentScore::all_vars_fixed() const {
 	if (!H[i].assigned()) return false;
     }
 
-
     return true;
 }
 
@@ -198,34 +196,136 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     //
     // ----------------------------------------
   
-  
+    
     const int n=seqA.length();
     const int m=seqB.length();
+    
 
+    // ----------------------------------------
+    // consistency checking all variables
+    // such that during forward and backward algo,
+    // we can do simple checks for allowed match, deletion and insertion
+    // and such that inconsistent values are removes early
+    // 
+    
+    Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
+    
+    // match variables are sorted increasingly M[i]<M[i+1], unless one is undef
+    // propagate in two sweeps
+    
+
+    int min_j=0;
+    int strict_min_j=-1;
+    for (int i=1; i<M.size(); i++) {
+	
+	int next_min_j=min_j;
+	int next_strict_min_j=strict_min_j;
+
+	if (!M[i].in(undef)) {
+	    ret |= G[i].eq(home,undef);
+	    ret |= H[i].cardMax(home,0);
+	    next_min_j = std::max( next_min_j, M[i].min() );
+	    next_strict_min_j = M[i].min();
+	}
+	if (!G[i].in(undef)) {
+	    ret |= M[i].eq(home,undef);
+	    ret |= H[i].cardMax(home,0);
+	    next_min_j = std::max( next_min_j, G[i].min() );
+	
+	}
+	if (H[i].glbSize()!=0) { // empty set is not possible value of H[i]
+	    ret |= M[i].eq(home,undef);
+	    ret |= G[i].eq(home,undef);
+	    next_min_j = std::max( next_min_j, H[i].glbMin() );
+	}
+	
+	ret |= M[i].gr(home,min_j);
+	ret |= G[i].gr(home,min_j-1);
+	ret |= G[i].gr(home,strict_min_j);
+	ret |= exclude_lq(home,H[i],min_j);
+	
+	min_j=next_min_j;
+	strict_min_j=next_strict_min_j;
+    }
+
+    int max_j=m+1;
+    int strict_max_j=m+1;
+    for (int i=n; i>1;) {
+	--i;
+	
+	int next_max_j=max_j;
+	int next_strict_max_j=strict_max_j;
+	
+	if (!M[i].in(undef)) {
+	    ret |= G[i].eq(home,undef);
+	    ret |= H[i].cardMax(home,0);
+	    next_max_j = std::min( next_max_j, max_non_undef(M[i]) );
+	    next_strict_max_j = max_non_undef(M[i]);
+	}
+	
+	if (!G[i].in(undef)) {
+	    ret |= M[i].eq(home,undef);
+	    ret |= H[i].cardMin(home,0);
+	    next_max_j = std::min( next_max_j, max_non_undef(G[i]) );
+	}
+	
+	if (H[i].glbSize()!=0) { // empty set is not possible value of H[i]
+	    ret |= M[i].eq(home,undef);
+	    ret |= G[i].eq(home,undef);
+	    next_max_j = std::min( next_max_j, H[i].glbMax() );
+	}
+	
+	ret |= le_or_undef(home,M[i],max_j);
+	ret |= le_or_undef(home,G[i],max_j+1);
+	ret |= le_or_undef(home,G[i],strict_max_j);
+	ret |= exclude_gq(home,H[i],max_j);
+	
+	max_j=next_max_j;
+	strict_max_j=next_strict_max_j;
+    }
+
+    ret |= exclude_gq(home,H[0],max_j);
+    
+    // each i is either matched or deleted
+    for (int i=1; i<=n; i++) {
+	if (M[i].assigned() && M[i].val()==undef) {
+	    ret |= G[i].nq(home,undef);
+	}
+	if (G[i].assigned() && G[i].val()==undef) {
+	    ret |= M[i].nq(home,undef);
+	}
+    }
+    
+    // each j is either matched or deleted
+    // here: go through the M[i] variables, if there are gaps, then force into H
+    max_j=0;
+    for (int i=1; i<=n; i++) {
+	// invariant: max_j is the maximal value that can be covered by M[i-1]
+	
+	// all j-values between max_j and M[i].min() have to be inserted after i-1!!!
+	for (int j=max_j+1; j<M[i].min(); j++) {
+	    ret |= H[i-1].include(home,j);
+	}
+	
+	max_j = M[i].max();
+    }
+    
+    GECODE_ME_CHECK(ret);
+
+    // missing deletions and insertions and cross compatibility with matches
+    
+    // DONE consistency check
+
+    ret=Gecode::ME_GEN_NONE;
+
+    //std::cout << "Made consistent:"<<std::endl;
     std::cout << "Matches:    " << M << std::endl;
     std::cout << "Deletions:  " << G << std::endl;
     std::cout << "Insertions: " << H << std::endl;
     std::cout << "Score:      " << Score << std::endl;
+
     
-
-    // ----------------------------------------
-    // simple consistency
-    // 
     
-    // if a match is fixed, this restricts deletions and insertions
-    for (size_type i=1; i<=n; i++) {
-	if (M[i].assigned() && M[i].val()!=undef) {
-	    GECODE_ME_CHECK(G[i].eq(home,undef));
-	    for (size_type i2=1; i2<i; i2++) {
-		GECODE_ME_CHECK(M[i2].le(home,M[i].val()));
-	    }
-	    for (size_type i2=i+1; i2<=n; i2++) {
-		GECODE_ME_CHECK(M[i2].gr(home,M[i].val()));
-	    }
-	}
-    }
-
-
     // ----------------------------------------
     // Forward algorithm
     //
@@ -269,7 +369,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
     // the forward algorithm yields an upper bound
     // ==> constrain the score variable
-    if (Fwd(n,m).is_finite()) {	
+    if (Fwd(n,m).is_finite()) {
 	GECODE_ME_CHECK(Score.lq(home,(int)Fwd(n,m).finite_value()));
     } else {
 	std::cout << "infinite upper bound"<<std::endl;
@@ -291,13 +391,13 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     for(size_type i=n; i>0;) { // for i=n-1 downto 0
 	--i;
 	if (deletion_allowed(i+1,m)) {
-	    Bwd(i,m) = Bwd(i-1,m) + scoring.gapA(i+1,m);
+	    Bwd(i,m) = Bwd(i+1,m) + scoring.gapA(i+1,m);
 	}
     }
     for(size_type j=m; j>0;) { // for j=m-1 downto 0
 	--j;
 	if (insertion_allowed(n,j+1)) {
-	    Bwd(n,j) = Bwd(n,j-1) + scoring.gapB(n,j+1);
+	    Bwd(n,j) = Bwd(n,j+1) + scoring.gapB(n,j+1);
 	}
     }
     
@@ -323,9 +423,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     // ----------------------------------------
     // Combine matrices and prune
     //
-    
-    Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
-    
+        
     for(size_type i=1; i<=n; i++) {
 	for(size_type j=1; j<=m; j++) {      
 	    infty_score_t score_min = (infty_score_t) Score.min();
@@ -334,7 +432,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	    if (match_allowed(i,j)) {
 		infty_score_t ubm = Fwd(i-1,j-1)+ub_match(i,j)+Bwd(i,j);
 		
-		if (ubm < score_min) {
+		if ( (!ubm.is_finite()) || (ubm < score_min)) {
 		    ret |= M[i].nq(home,(int)j);
 		}
 	    }
@@ -342,7 +440,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	    // prune G variable for gap i~- (deletion of i between j and j+1)
 	    if (deletion_allowed(i,j)) {
 		infty_score_t ubd = Fwd(i-1,j) + scoring.gapA(i+1,j) + Bwd(i,j);
-		if (ubd < score_min) {
+		if ( (!ubd.is_finite()) || (ubd < score_min)) {
 		    ret |= G[i].nq(home,(int)j);
 		}
 	    }
@@ -350,7 +448,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	    // prune H variable for gap -~j (insertion of j between i and i+1)
 	    if (insertion_allowed(i,j)) {
 		infty_score_t ubi = Fwd(i,j-1) + scoring.gapB(i,j+1) + Bwd(i,j);
-		if (ubi < score_min) {
+		if ( (!ubi.is_finite()) || (ubi < score_min)) {
 		    ret |= H[i].exclude(home,(int)j);
 		}
 	    }
@@ -361,6 +459,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
     // test whether all vars fixed, then subsume (can we subsume earlier?)
     if ( all_vars_fixed() ) {
+	Score.eq(home,Score.max());
 	return ES_SUBSUMED(*this,dispose(home)); 
     }
     
