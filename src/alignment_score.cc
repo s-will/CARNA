@@ -200,6 +200,11 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     const int n=seqA.length();
     const int m=seqB.length();
     
+    std::cout << "Before consistency"<<std::endl;
+    std::cout << "Matches:    " << M << std::endl;
+    std::cout << "Deletions:  " << G << std::endl;
+    std::cout << "Insertions: " << H << std::endl;
+    std::cout << "Score:      " << Score << std::endl;
 
     // ----------------------------------------
     // consistency checking all variables
@@ -210,28 +215,27 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
     Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
     
-    // match variables are sorted increasingly M[i]<M[i+1], unless one is undef
-    // propagate in two sweeps
-    
+    // propagate in two sweeps    
 
     int min_j=0;
-    int strict_min_j=-1;
     for (int i=1; i<M.size(); i++) {
 	
+	// invariant:
+	// min_j is the minimal j that is consumed left of i,
+	// i.e. either it is matched, deleted or inserted
+	//
+
 	int next_min_j=min_j;
-	int next_strict_min_j=strict_min_j;
 
 	if (!M[i].in(undef)) {
 	    ret |= G[i].eq(home,undef);
 	    ret |= H[i].cardMax(home,0);
 	    next_min_j = std::max( next_min_j, M[i].min() );
-	    next_strict_min_j = M[i].min();
 	}
 	if (!G[i].in(undef)) {
 	    ret |= M[i].eq(home,undef);
 	    ret |= H[i].cardMax(home,0);
 	    next_min_j = std::max( next_min_j, G[i].min() );
-	
 	}
 	if (H[i].glbSize()!=0) { // empty set is not possible value of H[i]
 	    ret |= M[i].eq(home,undef);
@@ -241,26 +245,21 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	
 	ret |= M[i].gr(home,min_j);
 	ret |= G[i].gr(home,min_j-1);
-	ret |= G[i].gr(home,strict_min_j);
 	ret |= exclude_lq(home,H[i],min_j);
 	
 	min_j=next_min_j;
-	strict_min_j=next_strict_min_j;
     }
 
     int max_j=m+1;
-    int strict_max_j=m+1;
     for (int i=n; i>1;) {
 	--i;
 	
 	int next_max_j=max_j;
-	int next_strict_max_j=strict_max_j;
 	
 	if (!M[i].in(undef)) {
 	    ret |= G[i].eq(home,undef);
 	    ret |= H[i].cardMax(home,0);
 	    next_max_j = std::min( next_max_j, max_non_undef(M[i]) );
-	    next_strict_max_j = max_non_undef(M[i]);
 	}
 	
 	if (!G[i].in(undef)) {
@@ -276,12 +275,10 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	}
 	
 	ret |= le_or_undef(home,M[i],max_j);
-	ret |= le_or_undef(home,G[i],max_j+1);
-	ret |= le_or_undef(home,G[i],strict_max_j);
+	ret |= le_or_undef(home,G[i],max_j);
 	ret |= exclude_gq(home,H[i],max_j);
 	
 	max_j=next_max_j;
-	strict_max_j=next_strict_max_j;
     }
 
     ret |= exclude_gq(home,H[0],max_j);
@@ -318,7 +315,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 
     ret=Gecode::ME_GEN_NONE;
 
-    //std::cout << "Made consistent:"<<std::endl;
+    std::cout << "Made consistent:"<<std::endl;
     std::cout << "Matches:    " << M << std::endl;
     std::cout << "Deletions:  " << G << std::endl;
     std::cout << "Insertions: " << H << std::endl;
