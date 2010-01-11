@@ -7,6 +7,8 @@
 // left and to the right are added. In total, thus each arcmatch score is added twice.
 // Dividing the score by two may cause rounding problems. Thus, better multiply all other
 // scores by two (not done yet).
+// NOTE: it does not work to add only scores either to the left or 
+// to the right (depending on whether doing forward or backward computation!)
 
 
 AlignmentScore::AlignmentScore(Gecode::Space& home,
