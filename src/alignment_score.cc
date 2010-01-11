@@ -3,6 +3,11 @@
 
 //#include <iostream>
 
+// DETAIL: for the upper bound in ub_match, arc match scores to the
+// left and to the right are added. In total, thus each arcmatch score is added twice.
+// Dividing the score by two may cause rounding problems. Thus, better multiply all other
+// scores by two (not done yet).
+
 
 AlignmentScore::AlignmentScore(Gecode::Space& home,
 			       const Sequence &seqA_,
@@ -31,8 +36,7 @@ AlignmentScore::AlignmentScore(Gecode::Space& home,
     M.subscribe(home,*this,Gecode::Int::PC_INT_DOM);
     G.subscribe(home,*this,Gecode::Int::PC_INT_DOM);
     H.subscribe(home,*this,Gecode::Set::PC_SET_ANY);
-    Score.subscribe(home,*this,Gecode::Int::PC_INT_BND);
-    
+    Score.subscribe(home,*this,Gecode::Int::PC_INT_BND);    
 }
 
 AlignmentScore::AlignmentScore(Gecode::Space& home,
@@ -108,7 +112,7 @@ AlignmentScore::cost(const Gecode::Space& home, const Gecode::ModEventDelta& med
 }
 
 
-infty_score_t
+score_t
 AlignmentScore::ub_match(size_type i, size_type j) const {
     //std::cout << "AlignmentScore::ub_match"<<std::endl;
   
@@ -119,37 +123,39 @@ AlignmentScore::ub_match(size_type i, size_type j) const {
     // when selecting a certain structure: maximize over possible base pair matchs
     // when not selecting one single structure: make use of the fact that
     // there is at most one alignment edge per base ==> each arc can be matched at most once
-  
-    infty_score_t bound=(infty_score_t)0;
+    
+    score_t bound=2*scoring.basematch(i,j);
     
     // NOTE: there are different possibilities to enumerate the possible arc-matches.
     // traversing the arc-matches is good for theoretical complexity,
     // since we assume this is limited by a constant
-
-	
+    
+    
     // for all pairs of arcs in A and B that have right ends i and j, respectively
     //
     for(ArcMatchIdxVec::const_iterator it=arc_matches.common_right_end_list(i,j).begin();
 	arc_matches.common_right_end_list(i,j).end() != it; ++it ) {
 	
 	const ArcMatch &am = arc_matches.arcmatch(*it);
-
-	if ( match_allowed(am.arcA().left(),am.arcB().left()) ) { // if the left ends of arcs arcA and arcB can match 
-	    bound += scoring.arcmatch(am);
-	}
-    }
-   
-    // same for common left ends
-    for(ArcMatchIdxVec::const_iterator it=arc_matches.common_left_end_list(i,j).begin();
-	arc_matches.common_left_end_list(i,j).end() != it; ++it ) {	
-	const ArcMatch &am = arc_matches.arcmatch(*it);
- 
-	if ( match_allowed(am.arcA().right(),am.arcB().right()) ) { // if the right ends of arcs arcA and arcB can match 
+	
+	if ( match_allowed(am.arcA().left(),am.arcB().left()) ) { 
+	    // if the left ends of arcs arcA and arcB can match 
 	    bound += scoring.arcmatch(am);
 	}
     }
     
-    return bound;
+    // same for common left ends
+    for(ArcMatchIdxVec::const_iterator it=arc_matches.common_left_end_list(i,j).begin();
+	arc_matches.common_left_end_list(i,j).end() != it; ++it ) {	
+	const ArcMatch &am = arc_matches.arcmatch(*it);
+	
+	if ( match_allowed(am.arcA().right(),am.arcB().right()) ) { 
+	    // if the right ends of arcs arcA and arcB can match 
+	    bound += scoring.arcmatch(am);
+	}
+    }
+    
+    return (bound/2);
 }
 
 
@@ -177,9 +183,72 @@ AlignmentScore::all_vars_fixed() const {
 }
 
 
+score_t
+AlignmentScore::evaluate_trace(std::vector<size_type> &traceA,
+			       std::vector<size_type> &traceB) const {
+    
+    const int n=seqA.length();
+    const int m=seqB.length();
+
+    score_t score=0;
+
+    size_type i=1;
+    size_type j=1;
+    
+    while (i<n && j<m) {
+	if (traceA[i]==0) {
+	    score += scoring.gapA(i,j);
+	    ++i;
+	} else if (traceA[j]==0) {
+	    score += scoring.gapB(i,j);
+	    ++j;
+	} else {
+	    // match between traceB[j]==i and traceA[i]==j
+	    
+	    score_t matchscore=scoring.basematch(i,j);
+	    
+	    // for all pairs of arcs in A and B that have right ends i and j, respectively
+	    //
+	    for(ArcMatchIdxVec::const_iterator it=arc_matches.common_right_end_list(i,j).begin();
+		arc_matches.common_right_end_list(i,j).end() != it; ++it ) {
+		
+		const ArcMatch &am = arc_matches.arcmatch(*it);
+		
+		if ( traceA[am.arcA().left()] == am.arcB().left() ) { 
+		    // if the left ends of arcs arcA and arcB match 
+		    matchscore += scoring.arcmatch(am);
+		}
+	    }
+	    
+	    // same for common left ends
+	    for(ArcMatchIdxVec::const_iterator it=arc_matches.common_left_end_list(i,j).begin();
+		arc_matches.common_left_end_list(i,j).end() != it; ++it ) {	
+		const ArcMatch &am = arc_matches.arcmatch(*it);
+		
+		if ( traceA[am.arcA().right()] == am.arcB().right() ) { 
+		    // if the right ends of arcs arcA and arcB  match 
+		    matchscore += scoring.arcmatch(am);
+		}
+	    }
+	    
+	    score += matchscore/2;
+
+	    ++i;
+	    ++j;
+	}
+    }
+    
+    return score;
+}
+
 
 Gecode::ExecStatus
 AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
+
+    //
+    // TODO: clean up code by having subroutines for the single steps of the propagation, i.e.
+    // consistency checking, forward, backward, combination and pruning
+    //
 
     std::cout << "AlignmentScore::propagate " <<std::endl;
 
@@ -217,68 +286,69 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
     // propagate in two sweeps    
 
+    // handling of insertions is still wrong
+    
+    // fails for Matches:    {10, 3, 4, {4,10}, {4,10}, 5, 8, 9, 10, 10}
+
     int min_j=0;
+    int min_j2=-1;
     for (int i=1; i<M.size(); i++) {
-	
 	// invariant:
 	// min_j is the minimal j that is consumed left of i,
-	// i.e. either it is matched, deleted or inserted
+	// i.e. either it is matched, deleted after j or inserted
 	//
+	// min_j2 is the minimal j that is matched, such that G[i] has to be strictly larger
 
-	int next_min_j=min_j;
+	ret |= M[i].gr(home,min_j);
+	ret |= G[i].gr(home,min_j-1);
+	ret |= G[i].gr(home,min_j2);
+	ret |= exclude_lq(home,H[i],min_j);
 
 	if (!M[i].in(undef)) {
 	    ret |= G[i].eq(home,undef);
-	    ret |= H[i].cardMax(home,0);
-	    next_min_j = std::max( next_min_j, M[i].min() );
+	    if (M[i].assigned()) {
+		ret |= H[i].exclude(home,M[i].val());
+	    }
+	    min_j = std::max( min_j, M[i].min() );
+	    min_j2 = M[i].min();
 	}
+	
 	if (!G[i].in(undef)) {
 	    ret |= M[i].eq(home,undef);
-	    ret |= H[i].cardMax(home,0);
-	    next_min_j = std::max( next_min_j, G[i].min() );
-	}
-	if (H[i].glbSize()!=0) { // empty set is not possible value of H[i]
-	    ret |= M[i].eq(home,undef);
-	    ret |= G[i].eq(home,undef);
-	    next_min_j = std::max( next_min_j, H[i].glbMin() );
+	    min_j = std::max( min_j, G[i].min() );	
 	}
 	
-	ret |= M[i].gr(home,min_j);
-	ret |= G[i].gr(home,min_j-1);
-	ret |= exclude_lq(home,H[i],min_j);
-	
-	min_j=next_min_j;
+	if (H[i].glbSize()!=0) { // if empty set is not possible value of H[i]
+	    min_j = std::max( min_j, H[i].glbMin() );
+	}
     }
 
+    
     int max_j=m+1;
     for (int i=n; i>1;) {
 	--i;
-	
-	int next_max_j=max_j;
-	
-	if (!M[i].in(undef)) {
-	    ret |= G[i].eq(home,undef);
-	    ret |= H[i].cardMax(home,0);
-	    next_max_j = std::min( next_max_j, max_non_undef(M[i]) );
-	}
-	
-	if (!G[i].in(undef)) {
-	    ret |= M[i].eq(home,undef);
-	    ret |= H[i].cardMin(home,0);
-	    next_max_j = std::min( next_max_j, max_non_undef(G[i]) );
-	}
-	
-	if (H[i].glbSize()!=0) { // empty set is not possible value of H[i]
-	    ret |= M[i].eq(home,undef);
-	    ret |= G[i].eq(home,undef);
-	    next_max_j = std::min( next_max_j, H[i].glbMax() );
-	}
 	
 	ret |= le_or_undef(home,M[i],max_j);
 	ret |= le_or_undef(home,G[i],max_j);
 	ret |= exclude_gq(home,H[i],max_j);
 	
-	max_j=next_max_j;
+	if (!M[i].in(undef)) {
+	    ret |= G[i].eq(home,undef);
+	    if (M[i].assigned()) {
+		ret |= H[i].exclude(home,M[i].val());
+	    }
+	    max_j = std::min( max_j, M[i].max());
+	}
+	
+	if (!G[i].in(undef)) {
+	    ret |= M[i].eq(home,undef);
+	    max_j = std::min( max_j, G[i].max() + 1 );
+	}
+	
+	if (H[i].glbSize()!=0) { // empty set is not possible value of H[i]
+	    max_j = std::min( max_j, H[i].glbMax() );
+	}
+	
     }
 
     ret |= exclude_gq(home,H[0],max_j);
@@ -294,17 +364,34 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     }
     
     // each j is either matched or deleted
-    // here: go through the M[i] variables, if there are gaps, then force into H
-    max_j=0;
-    for (int i=1; i<=n; i++) {
-	// invariant: max_j is the maximal value that can be covered by M[i-1]
-	
-	// all j-values between max_j and M[i].min() have to be inserted after i-1!!!
-	for (int j=max_j+1; j<M[i].min(); j++) {
-	    ret |= H[i-1].include(home,j);
+     
+    // determine values j that are not consumed right of i
+    int maxGLB[n+1]; // maximal value that has to be included in H[i] at a matched position
+    maxGLB[n]=m;
+    for (int i=n+1; i>0;) {
+	--i;
+	if ( !M[i].in(undef) && G[i].in(undef) ) { // in case we have a match
+	    maxGLB[i-1] = M[i].min()-1; // what's certainly in for smaller i
+        } else if ( M[i].in(undef) && !G[i].in(undef))  { // case where we have a gap
+	    maxGLB[i-1] = maxGLB[i]; // carry over deletions
+	} else { // when we don't know
+	    maxGLB[i-1]=0;
 	}
-	
-	max_j = M[i].max();
+    }
+     
+    for (int i=0; i<=n; i++) {
+	if ( !M[i].in(undef) && G[i].in(undef) ) {
+	    for (int k=M[i].min()+1; k<=maxGLB[i]; k++) {
+		ret |= H[i].include(home,k);
+	    }
+	}
+	if ( !G[i].in(undef) ) {
+	    ret |= H[i].cardMax(home,0); // symmetry breaking
+	}
+    }
+    
+    for (int k=1; k<=maxGLB[0]; k++) {
+	ret |= H[0].include(home,k);
     }
     
     GECODE_ME_CHECK(ret);
@@ -373,6 +460,80 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	return Gecode::ES_FAILED;
     }
 
+    // ----------------------------------------
+    // do backtracking of the Fwd matrix in order to obtain a lower bound of alignment score
+    //
+
+    //
+    // OBSERVATION:
+    // doing the trace back helps in the very beginning for having a lower bound at all
+    // later trace back usually won't yield better lower bounds
+    // i.e. in general its probably best to use some cheapo heuristic for getting
+    // a first good alignment and starting with some lower bound. Traceback in the propagator
+    // can consequently be omitted.
+    //
+
+
+    // trace vectors. idea one entry per position gives position in the other sequence to that
+    // the pos is matched or 0 (in case of gap).
+    std::vector< size_type > traceA;
+    std::vector< size_type > traceB;
+    
+    traceA.resize(n+1);
+    traceB.resize(m+1);
+    
+    {
+	int i=n;
+	int j=m;
+	
+	while (i>0 && j>0) {
+	    if ( Fwd(i,j) == Fwd(i-1,j-1) + ub_match(i,j) ) {
+		traceA[i]=j;
+		traceB[j]=i;
+		--i; 
+		--j;
+	    } else if ( Fwd(i,j) == Fwd(i-1,j) + scoring.gapA(i,j) ) {
+		traceA[i]=0;
+		--i;
+	    } else if ( Fwd(i,j) == Fwd(i,j-1) + scoring.gapB(i,j) ) {
+		traceB[j]=0;
+		--j;
+	    }
+	}
+	
+	while (i>0) {
+	    traceA[i]=0;
+	    --i;
+	}
+	while (j>0) {
+	    traceB[j]=0;
+	    --j;
+	}
+    }
+    
+    // print trace (DEBUGGING)
+    for (size_type i=1; i<=n; ++i ) {
+	std::cout << traceA[i] << " ";
+    }
+    std::cout << std::endl;
+    for (size_type j=1; j<=m; j++) {
+	std::cout << traceB[j] << " ";
+    }
+    std::cout << std::endl;
+    
+    // evaluate alignment for obtaining lower bound
+    score_t lower_bound = evaluate_trace(traceA,traceB);
+    
+    std::cout << "Score: " << lower_bound << std::endl;
+
+    
+    // constrain Score by lower bound
+    Score.gq(home,(int)lower_bound);
+    
+    // end of traceback and lower bounding
+    // ----------------------------------------
+    
+    
     // ----------------------------------------
     // Backward algorithm
     //

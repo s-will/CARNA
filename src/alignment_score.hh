@@ -93,8 +93,15 @@ protected:
 
     //! upper bound for the contribution of matching positions i
     //! and j of respective sequences R and S
-    infty_score_t
+    score_t
     ub_match(size_type i, size_type j) const;
+
+    //! calculate the score for an alingment given by trace vectors
+    //! @param traceA trace vector for positions in sequence A
+    //! @param traceB trace vector for positions in sequence B
+    score_t
+    evaluate_trace(std::vector<size_type> &traceA,std::vector<size_type> &traceB) const;
+
 
     //! test whether a match is allowed by the constraint store
     //! @param i position in sequence 1
