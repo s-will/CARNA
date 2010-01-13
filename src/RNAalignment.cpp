@@ -1,5 +1,6 @@
 #include <gecode/minimodel.hh>
 #include <gecode/search.hh>
+#include <gecode/gist.hh>
 
 #include "LocARNA/rna_data.hh"
 #include "LocARNA/ribosum.hh"
@@ -9,7 +10,7 @@
 
 
 #include "alignment_score.hh"
-
+#include "WinDisplay.cpp"
 
 
 
@@ -238,10 +239,12 @@ option_def my_options[] = {
  *
  */
 class RNAalignment : public Space {
-    const size_t n;
-    const size_t m;
-
-    const size_t undef;
+  const size_t n;
+  const size_t m;
+  
+  const size_t undef;
+  
+  WinDisplay* wind;
 
 protected:
     IntVarArray M;
@@ -261,9 +264,11 @@ public:
 	H(*this,n+1,IntSet::empty,1,m,0), // here, we want H_0(!)...H_n, init such that empty sets allowed, maximal sets are {1..m}
 	Score(*this,Gecode::Int::Limits::min,Gecode::Int::Limits::max)
     {
-	//ignore M_0
-	rel(*this,M[0],IRT_EQ,undef);
-	rel(*this,G[0],IRT_EQ,undef);
+      wind=new WinDisplay(m+1,n+1,"Display variables status");
+      
+      //ignore M_0
+      rel(*this,M[0],IRT_EQ,undef);
+      rel(*this,G[0],IRT_EQ,undef);
 
 	AlignmentScore::post(*this,seqA,seqB,arcmatches,aligner_params,scoring,
 			     M,G,H,Score);
@@ -294,6 +299,7 @@ public:
 	G.update(*this, share, s.G);
 	H.update(*this, share, s.H);
 	Score.update(*this,share,s.Score);
+	wind=s.wind;   
     }
 
     /// Perform copying during cloning
@@ -310,6 +316,7 @@ public:
 	std::cout << "Deletions:  " << G << std::endl;
 	std::cout << "Insertions: " << H << std::endl;
 	std::cout << "Score:      " << Score << std::endl;
+	wind->update(M,G,H);    
     }
 
     virtual void constrain(const Space& _best) {
@@ -508,8 +515,15 @@ main(int argc, char* argv[]) {
 				 );
     
     RNAalignment* s = new RNAalignment(seqA,seqB,*arc_matches,aligner_params,scoring);
+
     
+    Gist::Print<RNAalignment> p("Node explorer");
+    Gist::Options o;
+    o.inspect.click(&p);
     
+    Gist::dfs(s,o);
+    
+    /*    
     BAB<RNAalignment> e(s);
     
     RNAalignment* ex;
@@ -517,6 +531,7 @@ main(int argc, char* argv[]) {
 	ex->print(std::cout);
 	delete ex;
     }
-    
+    */
+
     return 0;
 }

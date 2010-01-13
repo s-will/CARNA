@@ -109,7 +109,7 @@ AlignmentScore::copy(Gecode::Space& home, bool share) {
 Gecode::PropCost
 AlignmentScore::cost(const Gecode::Space& home, const Gecode::ModEventDelta& med) const {
     return Gecode::PropCost::linear(Gecode::PropCost::LO,
-				    seqA.length() * seqB.length()
+				    (unsigned int) (seqA.length() * seqB.length())
 				    );
 }
 

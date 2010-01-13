@@ -22,6 +22,8 @@ class WinDisplay {
   int img_x;
   int img_y;  
 
+  int undef;
+
   char* title;
 
   
@@ -34,6 +36,8 @@ public:
 
   WinDisplay(int Rows, int Cols, char* t){   
     int min_win_size=200;
+
+    undef= Rows;
 
     title=t;
     nRows=Rows;
@@ -113,7 +117,10 @@ public:
 	      x=j*scalex-dx+scalex/2+k;
 	      y=i*scaley-dx+scalex/2;
 	      if (x>0 && y>0 && x<img_x && y<img_y){
-		rgb(x,y,0,0,255);
+		if (M[i].in(undef))
+		  rgb(x,y,0,128,255); // if can be undef -> cyan color
+		else
+		  rgb(x,y,0,0,255);   // blue if chosen
 	      }
 	    }	    
 	  }
@@ -132,7 +139,10 @@ public:
 	      x=j*scalex   +scalex/2+k;
 	      y=i*scaley-dx+scalex/2;
 	      if (x>0 && y>0 && x<img_x && y<img_y){
-		rgb(x,y,255,0,0);
+		if (G[i].in(undef))
+		  rgb(x,y,255,128,0); // if can also be undef -> orange
+		else
+		  rgb(x,y,255,0,0);  // if can not be undef -> red
 	      }
 	    }	    
 	  }
@@ -162,6 +172,8 @@ public:
     }
 
 
+    /*
+      // keep for future use: text drawing in the picture
     for (int i=0;i<nRows;i++){
       imageOut.draw_text(0*scalex,
 			 i*scaley,
@@ -169,6 +181,7 @@ public:
 			 white,
 			 0,1,4,i);
     }
+    */
     
     display();    
   }
