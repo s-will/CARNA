@@ -264,7 +264,7 @@ public:
 	H(*this,n+1,IntSet::empty,1,m,0), // here, we want H_0(!)...H_n, init such that empty sets allowed, maximal sets are {1..m}
 	Score(*this,Gecode::Int::Limits::min,Gecode::Int::Limits::max)
     {
-      wind=new WinDisplay(m+1,n+1,"Display variables status");
+      wind=new WinDisplay(n+1,m+1,"Display variables status");
       
       //ignore M_0
       rel(*this,M[0],IRT_EQ,undef);

@@ -17,8 +17,7 @@ class WinDisplay {
 
   int nRows;
   int nCols;
-  int scalex;
-  int scaley;
+  int scale;
   int img_x;
   int img_y;  
 
@@ -35,15 +34,15 @@ public:
   }
 
   WinDisplay(int Rows, int Cols, char* t){   
-    int min_win_size=200;
+    int min_win_size=600;
 
     undef= Rows;
 
     title=t;
     nRows=Rows;
     nCols=Cols;
-    scalex=1;
-    scaley=1;
+    int scalex=1;
+    int scaley=1;
     img_x=0;
     img_y=0;    
     if (Cols<min_win_size){
@@ -52,8 +51,12 @@ public:
     if (Rows<min_win_size){
       scaley=min_win_size/Rows;
     }
-    img_x=Cols*scalex;
-    img_y=Rows*scaley;
+    
+    if (scalex<scaley) scale=scalex;
+    else
+      scale=scaley;
+    img_x=Cols*scale;
+    img_y=Rows*scale;
 
     imageOut = CImg<>(img_x,img_y,1,3,0);
     cout << "allocating image: " << img_x << " " << img_y << "\n";
@@ -83,7 +86,7 @@ public:
 
   void update(IntVarArray M, IntVarArray G, SetVarArray H){
     const unsigned char green[] = { 64,255,32 }, blue[] = { 128,200,255}, red[] = { 255,0,0 }, white[] = { 255,255,255 };
-
+        printf("OK: imgx %d, imgy %d, col %d, row %d, scale %d\n",img_x,img_y,nCols,nRows,scale);
     // clean image
     for (int i=0;i<img_x;i++){
       for(int j=0;j<img_y;j++){
@@ -111,11 +114,11 @@ public:
     for (int i=0;i<nRows;i++){
       for (int j=0;j<nCols;j++){
 	if (M[i].in(j)){
-	  for (int dx=0;dx<scalex;dx++){	    
+	  for (int dx=0;dx<scale;dx++){	    
 	    for (int k=-1;k<2;k++){
 	      int x,y;
-	      x=j*scalex-dx+scalex/2+k;
-	      y=i*scaley-dx+scalex/2;
+	      x=j*scale-dx+scale/2+k;
+	      y=i*scale-dx+scale/2;
 	      if (x>0 && y>0 && x<img_x && y<img_y){
 		if (M[i].in(undef))
 		  rgb(x,y,0,128,255); // if can be undef -> cyan color
@@ -133,11 +136,11 @@ public:
     for (int i=0;i<nRows;i++){
       for (int j=0;j<nCols;j++){
 	if (G[i].in(j)){
-	  for (int dx=0;dx<scalex;dx++){	    
+	  for (int dx=0;dx<scale;dx++){	    
 	    for (int k=-1;k<2;k++){
 	      int x,y;
-	      x=j*scalex   +scalex/2+k;
-	      y=i*scaley-dx+scalex/2;
+	      x=j*scale   +scale/2+k;
+	      y=i*scale-dx+scale/2;
 	      if (x>0 && y>0 && x<img_x && y<img_y){
 		if (G[i].in(undef))
 		  rgb(x,y,255,128,0); // if can also be undef -> orange
@@ -157,11 +160,11 @@ public:
 	
 	if (H[i].contains(j)) {g=200;r=0;b=40;}
 	if (!H[i].notContains(j)){ //{g=10;r=200;b=10;}
-	  for (int dx=0;dx<scalex;dx++){	    
+	  for (int dx=0;dx<scale;dx++){	    
 	    for (int k=-1;k<2;k++){
 	      int x,y;
-	      x=j*scalex-dx+scalex/2;
-	      y=i*scaley+   scalex/2+k;
+	      x=j*scale-dx+scale/2;
+	      y=i*scale+   scale/2+k;
 	      if (x>0 && y>0 && x<img_x && y<img_y){
 		rgb(x,y,r,g,b);
 	      }
@@ -182,7 +185,7 @@ public:
 			 0,1,4,i);
     }
     */
-    
+
     display();    
   }
   
