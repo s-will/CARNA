@@ -8,7 +8,6 @@
 
 using namespace cimg_library;
 using namespace std;
-using namespace Gecode;
 
 class WinDisplay {
 
@@ -23,7 +22,7 @@ class WinDisplay {
 
   int undef;
 
-  char* title;
+  const char* title;
 
   
 
@@ -33,12 +32,12 @@ public:
     WinDisplay(Rows,Cols,"Untitled");
   }
 
-  WinDisplay(int Rows, int Cols, char* t){   
+  WinDisplay(int Rows, int Cols, string t){   
     int min_win_size=600;
 
     undef= Rows;
 
-    title=t;
+    title=t.c_str();
     nRows=Rows;
     nCols=Cols;
     int scalex=1;
@@ -84,7 +83,7 @@ public:
     main_disp.display(imageOut);  
   }
 
-  void update(IntVarArray M, IntVarArray G, SetVarArray H){
+    void update(Gecode::IntVarArray M, Gecode::IntVarArray G, Gecode::SetVarArray H){
     const unsigned char green[] = { 64,255,32 }, blue[] = { 128,200,255}, red[] = { 255,0,0 }, white[] = { 255,255,255 };
         printf("OK: imgx %d, imgy %d, col %d, row %d, scale %d\n",img_x,img_y,nCols,nRows,scale);
     // clean image

@@ -1,6 +1,3 @@
-#include <gecode/minimodel.hh>
-#include <gecode/search.hh>
-#include <gecode/gist.hh>
 
 #include "LocARNA/rna_data.hh"
 #include "LocARNA/ribosum.hh"
@@ -8,17 +5,17 @@
 #include "LocARNA/anchor_constraints.hh"
 #include "LocARNA/arc_matches.hh"
 
+#include <gecode/search.hh>
+#include <gecode/gist.hh>
+#include <gecode/minimodel.hh>
 
-#include "alignment_score.hh"
 #include "WinDisplay.cpp"
+#include "RNAalignment.hh"
 
-
-
-using namespace Gecode;
 
 using namespace std;
+using namespace Gecode;
 
-typedef std::vector<int>::size_type size_type;
 
 const std::string 
 VERSION_STRING = (std::string)PACKAGE_STRING; 
@@ -47,8 +44,6 @@ std::string free_endgaps; //!< specification of free end gaps,
 // order left end sequence 1, right 1, left 2, right 2
 // e.g. "+---" allows free end gaps at the left end of the first alignment string
 // ; "----" forbids free end gaps
-
-const bool DO_TRACE=true;
 
 
 int max_diff; // maximal difference for positions of alignment edges
@@ -232,98 +227,7 @@ option_def my_options[] = {
 // ------------------------------------------------------------
 
 
-/**
- * \brief %RNA Alignment
- *
- *
- *
- */
-class RNAalignment : public Space {
-  const size_t n;
-  const size_t m;
-  
-  const size_t undef;
-  
-  WinDisplay* wind;
 
-protected:
-    IntVarArray M;
-    IntVarArray G;
-    SetVarArray H;
-    
-    IntVar Score;
-
-public:
-    RNAalignment(const Sequence &seqA, const Sequence &seqB, const ArcMatches &arcmatches,const AlignerParams &aligner_params, const Scoring &scoring)
-	:
-	n(seqA.length()),
-	m(seqB.length()),
-	undef(m+1),
-	M(*this,n+1,1,m+1), // assume that undef is m+1! // we only need M_1,...,M_n ==> ignore M_0
-	G(*this,n+1,0,m+1), // ignore 0 as done for M
-	H(*this,n+1,IntSet::empty,1,m,0), // here, we want H_0(!)...H_n, init such that empty sets allowed, maximal sets are {1..m}
-	Score(*this,Gecode::Int::Limits::min,Gecode::Int::Limits::max)
-    {
-      wind=new WinDisplay(n+1,m+1,"Display variables status");
-      
-      //ignore M_0
-      rel(*this,M[0],IRT_EQ,undef);
-      rel(*this,G[0],IRT_EQ,undef);
-
-	AlignmentScore::post(*this,seqA,seqB,arcmatches,aligner_params,scoring,
-			     M,G,H,Score);
-	
-	
-	//  first enumerate M, then the rest
-	
-	// resort M vector, such that we start enumerating in the middle
-	// Ideally sort like balanced binary tree in array
-	IntVarArgs M_resorted(M.size());
-        for (size_type i=0; i<M.size(); i++) { 
-	    M_resorted[i] = M[(i+M.size()/2)%M.size()];
-	}
-	
-	branch(*this, M_resorted, INT_VAR_SIZE_MAX, INT_VAL_MED); // suggestion: split largest domain
-	branch(*this, G, INT_VAR_SIZE_MAX, INT_VAL_MED);
-
-	// we should show: here, the H variables are already fixed
-	// (this still depends on the propagator, otw. fix Hs to upper bound i sufficient)
-	// Then: branching over H should be dropped/replaced
-	branch(*this, H, SET_VAR_SIZE_MAX, SET_VAL_MED_INC); // no set splitting possible
-    }
-
-    /// Constructor for cloning \a s
-    RNAalignment(bool share, RNAalignment& s) : 
-	Space(share,s),n(s.n),m(s.m),undef(s.undef) {
-	M.update(*this, share, s.M);
-	G.update(*this, share, s.G);
-	H.update(*this, share, s.H);
-	Score.update(*this,share,s.Score);
-	wind=s.wind;   
-    }
-
-    /// Perform copying during cloning
-    virtual Space*
-    copy(bool share) {
-	return new RNAalignment(share,*this);
-    }
-
-    /// Print solution
-    virtual void
-    print(std::ostream& out) const {
-	std::cout << "SOLUTION" << std::endl;
-	std::cout << "Matches:    " << M << std::endl;
-	std::cout << "Deletions:  " << G << std::endl;
-	std::cout << "Insertions: " << H << std::endl;
-	std::cout << "Score:      " << Score << std::endl;
-	wind->update(M,G,H);    
-    }
-
-    virtual void constrain(const Space& _best) {
-	const RNAalignment& best = static_cast<const RNAalignment&>(_best);
-	rel(*this,Score,IRT_GR,best.Score);
-    }
-};
 
 /** \brief Main-function
  *  \relates RNAalignment
@@ -521,7 +425,8 @@ main(int argc, char* argv[]) {
     Gist::Options o;
     o.inspect.click(&p);
     
-    Gist::dfs(s,o);
+    //Gist::dfs(s,o);
+    Gist::bab(s,o);
     
     /*    
     BAB<RNAalignment> e(s);

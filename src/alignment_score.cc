@@ -1,6 +1,9 @@
 #include "alignment_score.hh"
 #include "LocARNA/arc_matches.hh"
 
+#include "WinDisplay.cpp"
+#include "RNAalignment.hh"
+
 //#include <iostream>
 
 // DETAIL: for the upper bound in ub_match, arc match scores to the
@@ -246,14 +249,14 @@ AlignmentScore::evaluate_trace(std::vector<size_type> &traceA,
 
 Gecode::ExecStatus
 AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
-
+    
     //
     // TODO: clean up code by having subroutines for the single steps of the propagation, i.e.
     // consistency checking, forward, backward, combination and pruning
     //
-
+    
     std::cout << "AlignmentScore::propagate " <<std::endl;
-
+    
     // ----------------------------------------
     // Propagation strategy:
     //
@@ -266,7 +269,6 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     // of matrix entries Fwd(i-1,j-1)+ub_mach(i,j)+Bwd(i,j) yields the upper bound for match i~j.
     //
     // ----------------------------------------
-  
     
     const int n=seqA.length();
     const int m=seqB.length();
@@ -300,7 +302,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	// i.e. either it is matched, deleted after j or inserted
 	//
 	// min_j2 is the minimal j that is matched, such that G[i] has to be strictly larger
-
+	
 	ret |= M[i].gr(home,min_j);
 	ret |= G[i].gr(home,min_j-1);
 	ret |= G[i].gr(home,min_j2);
@@ -514,6 +516,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     }
     
     // print trace (DEBUGGING)
+    std::cout << "TRACE"<<std::endl;
     for (size_type i=1; i<=n; ++i ) {
 	std::cout << traceA[i] << " ";
     }
@@ -523,6 +526,11 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     }
     std::cout << std::endl;
     
+
+    // copy trace vectors to the space of the propagator
+    static_cast<RNAalignment&>(home).traceA=traceA;
+    static_cast<RNAalignment&>(home).traceB=traceB;
+
     // evaluate alignment for obtaining lower bound
     score_t lower_bound = evaluate_trace(traceA,traceB);
     
