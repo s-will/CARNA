@@ -1,9 +1,9 @@
 SCORE: 0
 
-toyA UCGAAACGA
+toyA UCGAAACGCCCA
 
 #
-1 9 0.9
+1 12 0.9
 1 5 0.2
 1 6 0.4
 2 8 1.0

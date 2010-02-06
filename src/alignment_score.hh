@@ -100,7 +100,11 @@ protected:
     //! @param traceA trace vector for positions in sequence A
     //! @param traceB trace vector for positions in sequence B
     score_t
-    evaluate_trace(std::vector<size_type> &traceA,std::vector<size_type> &traceB) const;
+    evaluate_trace(const std::vector<size_type> &traceA,const std::vector<size_type> &traceB) const;
+
+    score_t
+    evaluate_tracematch(const std::vector<size_type> &traceA,const std::vector<size_type> &traceB,
+			size_type i,size_type j) const;
 
 
     //! test whether a match is allowed by the constraint store
@@ -112,6 +116,17 @@ protected:
     match_allowed(size_type i,size_type j) const {
 	return M[i].in((int)j);
     }
+
+    //! test whether a match is guaranteed (i.e. forced) by the constraint store
+    //! @param i position in sequence 1
+    //! @param j position in sequence 2
+    //! @returns whether the match between i and j is guaranteed
+    //! assume that all the consistency checking with other variables M,G,H has been done 
+    bool
+    match_forced(size_type i,size_type j) const {
+	return M[i].assigned() && M[i].val()==j;
+    }
+
     
     //! test whether an insertion is allowed by the constraint store
     //! @param i position in sequence 1
@@ -178,6 +193,28 @@ protected:
     all_vars_fixed() const;
 
 
+    //! first phase of propagation;
+    //! performs bound independent propagation on variables M,G,H
+    Gecode::ModEvent
+    simple_consistency(Gecode::Space& home);
+
+    void
+    forward_algorithm(Gecode::Space& home, Matrix<infty_score_t> &Fwd);
+
+    void
+    backtrace_forward(Gecode::Space &home, const Matrix<infty_score_t> &Fwd,
+		      std::vector<size_type> &traceA,
+		      std::vector<size_type> &traceB
+		      );
+
+    void
+    backward_algorithm(Gecode::Space& home, Matrix<infty_score_t> &Bwd);
+	
+    Gecode::ModEvent 
+    prune(Gecode::Space& home, 
+			  const Matrix<infty_score_t> &Fwd,
+			  const Matrix<infty_score_t> &Bwd);
+    
 public:
     //! post a binary neighbor constraint
     static Gecode::ExecStatus post(Gecode::Space& home,
