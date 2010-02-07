@@ -51,7 +51,7 @@ public:
     M[0].init(*this,undef,undef);
     G[0].init(*this,undef,undef);
     
-    for (int i=0;i<n+1;i++){
+    for (size_t i=0;i<n+1;i++){
       // exacty one M[i], G[i] is undef
       post (*this, tt( imp(M[i]!=undef, G[i]==undef)  ));
       post (*this, tt( imp(G[i]!=undef, M[i]==undef)  ));
@@ -67,8 +67,8 @@ public:
       
 
     //sorted M
-    for (int i=0;i<n+1;i++){
-      for (int j=i+1;j<n+1;j++){
+    for (size_t i=0;i<n+1;i++){
+      for (size_t j=i+1;j<n+1;j++){
 	
 	post (*this, tt( imp(M[i]!=undef && 
 			     M[j]!=undef,
@@ -77,8 +77,8 @@ public:
     }
 
     //sorted G
-    for (int i=0;i<n+1;i++){
-      for (int j=i+1;j<n+1;j++){
+    for (size_t i=0;i<n+1;i++){
+      for (size_t j=i+1;j<n+1;j++){
 	
 	post (*this, tt( imp(G[i]!=undef && 
 			     G[j]!=undef,
@@ -87,7 +87,7 @@ public:
     }
     
     // a relation between M and G (missing H[i].in(M[i]+1) to be correct)
-    for (int i=0;i<n;i++){
+    for (size_t i=0;i<n;i++){
       post(*this, tt(
 		     imp(M[i]!=undef,
 			 M[i+1]==M[i]+1 ||

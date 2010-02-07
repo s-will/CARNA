@@ -1,8 +1,13 @@
+
 #include "alignment_score.hh"
 #include "LocARNA/arc_matches.hh"
 
 #include "WinDisplay.cpp"
 #include "RNAalignment.hh"
+
+#include <limits>
+
+#include <assert.h>
 
 const bool debug_out=false;
 //const bool debug_out=true;
@@ -121,17 +126,15 @@ AlignmentScore::cost(const Gecode::Space& home, const Gecode::ModEventDelta& med
 }
 
 
+/*
 score_t
-AlignmentScore::ub_match(size_type i, size_type j) const {
+AlignmentScore::ub_match_simple(size_type i, size_type j) const {
     //std::cout << "AlignmentScore::ub_match"<<std::endl;
   
     // compute upper bound for the contribution of matching positions i
     // and j of respective sequences A and B
     // by summing over all possible base pair matchs
     //
-    // when selecting a certain structure: maximize over possible base pair matchs
-    // when not selecting one single structure: make use of the fact that
-    // there is at most one alignment edge per base ==> each arc can be matched at most once
     
     score_t bound=2*scoring.basematch(i,j);
     
@@ -172,6 +175,155 @@ AlignmentScore::ub_match(size_type i, size_type j) const {
     return (bound);
 }
 
+// simple ub_match: 46 16 68598 68613 
+*/
+
+score_t
+AlignmentScore::ub_match(size_type i, size_type j) const {
+    //std::cout << "AlignmentScore::ub_match "<<i<< " "<<j<<std::endl;
+  
+    // compute upper bound for the contribution of matching positions i
+    // and j of respective sequences A and B
+    // by summing over all possible base pair matchs
+    //
+    // when selecting a certain structure: maximize over possible base pair matchs
+    
+    score_t bound=2*scoring.basematch(i,j);    
+    
+    //std::cout << bound<<std::endl;
+
+    // solve the problem of finding a maximal clique in the compatibility graph of arcs to the left(right)
+    // by dynamic programming
+    //
+    
+    // note that the arcs in the right(left) adjecency lists are sorted
+
+    // for DP it suffices to store a row of the matrix
+    std::vector<score_t> bmat;
+    
+    score_t bmat_match;
+    
+    size_type ii=0;
+    size_type jj=0;
+    
+
+    const BasePairs::RightAdjList &radjlA = arc_matches.get_base_pairsA().right_adjlist(i);
+    const BasePairs::RightAdjList &radjlB = arc_matches.get_base_pairsB().right_adjlist(j);
+
+    // init bmat; first row
+    bmat.resize(0);
+    bmat.push_back(0);
+    for (BasePairs::RightAdjList::const_iterator arcB=radjlB.begin();
+	 arcB!=radjlB.end() ; ++arcB) {
+	bmat.push_back(0);
+    }
+    
+    ii=0;
+    // for all pairs of arcs in A and B that have right ends i and j, respectively
+    //
+    for (BasePairs::RightAdjList::const_iterator arcA=radjlA.begin();
+	 arcA!=radjlA.end() ; ++arcA) {
+	++ii;
+
+	bmat_match=0; // this is an extra cell for entry ii-1,jj-1 in the matrix b, which is necessary, since we want to overwrite the stored row of bmat
+	bmat[0]=0;
+
+	jj=0; // start with arc number one in sequence B
+	for (BasePairs::RightAdjList::const_iterator arcB=radjlB.begin();
+	     arcB!=radjlB.end() ; ++arcB) {
+	    ++jj;
+	    
+	    assert(jj<bmat.size());
+	    
+	    score_t entry=numeric_limits<score_t>::min();
+	    
+	    if ( match_allowed(arcA->left(),arcB->left()) ) {
+		// if the left ends of arcs arcA and arcB can match
+		score_t amscore = scoring.arcmatch(*arcA,*arcB);
+		
+		entry = bmat_match + amscore;
+		//cout << "match "<<arcA->left()<<" "<<arcB->left()<<" "<<amscore<<std::endl;
+	    }
+	    
+	    if ( (!match_allowed(arcA->left(),arcB->left())) || (!match_forced(arcA->left(),arcB->left())) ) {
+		entry = std::max(entry,bmat[jj]); // do not match arcA
+		entry = std::max(entry,bmat[jj-1]); // do not match arcB
+	    }
+	    
+	    bmat_match=bmat[jj]; // remember entry bmat[jj], which is still for the last row before overwriting it
+	    bmat[jj]=entry;
+	}
+    }
+
+    
+    // maximal bound for arcs matches to the left is in bmat[jj] 
+    //std::cout <<radjlA.size()<<" "<<radjlB.size()<<" "<<ii<<" "<<jj<<" "<< bmat[jj]<<std::endl;
+    bound += bmat[jj];
+
+    // same for common left ends
+    //     
+    const BasePairs::LeftAdjList &ladjlA = arc_matches.get_base_pairsA().left_adjlist(i);
+    const BasePairs::LeftAdjList &ladjlB = arc_matches.get_base_pairsB().left_adjlist(j);    
+    
+    // init first row
+    bmat.resize(0);
+    bmat.push_back(0);
+    for (BasePairs::LeftAdjList::const_iterator arcB=ladjlB.begin();
+	 arcB!=ladjlB.end() ; ++arcB) {
+	bmat.push_back(0);
+    }
+    
+    ii=0;
+    jj=0;
+    // for all pairs of arcs in A and B that have left ends i and j, respectively
+    //
+    for (BasePairs::LeftAdjList::const_iterator arcA=ladjlA.begin();
+	 arcA!=ladjlA.end() ; ++arcA) {
+	++ii;
+
+	bmat_match=0;
+	bmat[0]=0; // init with a score of 0; this is the score for best clique of compatible arc matchs for empty prefix of arcs in sequence B
+    	
+	jj=0; // start with arc number one in sequence B
+	for (BasePairs::LeftAdjList::const_iterator arcB=ladjlB.begin();
+	     arcB!=ladjlB.end() ; ++arcB) {
+	    ++jj;
+
+	    assert(jj<bmat.size());
+
+	    score_t entry=numeric_limits<score_t>::min();
+	    
+	    if ( match_allowed(arcA->right(),arcB->right()) ) {
+		// if the right ends of arcs arcA and arcB can match
+		score_t amscore = scoring.arcmatch(*arcA,*arcB);
+		
+		entry = bmat_match + amscore;
+		//cout << "match "<<arcA->right()<<" "<<arcB->right()<<" "<<amscore<<std::endl;
+	    }
+	    
+	    if ( (!match_allowed(arcA->right(),arcB->right())) || (!match_forced(arcA->right(),arcB->right())) ) {
+		    entry = std::max(entry,bmat[jj]); // do not match arcA
+		    entry = std::max(entry,bmat[jj-1]); // do not match arcB
+	    }
+	    
+	    bmat_match=bmat[jj]; // remember entry bmat[jj], which is still for the last row before overwriting it
+	    bmat[jj]=entry;
+	}
+    }
+
+    assert(jj<bmat.size());
+    
+    // maximal bound for arcs matches to the left is in bmat[jj] 
+    //std::cout <<ladjlA.size()<<" "<<ladjlB.size()<<" "<<ii<<" "<<jj<<" "<< bmat[jj]<<std::endl;
+    bound += bmat[jj];
+    
+    //std::cout << "end AlignmentScore::ub_match "<<i<< " "<<j<<" "<<bound<<std::endl;
+    
+    return bound;
+}
+
+
+
 
 bool
 AlignmentScore::all_vars_fixed() const {
@@ -179,17 +331,17 @@ AlignmentScore::all_vars_fixed() const {
     // otherwise return true
     
     //M
-    for (size_type i=1; i<M.size(); ++i) {
+    for (size_type i=1; i<(size_t)M.size(); ++i) {
 	if (!M[i].assigned()) return false;
     }
 
     //G
-    for (size_type i=1; i<G.size(); ++i) {
+    for (size_type i=1; i<(size_t)G.size(); ++i) {
 	if (!G[i].assigned()) return false;
     }
     
     //H
-    for (size_type i=0; i<H.size(); ++i) {
+    for (size_type i=0; i<(size_t)H.size(); ++i) {
 	if (!H[i].assigned()) return false;
     }
 
@@ -242,8 +394,8 @@ score_t
 AlignmentScore::evaluate_trace(const std::vector<size_type> &traceA,
 			       const std::vector<size_type> &traceB) const {
     
-    const int n=seqA.length();
-    const int m=seqB.length();
+    const size_t n=seqA.length();
+    const size_t m=seqB.length();
 
     score_t score=0;
 
@@ -355,8 +507,8 @@ AlignmentScore::simple_consistency(Gecode::Space& home) {
 
 void
 AlignmentScore::forward_algorithm(Gecode::Space& home, Matrix<infty_score_t> &Fwd) {
-    const int n=seqA.length();
-    const int m=seqB.length();
+    const size_t n=seqA.length();
+    const size_t m=seqB.length();
 
      // ----------------------------------------
     // Forward algorithm
@@ -497,8 +649,8 @@ AlignmentScore::prune(Gecode::Space& home,
     // Combine matrices and prune
     //
 
-    const int n=seqA.length();
-    const int m=seqB.length();
+    const size_t n=seqA.length();
+    const size_t m=seqB.length();
     Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
 
         
@@ -520,7 +672,7 @@ AlignmentScore::prune(Gecode::Space& home,
 	    
 	    // prune G variable for gap i~- (deletion of i between j and j+1)
 	    if (deletion_allowed(i,j)) {
-		infty_score_t ubd = Fwd(i-1,j) + 2*scoring.gapA(i+1,j) + Bwd(i,j);
+		infty_score_t ubd = Fwd(i-1,j) + 2*scoring.gapA(i,j) + Bwd(i,j);
 		if ( (!ubd.is_finite()) || (ubd < (infty_score_t) Score.min())) {
 		    ret |= G[i].nq(home,(int)j);
 		}
@@ -532,13 +684,15 @@ AlignmentScore::prune(Gecode::Space& home,
 	for(size_type j=1; j<=m; j++) {
 	    // prune H variable for gap -~j (insertion of j between i and i+1)
 	    if (insertion_allowed(i,j)) {
-		infty_score_t ubi = Fwd(i,j-1) + 2*scoring.gapB(i,j+1) + Bwd(i,j);
+		infty_score_t ubi = Fwd(i,j-1) + 2*scoring.gapB(i,j) + Bwd(i,j);
 		if ( (!ubi.is_finite()) || (ubi < (infty_score_t) Score.min())) {
 		    ret |= H[i].exclude(home,(int)j);
 		}
 	    }
 	}
     }
+
+    return ret;
 }
 
 Gecode::ExecStatus
@@ -573,8 +727,8 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	return Gecode::ES_FAILED;
     }
     
-    const int n=seqA.length();
-    const int m=seqB.length();
+    const size_t n=seqA.length();
+    const size_t m=seqB.length();
 
     // -------------------- RUN FORWARD ALGORITHM
     Matrix<infty_score_t> Fwd(n+1,m+1); // ForWarD matrix
@@ -647,7 +801,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     if (debug_out) {
 	// ------------------------------------------------------------
 	// DEBUGGING: check trace
-	for (int i=1; i<=n; i++) {
+	for (size_t i=1; i<=n; i++) {
 	    std::cout << "TRACE " << i <<" " << traceA[i] <<" ";
 	    if (traceA[i]!=0) {
 		size_t j = traceA[i];

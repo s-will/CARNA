@@ -66,9 +66,11 @@ protected:
     //! @param val integer value
     Gecode::ModEvent
     exclude_lq(Gecode::Space &home, Gecode::Set::SetView &xv, int val) {
+	Gecode::ModEvent ret=Gecode::ME_GEN_NONE;
 	for(int i=xv.lubMin(); i<=val; i++) {
-	    xv.exclude(home,i);
+	    ret |= xv.exclude(home,i);
 	}
+	return ret;
     }
 
     //! exclude from a set view all values greater or equal \a val
@@ -76,9 +78,11 @@ protected:
     //! @param val integer value
     Gecode::ModEvent
     exclude_gq(Gecode::Space &home, Gecode::Set::SetView &xv, int val) {
+	Gecode::ModEvent ret=Gecode::ME_GEN_NONE;
 	for(int i=val; i<=xv.lubMax(); i++) {
-	    xv.exclude(home,i);
+	    ret |= xv.exclude(home,i);
 	}
+	return ret;
     }
 
     //! @param xv Integer View
@@ -124,7 +128,7 @@ protected:
     //! assume that all the consistency checking with other variables M,G,H has been done 
     bool
     match_forced(size_type i,size_type j) const {
-	return M[i].assigned() && M[i].val()==j;
+	return M[i].assigned() && (size_t)M[i].val()==j;
     }
 
     

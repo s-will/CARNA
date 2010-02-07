@@ -394,24 +394,17 @@ Scoring::ribosum_arcmatch_score(const Arc &arcA, const Arc &arcB) const {
     return round2score(100.0 * score / gapless_combinations);
 }
 
-score_t
-Scoring::arcmatch(const ArcMatch &am, bool stacked) const {
-    score_t sequence_contribution=0;
-    
-    if (arc_matches->explicit_scores()) { // will not take stacking into account!!!
-	return arc_matches->get_score(am);
-    }
-    
-    const  Arc &arcA = am.arcA(); 
-    const  Arc &arcB = am.arcB(); 
-    
+
+score_t 
+Scoring::arcmatch(const Arc &arcA, const Arc &arcB, bool stacked) const {
     // assert: if stacking score requested, inner arcs must have probability > 0,
     // and there must be a non-zero joint probability of the arc and the inner arc in each RNA 
     
-    assert(!stacked || (bpsA->get_arc_prob(am.arcA().left()+1,am.arcA().right()-1)>0 && bpsB->get_arc_prob(am.arcB().left()+1,am.arcB().right()-1)>0));
+    assert(!stacked || (bpsA->get_arc_prob(arcA.left()+1,arcA.right()-1)>0 && bpsB->get_arc_prob(arcB.left()+1,arcB.right()-1)>0));
+    assert(!stacked || (bpsA->get_arc_2_prob(arcA.left(),arcA.right())>0 && bpsB->get_arc_2_prob(arcB.left(),arcB.right())>0));
     
-    assert(!stacked || (bpsA->get_arc_2_prob(am.arcA().left(),am.arcA().right())>0 && bpsB->get_arc_2_prob(am.arcB().left(),am.arcB().right())>0));
-    
+    score_t sequence_contribution=0;
+        
     
     // if tau is non-zero
     // we add a sequence contribution
@@ -513,4 +506,18 @@ Scoring::arcmatch(const ArcMatch &am, bool stacked) const {
 	      )
 	     );
     }
+}
+
+
+
+score_t
+Scoring::arcmatch(const ArcMatch &am, bool stacked) const {
+    if (arc_matches->explicit_scores()) { // will not take stacking into account!!!
+	return arc_matches->get_score(am);
+    }
+
+    const  Arc &arcA = am.arcA(); 
+    const  Arc &arcB = am.arcB(); 
+    
+    return arcmatch(arcA,arcB,stacked);
 }

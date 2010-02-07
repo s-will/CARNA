@@ -310,7 +310,10 @@ public:
 	return exp_sigma_tab(i,j);
     }
     
-    //! score arc match
+    //! score arc match, does *NOT* support explicit arc match scores
+    score_t arcmatch(const Arc &arcA, const Arc &arcB, bool stacked=false) const;
+
+    //! score arc match, support explicit arc match scores
     score_t arcmatch(const ArcMatch &am, bool stacked=false) const;
 
     //! partition function contribution of arc match

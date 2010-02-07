@@ -84,7 +84,7 @@ public:
   }
 
     void update(Gecode::IntVarArray M, Gecode::IntVarArray G, Gecode::SetVarArray H){
-    const unsigned char green[] = { 64,255,32 }, blue[] = { 128,200,255}, red[] = { 255,0,0 }, white[] = { 255,255,255 };
+	//const unsigned char green[] = { 64,255,32 }, blue[] = { 128,200,255}, red[] = { 255,0,0 }, white[] = { 255,255,255 };
         printf("OK: imgx %d, imgy %d, col %d, row %d, scale %d\n",img_x,img_y,nCols,nRows,scale);
     // clean image
     for (int i=0;i<img_x;i++){
