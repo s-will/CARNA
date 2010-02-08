@@ -197,8 +197,7 @@ public:
 				      unsigned int a) {
 	const RNAalignment& s = static_cast<const RNAalignment&>(home);
 	const Choice& c = static_cast<const Choice&>(_c);
-	
-	/*
+
 	// split in eq and nq
 	if (a==0) {
 	    return Gecode::me_failed(Gecode::Int::IntView(s.M[c.pos]).eq(home, (int)c.val))
@@ -208,8 +207,8 @@ public:
 	    return Gecode::me_failed(Gecode::Int::IntView(s.M[c.pos]).nq(home, (int)c.val))
 		? Gecode::ES_FAILED
 		: Gecode::ES_OK;
-		}
-	*/
+	}
+	/*
 	if (a==0) {
 	    // ACHTUNG: undef values!!!
 	    return Gecode::me_failed(
@@ -228,7 +227,7 @@ public:
 	    return Gecode::me_failed(ret)
 		? Gecode::ES_FAILED
 		: Gecode::ES_OK;
-	}
+		}*/
     }
     
     virtual Gecode::Actor* copy(Gecode::Space& home, bool share) {
