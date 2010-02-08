@@ -699,6 +699,118 @@ AlignmentScore::prune(Gecode::Space& home,
     return ret;
 }
 
+void
+AlignmentScore::choice(RNAalignment &s,
+		       const Matrix<infty_score_t> &Fwd,
+		       const Matrix<infty_score_t> &Bwd,
+		       const std::vector<size_type> &traceA,
+		       const std::vector<size_type> &traceB) const {
+    
+    const size_t n=seqA.length();
+    const size_t m=seqB.length();
+
+    /*
+      size_t last_assigned=start-1;
+      size_t best_left_end=0;
+      size_t best_run_len=0;
+      
+      // determine largest run of unassigned matches
+      for (size_t i=start; i<(size_t)s.M.size(); i++) {
+      if (s.M[i].assigned()) {
+      size_t cur_run_len = i-last_assigned-1;
+      if (cur_run_len>best_run_len) {
+      best_run_len=cur_run_len;
+      best_left_end=last_assigned+1;
+      }
+      last_assigned=i;
+      }
+      }
+      
+      size_t cur_run_len = s.M.size()-last_assigned-1;
+      if (cur_run_len>best_run_len) {
+      best_run_len=cur_run_len;
+      best_left_end=last_assigned+1;
+      }
+      
+      assert(best_run_len>0); // otherwise status() is incorrect
+      
+      size_t pos=best_left_end + (best_run_len/2); // split the longest run
+    */
+    
+    // determine position with larges trace score
+    
+        
+    score_t maxTraceScore=numeric_limits<score_t>::min();
+    
+    size_t pos=0;
+    for (size_t i=1; i<=n; i++) {
+	size_t j=traceA[i];
+	score_t traceScore;
+	if (j!=0) {
+	    traceScore=ub_match(i,j);
+	} else {
+	    traceScore=0;
+	}	
+
+	if ((!s.M[i].assigned()) && traceScore>maxTraceScore) {
+	    maxTraceScore=traceScore;
+	    pos=i;
+	}
+    }
+    
+    size_t val = (pos==0)?0:traceA[pos];
+    if (val==0) {val=s.undef;}
+    
+    // copy choice to the space
+    s.pos=pos;
+    s.val=val;
+    
+    // determine values for splitting choice
+    
+    score_t minb=numeric_limits<score_t>::max();
+    score_t maxb=numeric_limits<score_t>::min();
+
+    std::cout << "CHOICE AT "<<pos <<std::endl;
+    for (size_t j=1; j<=m; j++) {
+	infty_score_t b;
+	if (s.M[pos].in(j) && (b=Fwd(pos-1,j-1)+ub_match(pos,j)+Bwd(pos,j)).is_finite()) {
+		minb=min(minb,b.finite_value());
+		maxb=max(maxb,b.finite_value());
+	}
+    }
+
+    size_t minval=m+1;
+    size_t maxval=0;
+    
+    for (size_t j=1; j<=m; j++) {
+	infty_score_t b;
+	if (s.M[pos].in(j) && (b=Fwd(pos-1,j-1)+ub_match(pos,j)+Bwd(pos,j)).is_finite() ) {
+	    std::cout << j << ":" << b<<" ";
+	    if (b.finite_value()>=minb+0.5*(maxb-minb)) { 
+		minval=min(minval,j);
+		maxval=max(maxval,j);
+	    }
+	}
+    }	    
+    
+    if (minval==maxval) {
+	std::cout << " IN: " << minval;
+    } else {
+	std::cout << " IN: " << minval << "-" << maxval;
+    }
+    std::cout << std::endl;
+
+    if (minval==(size_t)s.M[pos].min() && maxval==(size_t)s.M[pos].max()) {
+	maxval=(maxval-minval)/2+minval;
+    }
+    
+    
+    s.minval=minval;
+    s.maxval=maxval;
+    
+}
+
+
 Gecode::ExecStatus
 AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
@@ -762,19 +874,6 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     // -------------------- BACKTRACE FWD
     backtrace_forward(home,Fwd,traceA,traceB);
     
-    // copy trace vectors to the space of the propagator
-    RNAalignment &s=static_cast<RNAalignment&>(home);
-    s.traceA=traceA;
-    s.traceB=traceB;
-    s.traceScores.resize(n+1);
-    for (size_t i=0; i<=n; i++) {
-	size_t j=traceA[i];
-	if (j!=0) {
-	    s.traceScores[i]=ub_match(i,j);
-	} else {
-	    s.traceScores[i]=0;
-	}	
-    }
     
     if (debug_out) {
 	// print trace (DEBUGGING)
@@ -833,6 +932,11 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
  
     // -------------------- PRUNE VARIABLES
     ret |= prune(home,Fwd,Bwd);
+
+
+    
+    // -------------------- select CHOICE for the space
+    choice(static_cast<RNAalignment&>(home),Fwd,Bwd,traceA,traceB);
 
 
     if (debug_out) {

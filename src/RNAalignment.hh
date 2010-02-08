@@ -22,17 +22,19 @@ class RNAalignBrancher;
 class RNAalignment : public Gecode::Space {
     friend class AlignmentScore;
 
-  const size_t n;
-  const size_t m;
-  
-  const size_t undef;
-  
-  WinDisplay* wind;
+    const size_t n;
+    const size_t m;
     
-    std::vector<size_t> traceA;
-    std::vector<size_t> traceB;
-    std::vector<score_t> traceScores;
+    const size_t undef;
+    
+    size_t pos;
+    size_t val;
+    size_t minval;
+    size_t maxval;
 
+    WinDisplay* wind;
+    
+    
 protected:
     Gecode::IntVarArray M;
     Gecode::IntVarArray G;
@@ -94,9 +96,10 @@ public:
 	n(s.n),
 	m(s.m),
 	undef(s.undef),
-	traceA(s.traceA),
-	traceB(s.traceB),
-	traceScores(s.traceScores)
+	pos(s.pos),
+	val(s.val),
+	minval(s.minval),
+	maxval(s.maxval)
     {
 	M.update(*this, share, s.M);
 	G.update(*this, share, s.G);
@@ -120,21 +123,6 @@ public:
 	//std::cout << "Insertions: " << H << std::endl;
 	std::cout << "Score:      " << Score << std::endl;
 	
-	/*
-	// print trace (DEBUGGING)
-	std::cout << "SPACE TRACE"<<std::endl;
-	for (size_type i=1; i<traceA.size(); ++i ) {
-	    std::cout << traceA[i] << " ";
-	}
-	std::cout << std::endl;
-	for (size_type j=1; j<traceB.size(); j++) {
-	    std::cout << traceB[j] << " ";
-	}
-	std::cout << std::endl;
-	for (size_type i=1; i<traceScores.size(); ++i ) {
-	    std::cout << traceScores[i] << " ";
-	}
-	*/
 	wind->update(M,G,H);
     }
 
@@ -160,10 +148,17 @@ private:
     private:
     public:
 	size_t pos;
-	size_t val;	
+	size_t val;
+	size_t minval;
+	size_t maxval;
+	
 
-	Choice(const Brancher& b,size_t pos_,size_t val_)
-	    : Gecode::Choice(b,2),pos(pos_),val(val_) {}
+	Choice(const Brancher& b,size_t pos_, size_t val_,size_t minval_,size_t maxval_)
+	    : Gecode::Choice(b,2),
+	      pos(pos_),val(val_),
+	      minval(minval_),
+	      maxval(maxval_)
+	{}
 	virtual size_t size(void) const {
 	    return sizeof(Choice);
 	}
@@ -190,52 +185,10 @@ public:
     virtual Gecode::Choice* choice(Gecode::Space& home) {
 	const RNAalignment& s = static_cast<const RNAalignment&>(home);
 	
-	/*
-	size_t last_assigned=start-1;
-	size_t best_left_end=0;
-	size_t best_run_len=0;
+	// move decision about choice to the propagator
 	
-	// determine largest run of unassigned matches
-	for (size_t i=start; i<(size_t)s.M.size(); i++) {
-	    if (s.M[i].assigned()) {
-		size_t cur_run_len = i-last_assigned-1;
-		if (cur_run_len>best_run_len) {
-		    best_run_len=cur_run_len;
-		    best_left_end=last_assigned+1;
-		}
-		last_assigned=i;
-	    }
-	}
-	
-	size_t cur_run_len = s.M.size()-last_assigned-1;
-	if (cur_run_len>best_run_len) {
-	    best_run_len=cur_run_len;
-	    best_left_end=last_assigned+1;
-	}
-	
-	assert(best_run_len>0); // otherwise status() is incorrect
-	
-	size_t pos=best_left_end + (best_run_len/2); // split the longest run
-	*/
-	
-	// determine position with larges trace score
-	
-	score_t maxTraceScore=numeric_limits<score_t>::min();
-
-	size_t pos=0;
-	for (size_t i=start; i<(size_t)s.M.size(); i++) {
-	    if ((!s.M[i].assigned()) && s.traceScores[i]>maxTraceScore) {
-		maxTraceScore=s.traceScores[i];
-		pos=i;
-	    }
-	}
-	assert(pos!=0);
-	
-	size_t val = s.traceA[pos];
-	if (val==0) {val=s.undef;}
-	
-	std::cout << "CHOICE "<<pos<<" "<<val<<" "<<s.M[pos]<<std::endl;
-	return new Choice(*this,pos,val);
+	std::cout << "CHOICE "<<s.pos<<" "<<s.val<<" "<<s.minval<<" "<<s.maxval<<" "<<s.M[s.pos]<<std::endl;
+	return new Choice(*this,s.pos,s.val,s.minval,s.maxval);
     }
     
     // commits the choice c and alternative a 
@@ -245,6 +198,7 @@ public:
 	const RNAalignment& s = static_cast<const RNAalignment&>(home);
 	const Choice& c = static_cast<const Choice&>(_c);
 	
+	/*
 	// split in eq and nq
 	if (a==0) {
 	    return Gecode::me_failed(Gecode::Int::IntView(s.M[c.pos]).eq(home, (int)c.val))
@@ -252,6 +206,26 @@ public:
 		: Gecode::ES_OK;
 	} else {
 	    return Gecode::me_failed(Gecode::Int::IntView(s.M[c.pos]).nq(home, (int)c.val))
+		? Gecode::ES_FAILED
+		: Gecode::ES_OK;
+		}
+	*/
+	if (a==0) {
+	    // ACHTUNG: undef values!!!
+	    return Gecode::me_failed(
+				     Gecode::Int::IntView(s.M[c.pos]).gq(home, (int)c.minval)
+				     |
+				     Gecode::Int::IntView(s.M[c.pos]).lq(home, (int)c.maxval)
+				     )
+		? Gecode::ES_FAILED
+		: Gecode::ES_OK;
+	} else {
+	    Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
+	    
+	    for (size_t val=c.minval; val<=c.maxval; val++)
+		ret|=Gecode::Int::IntView(s.M[c.pos]).nq(home, (int)val);
+	    
+	    return Gecode::me_failed(ret)
 		? Gecode::ES_FAILED
 		: Gecode::ES_OK;
 	}

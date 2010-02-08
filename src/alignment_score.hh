@@ -10,6 +10,9 @@
 #include "LocARNA/rna_data.hh"
 #include "LocARNA/scoring.hh"
 
+
+class RNAalignment;
+
 class AlignmentScore : public Gecode::Propagator {
 public:
     typedef Gecode::ViewArray<Gecode::Int::IntView> IntViewArray;
@@ -224,6 +227,14 @@ protected:
     template<class AdjList>
     score_t
     bound_arcmatches(size_t i, size_t j, AdjList adjlA, AdjList adjlB, bool right) const;
+    
+    // computes choice for the current space
+    void
+    choice(RNAalignment &s,
+	   const Matrix<infty_score_t> &Fwd,
+	   const Matrix<infty_score_t> &Bwd,
+	   const std::vector<size_type> &traceA,
+	   const std::vector<size_type> &traceB) const;
  
 public:
     //! post a binary neighbor constraint
