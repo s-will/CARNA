@@ -218,7 +218,13 @@ protected:
     prune(Gecode::Space& home, 
 			  const Matrix<infty_score_t> &Fwd,
 			  const Matrix<infty_score_t> &Bwd);
-    
+
+
+    //! bound on all arcmatches to the right (left) from i,j
+    template<class AdjList>
+    score_t
+    bound_arcmatches(size_t i, size_t j, AdjList adjlA, AdjList adjlB, bool right) const;
+ 
 public:
     //! post a binary neighbor constraint
     static Gecode::ExecStatus post(Gecode::Space& home,

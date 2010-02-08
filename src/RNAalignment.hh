@@ -31,6 +31,7 @@ class RNAalignment : public Gecode::Space {
     
     std::vector<size_t> traceA;
     std::vector<size_t> traceB;
+    std::vector<score_t> traceScores;
 
 protected:
     Gecode::IntVarArray M;
@@ -94,8 +95,9 @@ public:
 	m(s.m),
 	undef(s.undef),
 	traceA(s.traceA),
-	traceB(s.traceB)
- {
+	traceB(s.traceB),
+	traceScores(s.traceScores)
+    {
 	M.update(*this, share, s.M);
 	G.update(*this, share, s.G);
 	H.update(*this, share, s.H);
@@ -113,11 +115,12 @@ public:
     virtual void
     print(std::ostream& out) const {
 	std::cout << "SOLUTION" << std::endl;
-	std::cout << "Matches:    " << M << std::endl;
-	std::cout << "Deletions:  " << G << std::endl;
-	std::cout << "Insertions: " << H << std::endl;
+	//std::cout << "Matches:    " << M << std::endl;
+	//std::cout << "Deletions:  " << G << std::endl;
+	//std::cout << "Insertions: " << H << std::endl;
 	std::cout << "Score:      " << Score << std::endl;
 	
+	/*
 	// print trace (DEBUGGING)
 	std::cout << "SPACE TRACE"<<std::endl;
 	for (size_type i=1; i<traceA.size(); ++i ) {
@@ -128,7 +131,10 @@ public:
 	    std::cout << traceB[j] << " ";
 	}
 	std::cout << std::endl;
-		
+	for (size_type i=1; i<traceScores.size(); ++i ) {
+	    std::cout << traceScores[i] << " ";
+	}
+	*/
 	wind->update(M,G,H);
     }
 
@@ -183,7 +189,8 @@ public:
     // returns choice
     virtual Gecode::Choice* choice(Gecode::Space& home) {
 	const RNAalignment& s = static_cast<const RNAalignment&>(home);
-
+	
+	/*
 	size_t last_assigned=start-1;
 	size_t best_left_end=0;
 	size_t best_run_len=0;
@@ -209,9 +216,25 @@ public:
 	assert(best_run_len>0); // otherwise status() is incorrect
 	
 	size_t pos=best_left_end + (best_run_len/2); // split the longest run
+	*/
+	
+	// determine position with larges trace score
+	
+	score_t maxTraceScore=numeric_limits<score_t>::min();
+
+	size_t pos=0;
+	for (size_t i=start; i<(size_t)s.M.size(); i++) {
+	    if ((!s.M[i].assigned()) && s.traceScores[i]>maxTraceScore) {
+		maxTraceScore=s.traceScores[i];
+		pos=i;
+	    }
+	}
+	assert(pos!=0);
+	
 	size_t val = s.traceA[pos];
 	if (val==0) {val=s.undef;}
-	//std::cout << "CHOICE "<<pos<<" "<<val<<" "<<s.M[pos]<<std::endl;
+	
+	std::cout << "CHOICE "<<pos<<" "<<val<<" "<<s.M[pos]<<std::endl;
 	return new Choice(*this,pos,val);
     }
     
@@ -222,6 +245,7 @@ public:
 	const RNAalignment& s = static_cast<const RNAalignment&>(home);
 	const Choice& c = static_cast<const Choice&>(_c);
 	
+	// split in eq and nq
 	if (a==0) {
 	    return Gecode::me_failed(Gecode::Int::IntView(s.M[c.pos]).eq(home, (int)c.val))
 		? Gecode::ES_FAILED

@@ -9,8 +9,8 @@
 
 #include <assert.h>
 
-const bool debug_out=false;
-//const bool debug_out=true;
+//const bool debug_out=false;
+const bool debug_out=true;
 
 //#include <iostream>
 
@@ -178,6 +178,112 @@ AlignmentScore::ub_match_simple(size_type i, size_type j) const {
 // simple ub_match: 46 16 68598 68613 
 */
 
+
+template<class AdjList>
+score_t
+AlignmentScore::bound_arcmatches(size_t i, size_t j, AdjList adjlA, AdjList adjlB, bool right) const {
+    // solve the problem of finding a maximal clique in the compatibility graph of arcs to the left(right)
+    // by dynamic programming
+    //
+    
+    // note that the arcs in the right(left) adjacency lists are sorted
+
+    
+    // for DP it suffices to store a row of the matrix
+    std::vector<infty_score_t> bmat;
+    infty_score_t bmat_match; // this is an extra cell for entry ii-1,jj-1 in the matrix b, which is necessary, since we want to overwrite the stored row of bmat
+    
+    size_type ii=0;
+    size_type jj=0;
+    
+    // for all arcsA and arcsB determine whether its ok to delete them
+    // or they are part in a forced arc match
+    std::vector<bool> forcedA;
+    std::vector<bool> forcedB;
+    forcedA.resize(adjlA.size()+1);
+    forcedB.resize(adjlB.size()+1);
+    fill(forcedA.begin(),forcedA.end(),false);
+    fill(forcedB.begin(),forcedB.end(),false);
+    
+    // for all pairs of arcs in A and B that have right ends i and j, respectively
+    //
+    ii=0;
+    for (typename AdjList::const_iterator arcA=adjlA.begin();
+	 arcA!=adjlA.end() ; ++arcA) {
+	++ii;
+	jj=0; // start with arc number start_jj+1 in sequence B
+	for (typename AdjList::const_iterator arcB=adjlB.begin();
+	     arcB!=adjlB.end() ; ++arcB) {
+	    ++jj;
+	    
+	    size_t k=(right)?arcA->left():arcA->right();
+	    size_t l=(right)?arcB->left():arcB->right();
+
+	    bool forced = match_forced(k,l);
+	    
+	    forcedA[ii] = forcedA[ii] | forced;
+	    forcedB[jj] = forcedB[jj] | forced;
+	}
+    }
+    
+    // init bmat; first row
+    bmat.resize(adjlB.size()+1);
+    bmat[0]=(infty_score_t)0;
+    jj=0;
+    for (typename AdjList::const_iterator arcB=adjlB.begin();
+	 arcB!=adjlB.end() ; ++arcB) {
+	++jj;
+	//init with score for deleting all arcsB <=jj
+	bmat[jj]=bmat[jj-1];
+	if (forcedB[jj]) bmat[jj]=infty_score_t::neg_infty;
+    }
+    
+    ii=0;
+    // for all pairs of arcs in A and B that have right ends i and j, respectively
+    //
+    for (typename AdjList::const_iterator arcA=adjlA.begin();
+	 arcA!=adjlA.end() ; ++arcA) {
+	++ii;
+	
+	bmat_match=bmat[0];
+	if (forcedA[ii]) {
+	    bmat[0]=infty_score_t::neg_infty;
+	}
+	
+	jj=0; // start with arc number start_jj+1 in sequence B
+	for (typename AdjList::const_iterator arcB=adjlB.begin();
+	     arcB!=adjlB.end() ; ++arcB) {
+	    ++jj;
+	    
+	    assert(jj<bmat.size());
+	    
+	    infty_score_t entry=infty_score_t::neg_infty;
+
+	    size_t k=(right)?arcA->left():arcA->right();
+	    size_t l=(right)?arcB->left():arcB->right();
+
+	    if ( match_allowed(k,l) ) {
+		score_t amscore = scoring.arcmatch(*arcA,*arcB);
+		entry = bmat_match + amscore;
+	    }
+	    if (!forcedA[ii]) {
+		entry = std::max(entry,bmat[jj]); // do not match arcA
+	    }
+	    if (!forcedB[jj]) {
+		entry = std::max(entry,bmat[jj-1]); // do not match arcB
+	    }
+	    
+	    bmat_match=bmat[jj]; // remember entry bmat[jj], which is still for the last row before overwriting it
+	    bmat[jj]=entry;
+	}
+    }
+    
+    // maximal bound for arcs matches to the left is in bmat[jj] 
+    //std::cout <<adjlA.size()<<" "<<adjlB.size()<<" "<<ii<<" "<<jj<<" "<< bmat[jj]<<std::endl;
+    return bmat[jj].finite_value();
+}
+
+
 score_t
 AlignmentScore::ub_match(size_type i, size_type j) const {
     //std::cout << "AlignmentScore::ub_match "<<i<< " "<<j<<std::endl;
@@ -192,130 +298,17 @@ AlignmentScore::ub_match(size_type i, size_type j) const {
     
     //std::cout << bound<<std::endl;
 
-    // solve the problem of finding a maximal clique in the compatibility graph of arcs to the left(right)
-    // by dynamic programming
-    //
+    bound += bound_arcmatches
+	(i,j,
+	 arc_matches.get_base_pairsA().right_adjlist(i),
+	 arc_matches.get_base_pairsB().right_adjlist(j),
+	 true);
     
-    // note that the arcs in the right(left) adjecency lists are sorted
-
-    // for DP it suffices to store a row of the matrix
-    std::vector<score_t> bmat;
-    
-    score_t bmat_match;
-    
-    size_type ii=0;
-    size_type jj=0;
-    
-
-    const BasePairs::RightAdjList &radjlA = arc_matches.get_base_pairsA().right_adjlist(i);
-    const BasePairs::RightAdjList &radjlB = arc_matches.get_base_pairsB().right_adjlist(j);
-
-    // init bmat; first row
-    bmat.resize(0);
-    bmat.push_back(0);
-    for (BasePairs::RightAdjList::const_iterator arcB=radjlB.begin();
-	 arcB!=radjlB.end() ; ++arcB) {
-	bmat.push_back(0);
-    }
-    
-    ii=0;
-    // for all pairs of arcs in A and B that have right ends i and j, respectively
-    //
-    for (BasePairs::RightAdjList::const_iterator arcA=radjlA.begin();
-	 arcA!=radjlA.end() ; ++arcA) {
-	++ii;
-
-	bmat_match=0; // this is an extra cell for entry ii-1,jj-1 in the matrix b, which is necessary, since we want to overwrite the stored row of bmat
-	bmat[0]=0;
-
-	jj=0; // start with arc number one in sequence B
-	for (BasePairs::RightAdjList::const_iterator arcB=radjlB.begin();
-	     arcB!=radjlB.end() ; ++arcB) {
-	    ++jj;
-	    
-	    assert(jj<bmat.size());
-	    
-	    score_t entry=numeric_limits<score_t>::min();
-	    
-	    if ( match_allowed(arcA->left(),arcB->left()) ) {
-		// if the left ends of arcs arcA and arcB can match
-		score_t amscore = scoring.arcmatch(*arcA,*arcB);
-		
-		entry = bmat_match + amscore;
-		//cout << "match "<<arcA->left()<<" "<<arcB->left()<<" "<<amscore<<std::endl;
-	    }
-	    
-	    if ( (!match_allowed(arcA->left(),arcB->left())) || (!match_forced(arcA->left(),arcB->left())) ) {
-		entry = std::max(entry,bmat[jj]); // do not match arcA
-		entry = std::max(entry,bmat[jj-1]); // do not match arcB
-	    }
-	    
-	    bmat_match=bmat[jj]; // remember entry bmat[jj], which is still for the last row before overwriting it
-	    bmat[jj]=entry;
-	}
-    }
-
-    
-    // maximal bound for arcs matches to the left is in bmat[jj] 
-    //std::cout <<radjlA.size()<<" "<<radjlB.size()<<" "<<ii<<" "<<jj<<" "<< bmat[jj]<<std::endl;
-    bound += bmat[jj];
-
-    // same for common left ends
-    //     
-    const BasePairs::LeftAdjList &ladjlA = arc_matches.get_base_pairsA().left_adjlist(i);
-    const BasePairs::LeftAdjList &ladjlB = arc_matches.get_base_pairsB().left_adjlist(j);    
-    
-    // init first row
-    bmat.resize(0);
-    bmat.push_back(0);
-    for (BasePairs::LeftAdjList::const_iterator arcB=ladjlB.begin();
-	 arcB!=ladjlB.end() ; ++arcB) {
-	bmat.push_back(0);
-    }
-    
-    ii=0;
-    jj=0;
-    // for all pairs of arcs in A and B that have left ends i and j, respectively
-    //
-    for (BasePairs::LeftAdjList::const_iterator arcA=ladjlA.begin();
-	 arcA!=ladjlA.end() ; ++arcA) {
-	++ii;
-
-	bmat_match=0;
-	bmat[0]=0; // init with a score of 0; this is the score for best clique of compatible arc matchs for empty prefix of arcs in sequence B
-    	
-	jj=0; // start with arc number one in sequence B
-	for (BasePairs::LeftAdjList::const_iterator arcB=ladjlB.begin();
-	     arcB!=ladjlB.end() ; ++arcB) {
-	    ++jj;
-
-	    assert(jj<bmat.size());
-
-	    score_t entry=numeric_limits<score_t>::min();
-	    
-	    if ( match_allowed(arcA->right(),arcB->right()) ) {
-		// if the right ends of arcs arcA and arcB can match
-		score_t amscore = scoring.arcmatch(*arcA,*arcB);
-		
-		entry = bmat_match + amscore;
-		//cout << "match "<<arcA->right()<<" "<<arcB->right()<<" "<<amscore<<std::endl;
-	    }
-	    
-	    if ( (!match_allowed(arcA->right(),arcB->right())) || (!match_forced(arcA->right(),arcB->right())) ) {
-		    entry = std::max(entry,bmat[jj]); // do not match arcA
-		    entry = std::max(entry,bmat[jj-1]); // do not match arcB
-	    }
-	    
-	    bmat_match=bmat[jj]; // remember entry bmat[jj], which is still for the last row before overwriting it
-	    bmat[jj]=entry;
-	}
-    }
-
-    assert(jj<bmat.size());
-    
-    // maximal bound for arcs matches to the left is in bmat[jj] 
-    //std::cout <<ladjlA.size()<<" "<<ladjlB.size()<<" "<<ii<<" "<<jj<<" "<< bmat[jj]<<std::endl;
-    bound += bmat[jj];
+    bound += bound_arcmatches
+	(i,j,
+	 arc_matches.get_base_pairsA().left_adjlist(i),
+	 arc_matches.get_base_pairsB().left_adjlist(j),
+	 false);
     
     //std::cout << "end AlignmentScore::ub_match "<<i<< " "<<j<<" "<<bound<<std::endl;
     
@@ -680,6 +673,17 @@ AlignmentScore::prune(Gecode::Space& home,
 	}
     }
 
+    // // prune undef in M and G
+    // for(size_type i=1; i<=n; i++) {
+    // 	if (G[i].assigned() && G[i].val()==undef) {
+    // 	    ret |= M[i].nq(home,undef);
+    // 	}
+    // 	if (M[i].assigned() && M[i].val()==undef) {
+    // 	    ret |= G[i].nq(home,undef);
+    // 	}
+    // }
+
+
     for(size_type i=0; i<=n; i++) {
 	for(size_type j=1; j<=m; j++) {
 	    // prune H variable for gap -~j (insertion of j between i and i+1)
@@ -759,9 +763,19 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     backtrace_forward(home,Fwd,traceA,traceB);
     
     // copy trace vectors to the space of the propagator
-    static_cast<RNAalignment&>(home).traceA=traceA;
-    static_cast<RNAalignment&>(home).traceB=traceB;
-
+    RNAalignment &s=static_cast<RNAalignment&>(home);
+    s.traceA=traceA;
+    s.traceB=traceB;
+    s.traceScores.resize(n+1);
+    for (size_t i=0; i<=n; i++) {
+	size_t j=traceA[i];
+	if (j!=0) {
+	    s.traceScores[i]=ub_match(i,j);
+	} else {
+	    s.traceScores[i]=0;
+	}	
+    }
+    
     if (debug_out) {
 	// print trace (DEBUGGING)
 	std::cout << "TRACE"<<std::endl;
