@@ -9,8 +9,8 @@
 
 #include <assert.h>
 
-//const bool debug_out=false;
-const bool debug_out=true;
+const bool debug_out=false;
+//const bool debug_out=true;
 
 //#include <iostream>
 
