@@ -29,9 +29,8 @@ AlignmentScore::AlignmentScore(Gecode::Space& home,
 			       const ArcMatches &arc_matches_,
 			       const AlignerParams &params_,
 			       const Scoring &scoring_,
-			       IntViewArray &M_,
-			       IntViewArray &G_,
-			       SetViewArray &H_,
+			       IntViewArray &MD_,
+			       BoolViewArray &M_,
 			       Gecode::Int::IntView &Score_
 			       )
     : Propagator(home),
@@ -40,16 +39,13 @@ AlignmentScore::AlignmentScore(Gecode::Space& home,
       arc_matches(arc_matches_),
       params(params_),
       scoring(scoring_),
+      MD(MD_),
       M(M_),
-      G(G_),
-      H(H_),
-      Score(Score_),
-      undef(seqB.length()+1)
+      Score(Score_)
 {
     // subscribe the propagator to any variable change 
+    MD.subscribe(home,*this,Gecode::Int::PC_INT_DOM);
     M.subscribe(home,*this,Gecode::Int::PC_INT_DOM);
-    G.subscribe(home,*this,Gecode::Int::PC_INT_DOM);
-    H.subscribe(home,*this,Gecode::Set::PC_SET_ANY);
     Score.subscribe(home,*this,Gecode::Int::PC_INT_BND);    
 }
 
@@ -61,12 +57,10 @@ AlignmentScore::AlignmentScore(Gecode::Space& home,
     seqB(p.seqB),
     arc_matches(p.arc_matches),
     params(p.params),
-    scoring(p.scoring),
-    undef(p.undef)
+    scoring(p.scoring)
 {
+    MD.update(home,share,p.MD);
     M.update(home,share,p.M);
-    G.update(home,share,p.G);
-    H.update(home,share,p.H);
     Score.update(home,share,p.Score);
 }
 
@@ -78,9 +72,8 @@ post(Gecode::Space& home,
      const ArcMatches &arc_matches,
      const AlignerParams &params,
      const Scoring &scoring,
-     Gecode::IntVarArray &M,
-     Gecode::IntVarArray &G,
-     Gecode::SetVarArray &H,
+     Gecode::IntVarArray &MD,
+     Gecode::BoolVarArray &M,
      Gecode::IntVar &Score
      )
 {
@@ -92,22 +85,19 @@ post(Gecode::Space& home,
 	
     Gecode::Int::IntView ScoreView = Score;
       
-    Gecode::VarArgArray<Gecode::IntVar> MArg = M;
-    IntViewArray MView = IntViewArray(home,MArg);
+    Gecode::VarArgArray<Gecode::IntVar> MDArg = MD;
+    IntViewArray MDView = IntViewArray(home,MDArg);
     
-    Gecode::VarArgArray<Gecode::IntVar> GArg = G;
-    IntViewArray GView = IntViewArray(home, GArg);
-    
-    Gecode::VarArgArray<Gecode::SetVar> HArg = H;
-    SetViewArray HView = SetViewArray(home, HArg);
-    
+    Gecode::VarArgArray<Gecode::BoolVar> MArg = M;
+    BoolViewArray MView = BoolViewArray(home, MArg);
+        
     new (home) AlignmentScore(home,
 			      seqA,
 			      seqB,
 			      arc_matches,
 			      params,
 			      scoring,
-			      MView,GView,HView,
+			      MDView,MView,
 			      ScoreView);
     
     return Gecode::ES_OK;
@@ -258,10 +248,10 @@ AlignmentScore::bound_arcmatches(size_t i, size_t j, AdjList adjlA, AdjList adjl
 	    assert(jj<bmat.size());
 	    
 	    infty_score_t entry=infty_score_t::neg_infty;
-
+	    
 	    size_t k=(right)?arcA->left():arcA->right();
 	    size_t l=(right)?arcB->left():arcB->right();
-
+	    
 	    if ( match_allowed(k,l) ) {
 		score_t amscore = scoring.arcmatch(*arcA,*arcB);
 		entry = bmat_match + amscore;
@@ -279,7 +269,7 @@ AlignmentScore::bound_arcmatches(size_t i, size_t j, AdjList adjlA, AdjList adjl
     }
     
     // maximal bound for arcs matches to the left is in bmat[jj] 
-    //std::cout <<adjlA.size()<<" "<<adjlB.size()<<" "<<ii<<" "<<jj<<" "<< bmat[jj]<<std::endl;
+    //std::cout <<adjlA.size()<<" "<<adjlB.size()<<" "<< bmat[jj]<<std::endl;
     return bmat[jj].finite_value();
 }
 
@@ -323,19 +313,14 @@ AlignmentScore::all_vars_fixed() const {
     // test all variable views and return false as soon as one is not fixed/assigned
     // otherwise return true
     
+    //MD
+    for (size_type i=1; i<(size_t)MD.size(); ++i) {
+	if (!MD[i].assigned()) return false;
+    }
+
     //M
     for (size_type i=1; i<(size_t)M.size(); ++i) {
 	if (!M[i].assigned()) return false;
-    }
-
-    //G
-    for (size_type i=1; i<(size_t)G.size(); ++i) {
-	if (!G[i].assigned()) return false;
-    }
-    
-    //H
-    for (size_type i=0; i<(size_t)H.size(); ++i) {
-	if (!H[i].assigned()) return false;
     }
 
     return true;
@@ -422,76 +407,29 @@ AlignmentScore::evaluate_trace(const std::vector<size_type> &traceA,
     return score;
 }
 
+void
+AlignmentScore::print_vars() const {
+	std::cout << "Matches/Deletions:    " << MD << std::endl;
+	std::cout << "Match Flags:          " << M << std::endl;
+	std::cout << "Score:      " << Score << std::endl;
+}
+
+
 Gecode::ModEvent
 AlignmentScore::simple_consistency(Gecode::Space& home) {
-    const int n=seqA.length();
-    const int m=seqB.length();
+    //const int n=seqA.length();
+    //const int m=seqB.length();
 
     if (debug_out) {
 	std::cout << "Before consistency"<<std::endl;
-	std::cout << "Matches:    " << M << std::endl;
-	std::cout << "Deletions:  " << G << std::endl;
-	std::cout << "Insertions: " << H << std::endl;
-	std::cout << "Score:      " << Score << std::endl;
+	print_vars();
     }
 
-    Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
-        
-    // each i is either matched or deleted
-    for (int i=1; i<=n; i++) {
-	if ( !M[i].in(undef) ) {
-	    ret |= G[i].eq(home,undef);
-	}
-	if ( M[i].assigned() && M[i].val()==undef ) {
-	    ret |= G[i].nq(home,undef);
-	}	    
-	if ( !G[i].in(undef) ) {
-	    ret |= M[i].eq(home,undef);
-	}
-	if ( G[i].assigned() && G[i].val()==undef ) {
-	    ret |= M[i].nq(home,undef);
-	}
-    }
-
-    //each j is either matched or deleted
-     
-    //determine values j that are not consumed right of i
-    int maxGLB[n+1]; //maximal value that has to be included in H[i] at a matched position
-    maxGLB[n]=m;
-    for (int i=n+1; i>0;) {
-    	--i;
-    	if ( !M[i].in(undef) && G[i].in(undef) ) { //in case we have a match
-		maxGLB[i-1] = M[i].min()-1; // what's certainly in for smaller i
-        } else if ( M[i].in(undef) && !G[i].in(undef))  { //case where we have a gap
-		maxGLB[i-1] = maxGLB[i]; //carry over deletions
-	} else { //when we don't know
-    	    maxGLB[i-1]=0;
-    	}
-    }
-     
-    for (int i=0; i<=n; i++) {
-    	if ( !M[i].in(undef) && G[i].in(undef) ) {
-    	    for (int k=M[i].max()+1; k<=maxGLB[i]; k++) {
-    		ret |= H[i].include(home,k);
-    	    }
-    	}
-    	if ( !G[i].in(undef) ) {
-    	    ret |= H[i].cardMax(home,0); //symmetry breaking
-    	}
-    }
-
-    
-    for (int k=1; k<=maxGLB[0]; k++) {
-    	ret |= H[0].include(home,k);
-    }
-    
+    Gecode::ModEvent ret = Gecode::ME_GEN_NONE;    
     
     if (debug_out) {    
 	std::cout << "Made consistent:"<<std::endl;
-	std::cout << "Matches:    " << M << std::endl;
-	std::cout << "Deletions:  " << G << std::endl;
-	std::cout << "Insertions: " << H << std::endl;
-	std::cout << "Score:      " << Score << std::endl;
+	print_vars();
     }
 
     return ret;
@@ -646,52 +584,34 @@ AlignmentScore::prune(Gecode::Space& home,
     const size_t m=seqB.length();
     Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
 
-        
+    // prune MD and M
     for(size_type i=1; i<=n; i++) {
-	for(size_type j=1; j<=m; j++) {
-	    // prune M variable for match i~j
-	    if (match_allowed(i,j)) {
+	for(size_type j=0; j<=m; j++) {
+	    // prune MD variable for match i~j
+	    if (match_or_deletion_allowed(i,j)) {
+		infty_score_t ub = Fwd(i,j)+Bwd(i,j);
+		if ( (!ub.is_finite()) || (ub < (infty_score_t) Score.min())) {
+		    ret |= MD[i].nq(home,(int)j);
+		}
+	    }
+	}
+    }
+    
+    // prune on M only for assigned MD
+    for(size_type i=1; i<=n; i++) {
+	if (MD[i].assigned()) {
+	    size_t j=MD[i].val();
+	    infty_score_t ubd = Fwd(i-1,j)+scoring.gapA(i,j)+Bwd(i,j);
+	    if ( (!ubd.is_finite()) || (ubd < (infty_score_t) Score.min())) {
+		ret |= M[i].nq(home,0); // deletion not possible
+	    }
+	    if (j>0) {
 		infty_score_t ubm = Fwd(i-1,j-1)+ub_match(i,j)+Bwd(i,j);
-		
 		if ( (!ubm.is_finite()) || (ubm < (infty_score_t) Score.min())) {
-		    ret |= M[i].nq(home,(int)j);
+		    ret |= M[i].nq(home,1); // match not possible
 		}
-	    }
-	}
-    }
-
-    for(size_type i=1; i<=n; i++) {
-	for(size_type j=0; j<=m; j++) {      
-	    
-	    // prune G variable for gap i~- (deletion of i between j and j+1)
-	    if (deletion_allowed(i,j)) {
-		infty_score_t ubd = Fwd(i-1,j) + 2*scoring.gapA(i,j) + Bwd(i,j);
-		if ( (!ubd.is_finite()) || (ubd < (infty_score_t) Score.min())) {
-		    ret |= G[i].nq(home,(int)j);
-		}
-	    }
-	}
-    }
-
-    // // prune undef in M and G
-    // for(size_type i=1; i<=n; i++) {
-    // 	if (G[i].assigned() && G[i].val()==undef) {
-    // 	    ret |= M[i].nq(home,undef);
-    // 	}
-    // 	if (M[i].assigned() && M[i].val()==undef) {
-    // 	    ret |= G[i].nq(home,undef);
-    // 	}
-    // }
-
-
-    for(size_type i=0; i<=n; i++) {
-	for(size_type j=1; j<=m; j++) {
-	    // prune H variable for gap -~j (insertion of j between i and i+1)
-	    if (insertion_allowed(i,j)) {
-		infty_score_t ubi = Fwd(i,j-1) + 2*scoring.gapB(i,j) + Bwd(i,j);
-		if ( (!ubi.is_finite()) || (ubi < (infty_score_t) Score.min())) {
-		    ret |= H[i].exclude(home,(int)j);
-		}
+	    } else {
+		ret |= M[i].nq(home,1); // match not possible
 	    }
 	}
     }
@@ -737,43 +657,62 @@ AlignmentScore::choice(RNAalignment &s,
       size_t pos=best_left_end + (best_run_len/2); // split the longest run
     */
     
-    // determine position with larges trace score
+    // determine position with largest domain
     
-        
-    score_t maxTraceScore=numeric_limits<score_t>::min();
+    if (debug_out) std::cout <<"Determine choice"<<std::endl;
+    if (debug_out) print_vars();
     
     size_t pos=0;
-    for (size_t i=1; i<=n; i++) {
-	size_t j=traceA[i];
-	score_t traceScore;
-	if (j!=0) {
-	    traceScore=ub_match(i,j);
-	} else {
-	    traceScore=0;
-	}	
-
-	if ((!s.M[i].assigned()) && traceScore>maxTraceScore) {
-	    maxTraceScore=traceScore;
+    size_t maxs=0;
+    
+    for (size_t i=0; i<=n; i++) {
+	if (s.MD[i].size()>maxs) {
+	    maxs=s.MD[i].size();
 	    pos=i;
 	}
     }
+
+    // print trace (DEBUGGING)
+    if (debug_out) {std::cout << "TRACE"<<std::endl;
+	for (size_type i=1; i<=n; ++i ) {
+	    std::cout << traceA[i] << " ";
+	}
+	std::cout<<std::endl;
+    }
     
     size_t val = (pos==0)?0:traceA[pos];
-    if (val==0) {val=s.undef;}
     
+    if (val==0) { // trace suggests to delete pos
+	// look in traceA, where i is deleted
+	for (size_t i=pos; i>0;) {
+	    --i;
+	    if (traceA[i]!=0) {
+		val=traceA[i];
+		break;
+	    }
+	}
+	
+	if (debug_out) std::cout << "CHOICE AT "<<pos <<" DELETION AFTER "<<val<<" "<<MD[pos] <<std::endl;
+	
+	if (debug_out) print_vars();
+    }
+    
+
     // copy choice to the space
     s.pos=pos;
     s.val=val;
     
+    if (debug_out) std::cout << "Choose pos:"<<pos<<" val:"<<val<<std::endl;
+
     // determine values for splitting choice
     
     score_t minb=numeric_limits<score_t>::max();
     score_t maxb=numeric_limits<score_t>::min();
 
-    std::cout << "CHOICE AT "<<pos <<std::endl;
+    if (debug_out) std::cout << "CHOICE AT "<<pos <<std::endl;
     for (size_t j=1; j<=m; j++) {
 	infty_score_t b;
-	if (s.M[pos].in(j) && (b=Fwd(pos-1,j-1)+ub_match(pos,j)+Bwd(pos,j)).is_finite()) {
+	if (s.MD[pos].in(j) && (b=Fwd(pos,j)+Bwd(pos,j)).is_finite()) {
 		minb=min(minb,b.finite_value());
 		maxb=max(maxb,b.finite_value());
 	}
@@ -784,8 +723,8 @@ AlignmentScore::choice(RNAalignment &s,
     
     for (size_t j=1; j<=m; j++) {
 	infty_score_t b;
-	if (s.M[pos].in(j) && (b=Fwd(pos-1,j-1)+ub_match(pos,j)+Bwd(pos,j)).is_finite() ) {
-	    std::cout << j << ":" << b<<" ";
+	if (s.MD[pos].in(j) && (b=Fwd(pos,j)+Bwd(pos,j)).is_finite() ) {
+	    if (debug_out) std::cout << j << ":" << b<<" ";
 	    if (b.finite_value()>=minb+0.5*(maxb-minb)) { 
 		minval=min(minval,j);
 		maxval=max(maxval,j);
@@ -793,14 +732,16 @@ AlignmentScore::choice(RNAalignment &s,
 	}
     }	    
     
-    if (minval==maxval) {
-	std::cout << " IN: " << minval;
-    } else {
-	std::cout << " IN: " << minval << "-" << maxval;
+    if (debug_out) { 
+	if (minval==maxval) {
+	    if (debug_out) std::cout << " IN: " << minval;
+	} else {
+	    std::cout << " IN: " << minval << "-" << maxval;
+	}
+	std::cout << std::endl;
     }
-    std::cout << std::endl;
-
-    if (minval==(size_t)s.M[pos].min() && maxval==(size_t)s.M[pos].max()) {
+    
+    if (minval==(size_t)s.MD[pos].min() && maxval==(size_t)s.MD[pos].max()) {
 	maxval=(maxval-minval)/2+minval;
     }
     
@@ -934,17 +875,10 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     ret |= prune(home,Fwd,Bwd);
 
 
-    
-    // -------------------- select CHOICE for the space
-    choice(static_cast<RNAalignment&>(home),Fwd,Bwd,traceA,traceB);
-
 
     if (debug_out) {
 	std::cout << "After Pruning:"<<std::endl;
-	std::cout << "Matches:    " << M << std::endl;
-	std::cout << "Deletions:  " << G << std::endl;
-	std::cout << "Insertions: " << H << std::endl;
-	std::cout << "Score:      " << Score << std::endl;
+	print_vars();
     }
     
     if (Gecode::me_failed(ret)) {
@@ -957,6 +891,10 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	Score.eq(home,Score.max());
 	return ES_SUBSUMED(*this,dispose(home)); 
     }
+
+    // -------------------- select CHOICE for the space
+    choice(static_cast<RNAalignment&>(home),Fwd,Bwd,traceA,traceB);
+
     
     return Gecode::me_modified(ret)?Gecode::ES_NOFIX:Gecode::ES_FIX;
 }

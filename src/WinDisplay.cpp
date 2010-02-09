@@ -83,7 +83,7 @@ public:
     main_disp.display(imageOut);  
   }
 
-    void update(Gecode::IntVarArray M, Gecode::IntVarArray G, Gecode::SetVarArray H){
+    void update(const Gecode::IntVarArray &MD, const Gecode::BoolVarArray &M){
 	//const unsigned char green[] = { 64,255,32 }, blue[] = { 128,200,255}, red[] = { 255,0,0 }, white[] = { 255,255,255 };
         printf("OK: imgx %d, imgy %d, col %d, row %d, scale %d\n",img_x,img_y,nCols,nRows,scale);
     // clean image
@@ -109,20 +109,20 @@ public:
     */
 
 
-    // idea of drawing edges for variable M
+    // idea of drawing edges for matches
     for (int i=0;i<nRows;i++){
       for (int j=0;j<nCols;j++){
-	if (M[i].in(j)){
+	  if (MD[i].in(j) && M[i].in(1)){
 	  for (int dx=0;dx<scale;dx++){	    
 	    for (int k=-1;k<2;k++){
 	      int x,y;
 	      x=j*scale-dx+scale/2+k;
 	      y=i*scale-dx+scale/2;
 	      if (x>0 && y>0 && x<img_x && y<img_y){
-		if (M[i].in(undef))
-		  rgb(x,y,0,128,255); // if can be undef -> cyan color
-		else
-		  rgb(x,y,0,0,255);   // blue if chosen
+		  if (!M[i].assigned())
+		      rgb(x,y,0,128,255); // if undecided -> cyan color
+		  else
+		      rgb(x,y,0,0,255);   // blue if chosen
 	      }
 	    }	    
 	  }
@@ -131,20 +131,20 @@ public:
       
     }
 
-    // variables G
+    // deletions
     for (int i=0;i<nRows;i++){
       for (int j=0;j<nCols;j++){
-	if (G[i].in(j)){
+	if (MD[i].in(j) && M[i].in(0)){
 	  for (int dx=0;dx<scale;dx++){	    
 	    for (int k=-1;k<2;k++){
 	      int x,y;
 	      x=j*scale   +scale/2+k;
 	      y=i*scale-dx+scale/2;
 	      if (x>0 && y>0 && x<img_x && y<img_y){
-		if (G[i].in(undef))
-		  rgb(x,y,255,128,0); // if can also be undef -> orange
-		else
-		  rgb(x,y,255,0,0);  // if can not be undef -> red
+		  if (!M[i].assigned())
+		      rgb(x,y,255,128,0); // if undecided -> orange color
+		  else
+		      rgb(x,y,255,0,0);  // if can not be undef -> red
 	      }
 	    }	    
 	  }
@@ -152,13 +152,13 @@ public:
       }      
     }
 
-    // variables H
+    // insertions
     for (int i=0;i<nRows;i++){
       for (int j=0;j<nCols;j++){
 	int r=100,g=100,b=100;
 	
-	if (H[i].contains(j)) {g=200;r=0;b=40;}
-	if (!H[i].notContains(j)){ //{g=10;r=200;b=10;}
+	if (MD[i].max()<j && j<(i+1<nRows?MD[i+1].min()-((M[i].assigned()&&M[i].val()==1)?1:0):nCols)) {g=200;r=0;b=40;}
+	if (MD[i].min()<j && j<(i+1<nRows?MD[i+1].max()-((M[i].assigned()&&M[i].val()==1)?1:0):nCols)){ //{g=10;r=200;b=10;}
 	  for (int dx=0;dx<scale;dx++){	    
 	    for (int k=-1;k<2;k++){
 	      int x,y;

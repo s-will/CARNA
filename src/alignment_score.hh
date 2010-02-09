@@ -16,7 +16,8 @@ class RNAalignment;
 class AlignmentScore : public Gecode::Propagator {
 public:
     typedef Gecode::ViewArray<Gecode::Int::IntView> IntViewArray;
-    typedef Gecode::ViewArray<Gecode::Set::SetView> SetViewArray;
+    // typedef Gecode::ViewArray<Gecode::Set::SetView> SetViewArray;
+    typedef Gecode::ViewArray<Gecode::Int::BoolView> BoolViewArray;
     
     typedef size_t size_type;
 
@@ -27,12 +28,10 @@ private:
     const ArcMatches &arc_matches;
     const AlignerParams &params;
     const Scoring &scoring;
-    IntViewArray M;
-    IntViewArray G;
-    SetViewArray H;
+    IntViewArray MD;
+    BoolViewArray M;
     Gecode::Int::IntView Score;
     
-    const int undef;
     
 protected:
   
@@ -46,14 +45,18 @@ protected:
 		   const ArcMatches &arcmatches,
 		   const AlignerParams &params,
 		   const Scoring &scoring,
-		   IntViewArray &M,
-		   IntViewArray &G,
-		   SetViewArray &H,
+		   IntViewArray &MD,
+		   BoolViewArray &M,
 		   Gecode::Int::IntView &Score
 		   );
 
 protected:
+
+    void
+    print_vars() const;
+
     
+    /*
     //! constrain an integer view to be less or undef
     //! @param home Home space
     //! @param x the integer view
@@ -95,7 +98,7 @@ protected:
 	if (m!=undef) return m;
 	return m-xv.regret_max(); 
     }
-
+    */
     
 
     //! upper bound for the contribution of matching positions i
@@ -114,26 +117,36 @@ protected:
 			size_type i,size_type j) const;
 
 
+    //! test whether a match or deletion is allowed by the constraint store
+    //! @param i position in sequence 1
+    //! @param j position in sequence 2
+    //! @returns whether the match between i and j is of deletion of i between j,j+1 is allowed
+    //! assume that all the consistency checking with other variables MD,M has been done 
+    bool
+    match_or_deletion_allowed(size_type i,size_type j) const {
+	return MD[i].in((int)j);
+    }
+
+
     //! test whether a match is allowed by the constraint store
     //! @param i position in sequence 1
     //! @param j position in sequence 2
     //! @returns whether the match between i and j is allowed
-    //! assume that all the consistency checking with other variables M,G,H has been done 
+    //! assume that all the consistency checking with other variables MD,M has been done 
     bool
     match_allowed(size_type i,size_type j) const {
-	return M[i].in((int)j);
+	return MD[i].in((int)j) && M[i].in(1);
     }
 
     //! test whether a match is guaranteed (i.e. forced) by the constraint store
     //! @param i position in sequence 1
     //! @param j position in sequence 2
     //! @returns whether the match between i and j is guaranteed
-    //! assume that all the consistency checking with other variables M,G,H has been done 
+    //! assume that all the consistency checking with other variables MD,M has been done 
     bool
     match_forced(size_type i,size_type j) const {
-	return M[i].assigned() && (size_t)M[i].val()==j;
+	return MD[i].assigned() && (size_t)MD[i].val()==j && !M[i].in(0);
     }
-
     
     //! test whether an insertion is allowed by the constraint store
     //! @param i position in sequence 1
@@ -141,58 +154,29 @@ protected:
     //! @returns whether the insertion j between i and i+1 is allowed
     bool
     insertion_allowed(size_type i,size_type j) const {
-	return  ! H[i].notContains((int)j); // is j potentially a member of the set G[i]
+	// insertion has to be inferred from the MD and M vars in this and following line
+	// note that a match in line i+1 requires an extra non-insertion position in line i
+	const size_t n=seqA.length();
+	
+	if (i<n) {
+	    size_t max=MD[i+1].max();
+	    if (!M[i+1].in(0)) { // guaranteed match
+		max--;
+	    }
+	    return MD[i].min()<(int)j && j<=max;
+	} else {
+	    return MD[i].min()<(int)j;
+	}
     }
     
-
     //! test whether a deletion is allowed by the constraint store
     //! @param i position in sequence 1
     //! @param j position in sequence 2
     //! @returns whether the deletion of of i between j and j+1 is allowed
     bool
     deletion_allowed(size_type i,size_type j) const {
-	return G[i].in((int)j); // is j a member of G[i]	    
+	return MD[i].in((int)j) && M[i].in(0);
     }
-
-
-    // expensive versions with some consistency checking
-
-    // bool
-    // match_allowed(size_type i,size_type j) const {
-	
-    // 	// ATTENTION: inefficient, has to be done more efficiently
-    // 	bool j_not_inserted=true;	
-    // 	for (size_type i1=0;i1<H.size();i1++) {
-    // 	    j_not_inserted &= !H[i1].contains((int)j);
-    // 	}
-	
-    // 	return M[i].in((int)j)  // j is a member of M[i]
-    // 	    && G[i].in(undef)   // i is not necessarily deleted
-    // 	    && j_not_inserted;  // j is not necessarily inserted, i.e. for all i: j is not necessarily inserted after i
-    // }
-
-    // bool
-    // insertion_allowed(size_type i,size_type j) const {
-
-    // 	// ATTENTION: inefficient, has to be done more efficiently
-    // 	bool j_not_matched=true;
-    // 	for (size_type i1=0;i1<H.size();i1++) {
-    // 	    j_not_matched &= !(M[i1].assigned() && M[i1].val()==j) ;
-    // 	}
-	
-    // 	return  ! H[i].notContains((int)j) // is j potentially a member of the set G[i]
-    // 	    && j_not_matched; // j is not matched
-    // }
-    
-    // bool
-    // deletion_allowed(size_type i,size_type j) const {
-	
-    // 	return G[i].in((int)j) // is j a member of G[i]
-    // 	    && M[i].in(undef) // is is not necessarily matched
-    // 	    ; // deletion is not a problem to deal with here
-    // }
-
-
 
     //! used for testing whether propagator can be deleted
     //! @returns whether all vars are fixed
@@ -201,7 +185,7 @@ protected:
 
 
     //! first phase of propagation;
-    //! performs bound independent propagation on variables M,G,H
+    //! performs bound independent propagation on variables MD,M
     Gecode::ModEvent
     simple_consistency(Gecode::Space& home);
 
@@ -244,9 +228,8 @@ public:
 				   const ArcMatches &arc_matches,
 				   const AlignerParams &params,
 				   const Scoring &scoring,
-				   Gecode::IntVarArray &M,
-				   Gecode::IntVarArray &G,
-				   Gecode::SetVarArray &H,
+				   Gecode::IntVarArray &MD,
+				   Gecode::BoolVarArray &M,
 				   Gecode::IntVar &Score
 				   );
 	    

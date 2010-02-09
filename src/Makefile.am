@@ -1,7 +1,7 @@
-bin_PROGRAMS = RNAalignment exampleVisualization
+bin_PROGRAMS = RNAalignment #exampleVisualization
 
-exampleVisualization_SOURCES = exampleVisualization.cpp  \
-	WinDisplay.cpp 
+#exampleVisualization_SOURCES = exampleVisualization.cpp  \
+#	WinDisplay.cpp 
 
 RNAalignment_SOURCES = RNAalignment.cpp \
 	LocARNA/rna_data.cc LocARNA/rna_data.hh \
