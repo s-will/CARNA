@@ -198,7 +198,8 @@ public:
 				      unsigned int a) {
 	const RNAalignment& s = static_cast<const RNAalignment&>(home);
 	const Choice& c = static_cast<const Choice&>(_c);
-
+	
+	/*
 	// split in eq and nq
 	if (a==0) {
 	    return Gecode::me_failed(Gecode::Int::IntView(s.MD[c.pos]).eq(home, (int)c.val))
@@ -209,26 +210,20 @@ public:
 		? Gecode::ES_FAILED
 		: Gecode::ES_OK;
 	}
-	/*
-	  split into in and out of range
+	*/
+
+	Gecode::Iter::Ranges::Singleton r((int)c.minval,(int)c.maxval);
+	
+	Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
 	if (a==0) {
-	    return Gecode::me_failed(
-				     Gecode::Int::IntView(s.MD[c.pos]).gq(home, (int)c.minval)
-				     |
-				     Gecode::Int::IntView(s.MD[c.pos]).lq(home, (int)c.maxval)
-				     )
-		? Gecode::ES_FAILED
-		: Gecode::ES_OK;
+	    ret = Gecode::Int::IntView(s.MD[c.pos]).inter_r(home, r,false);
 	} else {
-	    Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
-	    
-	    for (size_t val=c.minval; val<=c.maxval; val++)
-		ret|=Gecode::Int::IntView(s.MD[c.pos]).nq(home, (int)val);
-	    
-	    return Gecode::me_failed(ret)
-		? Gecode::ES_FAILED
-		: Gecode::ES_OK;
-		}*/
+	    ret = Gecode::Int::IntView(s.MD[c.pos]).minus_r(home, r,false);
+	}
+	
+	return Gecode::me_failed(ret)
+	    ? Gecode::ES_FAILED
+	    : Gecode::ES_OK;
     }
     
     virtual Gecode::Actor* copy(Gecode::Space& home, bool share) {

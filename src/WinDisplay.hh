@@ -33,7 +33,7 @@ public:
   }
 
   WinDisplay(int Rows, int Cols, string t){   
-    int min_win_size=600;
+    int min_win_size=1000;
 
     undef= Rows;
 
@@ -157,8 +157,18 @@ public:
       for (int j=0;j<nCols;j++){
 	int r=100,g=100,b=100;
 	
-	if (MD[i].max()<j && j<(i+1<nRows?MD[i+1].min()-((M[i].assigned()&&M[i].val()==1)?1:0):nCols)) {g=200;r=0;b=40;}
-	if (MD[i].min()<j && j<(i+1<nRows?MD[i+1].max()-((M[i].assigned()&&M[i].val()==1)?1:0):nCols)){ //{g=10;r=200;b=10;}
+	int minj=nCols-1;
+	if (i+1<nRows) {
+	    minj = MD[i+1].min()-(!M[i+1].in(0)?1:0);
+	}
+	
+	int maxj=nCols-1;
+	if (i+1<nRows) {
+	    maxj = MD[i+1].max()-(!M[i+1].in(0)?1:0);
+	}
+	
+	if (MD[i].max()<j && j<=minj) {g=200;r=0;b=40;}
+	if (MD[i].min()<j && j<=maxj) { //{g=10;r=200;b=10;}
 	  for (int dx=0;dx<scale;dx++){	    
 	    for (int k=-1;k<2;k++){
 	      int x,y;

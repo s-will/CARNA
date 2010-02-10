@@ -2,7 +2,7 @@
 #include "alignment_score.hh"
 #include "LocARNA/arc_matches.hh"
 
-#include "WinDisplay.cpp"
+#include "WinDisplay.hh"
 #include "RNAalignment.hh"
 
 #include <limits>
@@ -323,6 +323,8 @@ AlignmentScore::all_vars_fixed() const {
 	if (!M[i].assigned()) return false;
     }
 
+    if (!Score.assigned()) return false;
+
     return true;
 }
 
@@ -334,8 +336,8 @@ AlignmentScore::evaluate_tracematch(const std::vector<size_type> &traceA,
 				    size_type j) const{
     
     score_t matchscore=2*scoring.basematch(i,j);
-    
-    if (debug_out) std::cout <<"[ ";
+
+    if (debug_out) std::cout <<"[ "<<matchscore<<" ";
     // for all pairs of arcs in A and B that have right ends i and j, respectively
     //
     for(ArcMatchIdxVec::const_iterator it=arc_matches.common_right_end_list(i,j).begin();
@@ -345,11 +347,13 @@ AlignmentScore::evaluate_tracematch(const std::vector<size_type> &traceA,
 	
 	if ( traceA[am.arcA().left()] == am.arcB().left() ) { 
 	    // if the left ends of arcs arcA and arcB match 
-	    if (debug_out) std::cout<<am.arcA().left()<<" "<<am.arcB().left()<<" ";
+	    if (debug_out) std::cout<<am.arcA().left()<<","<<am.arcB().left()<<":"<<scoring.arcmatch(am)<<" ";
 	    matchscore += scoring.arcmatch(am);
 	}
     }
-    
+
+    if (debug_out) std::cout <<" ; ";
+
     // same for common left ends
     for(ArcMatchIdxVec::const_iterator it=arc_matches.common_left_end_list(i,j).begin();
 	arc_matches.common_left_end_list(i,j).end() != it; ++it ) {	
@@ -357,7 +361,7 @@ AlignmentScore::evaluate_tracematch(const std::vector<size_type> &traceA,
 	
 	if ( traceA[am.arcA().right()] == am.arcB().right() ) { 
 	    // if the right ends of arcs arcA and arcB  match 
-	    if (debug_out) std::cout<<am.arcA().right()<<" "<<am.arcB().right()<<" ";
+	    if (debug_out) std::cout<<am.arcA().right()<<","<<am.arcB().right()<<":"<<scoring.arcmatch(am)<<" ";
 	    matchscore += scoring.arcmatch(am);
 	}
     }
@@ -628,36 +632,9 @@ AlignmentScore::choice(RNAalignment &s,
     
     const size_t n=seqA.length();
     const size_t m=seqB.length();
-
-    /*
-      size_t last_assigned=start-1;
-      size_t best_left_end=0;
-      size_t best_run_len=0;
-      
-      // determine largest run of unassigned matches
-      for (size_t i=start; i<(size_t)s.M.size(); i++) {
-      if (s.M[i].assigned()) {
-      size_t cur_run_len = i-last_assigned-1;
-      if (cur_run_len>best_run_len) {
-      best_run_len=cur_run_len;
-      best_left_end=last_assigned+1;
-      }
-      last_assigned=i;
-      }
-      }
-      
-      size_t cur_run_len = s.M.size()-last_assigned-1;
-      if (cur_run_len>best_run_len) {
-      best_run_len=cur_run_len;
-      best_left_end=last_assigned+1;
-      }
-      
-      assert(best_run_len>0); // otherwise status() is incorrect
-      
-      size_t pos=best_left_end + (best_run_len/2); // split the longest run
-    */
     
     // determine position with largest domain
+    // use tie-breaking
     
     if (debug_out) std::cout <<"Determine choice"<<std::endl;
     if (debug_out) print_vars();
@@ -671,6 +648,36 @@ AlignmentScore::choice(RNAalignment &s,
 	    pos=i;
 	}
     }
+    
+    // determine longest run of vars that have maxs size
+    
+    size_t last_notchosen=-1;
+    size_t best_left_end=0;
+    size_t best_run_len=0;
+    
+    for (size_t i=0; i<=n; i++) {
+	if (s.MD[i].size()<maxs) {
+	    size_t cur_run_len = i-last_notchosen-1;
+	    if (cur_run_len>best_run_len) {
+		best_run_len=cur_run_len;
+		best_left_end=last_notchosen+1;
+	    }
+	    last_notchosen=i;
+	}
+    }
+    
+    size_t cur_run_len = s.MD.size()-last_notchosen-1;
+    if (cur_run_len>best_run_len) {
+	best_run_len=cur_run_len;
+	best_left_end=last_notchosen+1;
+    }
+    
+    assert(best_run_len>0); // otherwise status() is incorrect
+    
+    pos=best_left_end + (best_run_len/2); // split the longest run
+    
+    assert(0<=pos && pos<=n);
+
 
     // print trace (DEBUGGING)
     if (debug_out) {std::cout << "TRACE"<<std::endl;
@@ -725,7 +732,7 @@ AlignmentScore::choice(RNAalignment &s,
 	infty_score_t b;
 	if (s.MD[pos].in(j) && (b=Fwd(pos,j)+Bwd(pos,j)).is_finite() ) {
 	    if (debug_out) std::cout << j << ":" << b<<" ";
-	    if (b.finite_value()>=minb+0.5*(maxb-minb)) { 
+	    if (b.finite_value()>=minb+0.95*(maxb-minb)) { 
 		minval=min(minval,j);
 		maxval=max(maxval,j);
 	    }
@@ -816,9 +823,16 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     backtrace_forward(home,Fwd,traceA,traceB);
     
     
+    // -------------------- Lower bounding
+
+    // evaluate alignment for obtaining lower bound
+    score_t trace_score = evaluate_trace(traceA,traceB);
+    
+    
     if (debug_out) {
 	// print trace (DEBUGGING)
 	std::cout << "TRACE"<<std::endl;
+	std::cout << "Score: " << trace_score << std::endl;
 	for (size_type i=1; i<=n; ++i ) {
 	    std::cout << traceA[i] << " ";
 	}
@@ -829,15 +843,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	std::cout << std::endl;
     }
 
-    // -------------------- Lower bounding
 
-    // evaluate alignment for obtaining lower bound
-    score_t trace_score = evaluate_trace(traceA,traceB);
-    
-    if (debug_out) {
-	std::cout << "TRACE Score: " << trace_score << std::endl;
-    }
-    
     // constrain Score by trace_score, which is a lower bound
     
     if (Gecode::me_failed(Score.gq(home,(int)trace_score))) {
@@ -845,6 +851,9 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
       	return Gecode::ES_FAILED;
     }
     
+    
+
+
     // -------------------- RUN BACKWARD ALGORITHM
     Matrix<infty_score_t> Bwd(n+1,m+1); 
 
@@ -888,8 +897,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
     // test whether all vars fixed, then subsume (can we subsume earlier?)
     if ( all_vars_fixed() ) {
-	Score.eq(home,Score.max());
-	return ES_SUBSUMED(*this,dispose(home)); 
+	return ES_SUBSUMED(*this,dispose(home));
     }
 
     // -------------------- select CHOICE for the space
