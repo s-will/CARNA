@@ -104,7 +104,7 @@ protected:
     //! upper bound for the contribution of matching positions i
     //! and j of respective sequences R and S
     score_t
-    ub_match(size_type i, size_type j) const;
+    ub_match(size_type i, size_type j,bool with_basematch=true) const;
 
     //! calculate the score for an alingment given by trace vectors
     //! @param traceA trace vector for positions in sequence A

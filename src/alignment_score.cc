@@ -275,7 +275,7 @@ AlignmentScore::bound_arcmatches(size_t i, size_t j, AdjList adjlA, AdjList adjl
 
 
 score_t
-AlignmentScore::ub_match(size_type i, size_type j) const {
+AlignmentScore::ub_match(size_type i, size_type j,bool with_basematch) const {
     //std::cout << "AlignmentScore::ub_match "<<i<< " "<<j<<std::endl;
   
     // compute upper bound for the contribution of matching positions i
@@ -284,7 +284,7 @@ AlignmentScore::ub_match(size_type i, size_type j) const {
     //
     // when selecting a certain structure: maximize over possible base pair matchs
     
-    score_t bound=2*scoring.basematch(i,j);    
+    score_t bound=with_basematch?2*scoring.basematch(i,j):0;
     
     //std::cout << bound<<std::endl;
 
@@ -529,8 +529,8 @@ backtrace_forward(Gecode::Space &home, const Matrix<infty_score_t> &Fwd,
 
 void
 AlignmentScore::backward_algorithm(Gecode::Space& home, Matrix<infty_score_t> &Bwd) {
-    const int n=seqA.length();
-    const int m=seqB.length();
+    const size_t n=seqA.length();
+    const size_t m=seqB.length();
 
     // ----------------------------------------
     // Backward algorithm
@@ -637,24 +637,46 @@ AlignmentScore::choice(RNAalignment &s,
     if (debug_out) std::cout <<"Determine choice"<<std::endl;
     if (debug_out) print_vars();
     
+    vector<score_t> weights;
+    score_t maxweight=numeric_limits<score_t>::min();
+    
+    weights.resize(n+1);
+    for (size_t i=0; i<=n; i++) {
+	
+	// weight by maximal base pair bound
+	weights[i]=numeric_limits<score_t>::min();
+	
+	if (!s.MD[i].assigned()) {
+	    for (size_t j=s.MD[i].min(); j<=(size_t)s.MD[i].max(); j++) {
+		if (s.MD[i].in((int)j)) {
+		    weights[i]=max(weights[i],ub_match(i,j,false));
+		}
+	    }
+	}
+    }
+
     size_t pos=0;
-    size_t maxs=0;
     
     for (size_t i=0; i<=n; i++) {
-	if (s.MD[i].size()>maxs) {
-	    maxs=s.MD[i].size();
+	if (weights[i]>maxweight) {
+	    maxweight=weights[i];
 	    pos=i;
 	}
     }
     
-    // determine longest run of vars that have maxs size
+    if(maxweight == numeric_limits<score_t>::min()) {	
+	return;
+    }
+
+
+    // determine longest run of vars that have weight maxweight
     
     size_t last_notchosen=-1;
     size_t best_left_end=0;
     size_t best_run_len=0;
     
     for (size_t i=0; i<=n; i++) {
-	if (s.MD[i].size()<maxs) {
+	if (weights[i]<maxweight) {
 	    size_t cur_run_len = i-last_notchosen-1;
 	    if (cur_run_len>best_run_len) {
 		best_run_len=cur_run_len;
