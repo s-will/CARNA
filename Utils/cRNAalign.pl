@@ -194,7 +194,7 @@ sub convert_fix_structure_to_pp {
     
     for (my $i=0; $i<=$#str; $i++) {
 	if ($str[$i]>$i) {
-	    print OUT "$i $str[$i] 1.0\n";
+	    print OUT ($i+1)." ".($str[$i]+1)." 1.0\n";
 	}
     }
 }
@@ -230,7 +230,7 @@ foreach my $name (@names) {
 
 
 my $cmd = "src/RNAalignment $RNAalignmentArgs "."1.pp.$tmpsuf 2.pp.$tmpsuf";
-print "CALL: $cmd\n";
+# print "CALL: $cmd\n";
 
 if ( system($cmd) !=0 ) {
     print STDERR "ERROR: CALL $cmd failed.\n"; exit(-1); 
