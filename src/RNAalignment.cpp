@@ -94,8 +94,9 @@ bool opt_verbose;
 
 bool opt_write_structure;
 
-
 bool opt_stacking;
+
+bool opt_gist;
 
 std::string ribosum_file;
 bool use_ribosum;
@@ -159,7 +160,7 @@ option_def my_options[] = {
     // {"free-endgaps",0,0,O_ARG_STRING,&free_endgaps,"----","spec","Whether and which end gaps are free. order: L1,R1,L2,R2"},
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Controlling output"},
-    
+    {"gist",0,&opt_gist,O_NO_ARG,0,O_NODEFAULT,"","Use gist for interactive/graphical search."},
     {"width",'w',0,O_ARG_INT,&output_width,"120","columns","Output width"},
     {"clustal",0,&opt_clustal_out,O_ARG_STRING,&clustal_out,O_NODEFAULT,"file","Clustal output"},
     // {"pp",0,&opt_pp_out,O_ARG_STRING,&pp_out,O_NODEFAULT,"file","PP output"},
@@ -400,9 +401,9 @@ main(int argc, char* argv[]) {
 
     // ----------------------------------------
     // construct scoring
-   
+    
     Scoring scoring(seqA,seqB,arc_matches,0L,&scoring_params);    
-
+    
     // ------------------------------------------------------------
     // parameter for the alignment
     //
@@ -418,25 +419,28 @@ main(int argc, char* argv[]) {
 				 seq_constraints
 				 );
     
-    RNAalignment* s = new RNAalignment(seqA,seqB,*arc_matches,aligner_params,scoring);
+    RNAalignment* s = new RNAalignment(seqA,seqB,
+				       *arc_matches,
+				       aligner_params,scoring,
+				       opt_gist
+				       );
 
-    
-    Gist::Print<RNAalignment> p("Node explorer");
-    Gist::Options o;
-    o.inspect.click(&p);
-    
-    //Gist::dfs(s,o);
-    Gist::bab(s,o);
-    
-    /*    
-    BAB<RNAalignment> e(s);
-    
-    RNAalignment* ex;
-    while ((ex = e.next()) && (ex != NULL)) {
-	ex->print(std::cout);
-	delete ex;
+    if (opt_gist) {
+	Gist::Print<RNAalignment> p("Node explorer");
+	Gist::Options o;
+	o.inspect.click(&p);
+	
+	//Gist::dfs(s,o);
+	Gist::bab(s,o);
+    } else {	
+	BAB<RNAalignment> e(s);
+	      
+	RNAalignment* ex;
+	while ((ex = e.next()) && (ex != NULL)) {
+	    ex->print(std::cout);
+	    delete ex;
+	}
     }
-    */
 
     return 0;
 }

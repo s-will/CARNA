@@ -306,8 +306,6 @@ AlignmentScore::ub_match(size_type i, size_type j) const {
 }
 
 
-
-
 bool
 AlignmentScore::all_vars_fixed() const {
     // test all variable views and return false as soon as one is not fixed/assigned
@@ -732,7 +730,7 @@ AlignmentScore::choice(RNAalignment &s,
 	infty_score_t b;
 	if (s.MD[pos].in(j) && (b=Fwd(pos,j)+Bwd(pos,j)).is_finite() ) {
 	    if (debug_out) std::cout << j << ":" << b<<" ";
-	    if (b.finite_value()>=minb+0.95*(maxb-minb)) { 
+	    if (b.finite_value()>=minb+0.80*(maxb-minb)) { 
 		minval=min(minval,j);
 		maxval=max(maxval,j);
 	    }

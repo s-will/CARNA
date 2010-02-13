@@ -21,6 +21,11 @@ class RNAalignBrancher;
  */
 class RNAalignment : public Gecode::Space {
     friend class AlignmentScore;
+      
+protected:
+
+    const Sequence &seqA; // only used for output
+    const Sequence &seqB;
 
     const size_t n;
     const size_t m;
@@ -33,24 +38,29 @@ class RNAalignment : public Gecode::Space {
 
     WinDisplay* wind;
     
-    
-protected:
     Gecode::IntVarArray MD; // MD[i] is position of match or deletion in row i
     Gecode::BoolVarArray M; // M[i] is true iff i~MD[i] is a match
     
     Gecode::IntVar Score;
 
+ 
 public:
-    RNAalignment(const Sequence &seqA, const Sequence &seqB, const ArcMatches &arcmatches,
-		 const AlignerParams &aligner_params, const Scoring &scoring)
+    RNAalignment(const Sequence &seqA_, const Sequence &seqB_, const ArcMatches &arcmatches,
+		 const AlignerParams &aligner_params, const Scoring &scoring, bool opt_graphical_output)
 	:
+	seqA(seqA_),
+	seqB(seqB_),
 	n(seqA.length()),
 	m(seqB.length()),
 	MD(*this,n+1,0,m), //we only need MD_1,...,MD_n ==> ignore MD_0
 	M(*this,n+1,0,1),
 	Score(*this,Gecode::Int::Limits::min,Gecode::Int::Limits::max)
     {
-	wind=new WinDisplay(n+1,m+1,"Display variables status");
+	if (opt_graphical_output) 
+	    wind=new WinDisplay(n+1,m+1,"Display variables status");
+	else {
+	    wind=NULL;
+	}
 	
 	//ignore MD_0 and M_0
 	rel(*this,MD[0],Gecode::IRT_EQ,0);
@@ -96,6 +106,8 @@ public:
     /// Constructor for cloning \a s
     RNAalignment(bool share, RNAalignment& s) : 
 	Gecode::Space(share,s),
+	seqA(s.seqA),
+	seqB(s.seqB),
 	n(s.n),
 	m(s.m),
 	pos(s.pos),
@@ -106,9 +118,9 @@ public:
 	MD.update(*this, share, s.MD);
 	M.update(*this, share, s.M);
 	Score.update(*this,share,s.Score);
-	wind=s.wind;   
+	wind=s.wind;
     }
-
+    
     /// Perform copying during cloning
     virtual Gecode::Space*
     copy(bool share) {
@@ -118,13 +130,46 @@ public:
     /// Print solution
     virtual void
     print(std::ostream& out) const {
-	std::cout << "SOLUTION" << std::endl;
+	std::cout << "VALUATION" << std::endl;
 	
-	std::cout << "Matches/Deletions:    " << MD << std::endl;
-	std::cout << "Match Flags:          " << M << std::endl;
-	std::cout << "Score:      " << Score << std::endl;
+	bool all_assigned=true;
+	for (size_t i=1; i<=seqA.length(); i++) {
+	    all_assigned &= MD[i].assigned();
+	    all_assigned &= M[i].assigned();
+	}
 
-	wind->update(MD,M);
+	if (all_assigned) {
+	    // write alignment
+	    Sequence a;
+	    Sequence b;
+
+	    a.init_buffer(seqA);
+	    b.init_buffer(seqB);
+	    
+	    size_t j=1;
+	    for (size_t i=1; i<=seqA.length(); i++) {
+		for (;j<(size_t)MD[i].val();j++) {
+		    a+='-';
+		    b+=seqB[j];
+		}
+		a+=seqA[i];
+		if (M[i].val()==1) {
+		    b+=seqB[j];
+		    j++;
+		} else {
+		    b+='-';
+		}
+	    }
+	    
+	    a.write( std::cout );
+	    b.write( std::cout );
+	} else {
+	    std::cout << "Matches/Deletions:    " << MD << std::endl;
+	    std::cout << "Match Flags:          " << M << std::endl;
+	}
+	std::cout << "Score:      " << Score << std::endl;
+	
+	if (wind!=NULL) wind->update(MD,M);
     }
 
     virtual void constrain(const Space& _best) {
