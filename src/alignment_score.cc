@@ -448,26 +448,48 @@ AlignmentScore::forward_algorithm(Gecode::Space& home, Matrix<infty_score_t> &Fw
     //
     
     Fwd.fill(infty_score_t::neg_infty);
-  
+    
+    // Definition( Fwd-matrix )
     // Fwd(i,j) := max score of a alignment R[1..i], S[1..j]
   
+    
     // initialize
     Fwd(0,0)=(infty_score_t)0;
     for(size_type i=1; i<=n; i++) {
 	if (deletion_allowed(i,0)) {
 	    Fwd(i,0) = Fwd(i-1,0) + 2*scoring.gapA(i,0);
+	} else {
+	    Fwd(i,0) = infty_score_t::neg_infty;
 	}
     }
     
     for(size_type j=1; j<=m; j++) {
 	if (insertion_allowed(0,j)) {
 	    Fwd(0,j) = Fwd(0,j-1)  + 2*scoring.gapB(0,j);
+	} else {
+	    Fwd(0,j) = infty_score_t::neg_infty;
 	}
     }
-  
+    
+    for(size_type i=1; i<=n; i++) {
+	if (max(1,MD[i].min())-1 > 0) {
+	    Fwd(i,max(1,MD[i].min())-1) = infty_score_t::neg_infty;
+	}
+    }
+    
+    Fwd(n,m) = infty_score_t::neg_infty;
+    
     // recurse
     for(size_type i=1; i<=n; i++) {
-	for(size_type j=1; j<=m; j++) {
+	size_t maxj=m;
+	if (i<n) {
+	    maxj = MD[i+1].max();
+	    if (!M[i+1].in(0)) {
+		maxj--;
+	    }
+	}
+	for(size_type j=max(1,MD[i].min()); j<=maxj; j++) {
+	    Fwd(i,j) = infty_score_t::neg_infty;
 	    if (match_allowed(i,j)) {
 		Fwd(i,j) = Fwd(i-1,j-1) + ub_match(i,j);
 	    }
@@ -539,7 +561,7 @@ AlignmentScore::backward_algorithm(Gecode::Space& home, Matrix<infty_score_t> &B
     // Bwd(i,j) := max score of a alignment R[i+1..n], S[j+1..m]
     
     // init with "invalid" value negative infinity
-    Bwd.fill(infty_score_t::neg_infty);
+    // Bwd.fill(infty_score_t::neg_infty);
     
     // initialize
     Bwd(n,m)=(infty_score_t)0;
@@ -547,20 +569,53 @@ AlignmentScore::backward_algorithm(Gecode::Space& home, Matrix<infty_score_t> &B
 	--i;
 	if (deletion_allowed(i+1,m)) {
 	    Bwd(i,m) = Bwd(i+1,m) + 2*scoring.gapA(i+1,m);
+	} else {
+	    Bwd(i,m) = infty_score_t::neg_infty;
 	}
     }
     for(size_type j=m; j>0;) { // for j=m-1 downto 0
 	--j;
 	if (insertion_allowed(n,j+1)) {
 	    Bwd(n,j) = Bwd(n,j+1) + 2*scoring.gapB(n,j+1);
+	} else {
+	    Bwd(n,j) = infty_score_t::neg_infty;
+	}
+    }
+    
+    Bwd(0,0) = infty_score_t::neg_infty;
+
+    
+    for(size_type i=n; i>0;) { // for i=n-1 downto 0
+	--i;
+
+	size_t maxj = MD[i+1].max();
+	if (!M[i+1].in(0)) {
+	    maxj--;
+	}
+	maxj = min(maxj,m-1);
+	
+	if (maxj+1<m) {
+	    Bwd(i,maxj+1) = infty_score_t::neg_infty;
 	}
     }
     
     // recurse
     for(size_type i=n; i>0;) { // for i=n-1 downto 0
 	--i;
-	for(size_type j=m; j>0;) { // for j=m-1 downto 0
+	
+	// we need to cover allowed matches/deletions/insertions in the row i+1!
+	size_t minj = MD[i].min();
+	
+	size_t maxj = MD[i+1].max();
+	if (!M[i+1].in(0)) {
+	    maxj--;
+	}
+	maxj = min(maxj,m-1);
+
+	
+	for(size_type j=maxj+1; j>minj;) { // for j=m-1 downto 0
 	    --j;
+	    Bwd(i,j) = infty_score_t::neg_infty;
 	    if (match_allowed(i+1,j+1)) {   // match i+1 ~ j+1 (!)
 		Bwd(i,j) = Bwd(i+1,j+1) + ub_match(i+1,j+1);
 	    }
@@ -583,12 +638,12 @@ AlignmentScore::prune(Gecode::Space& home,
     //
 
     const size_t n=seqA.length();
-    const size_t m=seqB.length();
+    // const size_t m=seqB.length();
     Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
 
     // prune MD and M
     for(size_type i=1; i<=n; i++) {
-	for(size_type j=0; j<=m; j++) {
+	for(size_type j=(size_t)MD[i].min(); j<=(size_t)MD[i].max(); j++) {
 	    // prune MD variable for match i~j
 	    if (match_or_deletion_allowed(i,j)) {
 		infty_score_t ub = Fwd(i,j)+Bwd(i,j);
@@ -631,7 +686,7 @@ AlignmentScore::choice(RNAalignment &s,
     const size_t n=seqA.length();
     const size_t m=seqB.length();
     
-    // determine position with largest domain
+    // determine position with largest weight
     // use tie-breaking
     
     if (debug_out) std::cout <<"Determine choice"<<std::endl;
@@ -649,7 +704,7 @@ AlignmentScore::choice(RNAalignment &s,
 	if (!s.MD[i].assigned()) {
 	    for (size_t j=s.MD[i].min(); j<=(size_t)s.MD[i].max(); j++) {
 		if (s.MD[i].in((int)j)) {
-		    weights[i]=max(weights[i],ub_match(i,j,false));
+		    weights[i]=max(weights[i],ub_match(i,j,false) + (score_t)s.MD[i].size());
 		}
 	    }
 	}
