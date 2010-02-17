@@ -432,9 +432,9 @@ main(int argc, char* argv[]) {
 	
 	//Gist::dfs(s,o);
 	Gist::bab(s,o);
-    } else {	
+    } else {
 	BAB<RNAalignment> e(s);
-	      
+	
 	RNAalignment* ex;
 	while ((ex = e.next()) && (ex != NULL)) {
 	    ex->print(std::cout);

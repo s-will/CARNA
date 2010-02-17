@@ -64,6 +64,8 @@ AlignmentScore::AlignmentScore(Gecode::Space& home,
     Score.update(home,share,p.Score);
 }
 
+AlignmentScore::~AlignmentScore() {}
+
 Gecode::ExecStatus
 AlignmentScore::
 post(Gecode::Space& home,
@@ -335,7 +337,7 @@ AlignmentScore::evaluate_tracematch(const std::vector<size_type> &traceA,
     
     score_t matchscore=2*scoring.basematch(i,j);
 
-    if (debug_out) std::cout <<"[ "<<matchscore<<" ";
+    //if (debug_out) std::cout <<"[ "<<matchscore<<" ";
     // for all pairs of arcs in A and B that have right ends i and j, respectively
     //
     for(ArcMatchIdxVec::const_iterator it=arc_matches.common_right_end_list(i,j).begin();
@@ -345,12 +347,12 @@ AlignmentScore::evaluate_tracematch(const std::vector<size_type> &traceA,
 	
 	if ( traceA[am.arcA().left()] == am.arcB().left() ) { 
 	    // if the left ends of arcs arcA and arcB match 
-	    if (debug_out) std::cout<<am.arcA().left()<<","<<am.arcB().left()<<":"<<scoring.arcmatch(am)<<" ";
+	    //if (debug_out) std::cout<<am.arcA().left()<<","<<am.arcB().left()<<":"<<scoring.arcmatch(am)<<" ";
 	    matchscore += scoring.arcmatch(am);
 	}
     }
 
-    if (debug_out) std::cout <<" ; ";
+    //if (debug_out) std::cout <<" ; ";
 
     // same for common left ends
     for(ArcMatchIdxVec::const_iterator it=arc_matches.common_left_end_list(i,j).begin();
@@ -359,12 +361,12 @@ AlignmentScore::evaluate_tracematch(const std::vector<size_type> &traceA,
 	
 	if ( traceA[am.arcA().right()] == am.arcB().right() ) { 
 	    // if the right ends of arcs arcA and arcB  match 
-	    if (debug_out) std::cout<<am.arcA().right()<<","<<am.arcB().right()<<":"<<scoring.arcmatch(am)<<" ";
+	    //if (debug_out) std::cout<<am.arcA().right()<<","<<am.arcB().right()<<":"<<scoring.arcmatch(am)<<" ";
 	    matchscore += scoring.arcmatch(am);
 	}
     }
 
-    if (debug_out) std::cout <<"]";
+    //if (debug_out) std::cout <<"]";
 
     
     return matchscore;    
@@ -382,15 +384,15 @@ AlignmentScore::evaluate_trace(const std::vector<size_type> &traceA,
     size_type i=1;
     size_type j=1;
     
-    if (debug_out) std::cout << "TRACE SCORE "<<n<<" "<<m<<std::endl;
+    //if (debug_out) std::cout << "TRACE SCORE "<<n<<" "<<m<<std::endl;
     while (i<=n || j<=m) {
 	if (i<=n && traceA[i]==0) {
 	    score += 2*scoring.gapA(i,j-1);
-	    if (debug_out) std::cout << "del "<<i<<std::endl;
+	    //if (debug_out) std::cout << "del "<<i<<std::endl;
 	    ++i;
 	} else if (j<=m && traceB[j]==0) {
 	    score += 2*scoring.gapB(i-1,j);
-	    if (debug_out) std::cout << "ins "<<i<<std::endl;
+	    //if (debug_out) std::cout << "ins "<<i<<std::endl;
 	    ++j;
 	} else {
 	    // match between traceB[j]==i and traceA[i]==j
@@ -398,8 +400,8 @@ AlignmentScore::evaluate_trace(const std::vector<size_type> &traceA,
 	    score_t matchscore = evaluate_tracematch(traceA,traceB,i,j);
 	    
 	    score += matchscore;
-
-	    if (debug_out) std::cout << "match "<<i<<" "<<j<<" "<<matchscore<<std::endl;
+	    
+	    //if (debug_out) std::cout << "match "<<i<<" "<<j<<" "<<matchscore<<std::endl;
 	    
 	    ++i;
 	    ++j;
@@ -417,26 +419,6 @@ AlignmentScore::print_vars() const {
 }
 
 
-Gecode::ModEvent
-AlignmentScore::simple_consistency(Gecode::Space& home) {
-    //const int n=seqA.length();
-    //const int m=seqB.length();
-
-    if (debug_out) {
-	std::cout << "Before consistency"<<std::endl;
-	print_vars();
-    }
-
-    Gecode::ModEvent ret = Gecode::ME_GEN_NONE;    
-    
-    if (debug_out) {    
-	std::cout << "Made consistent:"<<std::endl;
-	print_vars();
-    }
-
-    return ret;
-}
-
 
 void
 AlignmentScore::forward_algorithm(Gecode::Space& home, Matrix<infty_score_t> &Fwd) {
@@ -447,11 +429,10 @@ AlignmentScore::forward_algorithm(Gecode::Space& home, Matrix<infty_score_t> &Fw
     // Forward algorithm
     //
     
-    Fwd.fill(infty_score_t::neg_infty);
+    //Fwd.fill(infty_score_t::neg_infty);
     
     // Definition( Fwd-matrix )
     // Fwd(i,j) := max score of a alignment R[1..i], S[1..j]
-  
     
     // initialize
     Fwd(0,0)=(infty_score_t)0;
@@ -690,7 +671,7 @@ AlignmentScore::choice(RNAalignment &s,
     // use tie-breaking
     
     if (debug_out) std::cout <<"Determine choice"<<std::endl;
-    if (debug_out) print_vars();
+    //if (debug_out) print_vars();
     
     vector<score_t> weights;
     score_t maxweight=numeric_limits<score_t>::min();
@@ -755,12 +736,12 @@ AlignmentScore::choice(RNAalignment &s,
 
 
     // print trace (DEBUGGING)
-    if (debug_out) {std::cout << "TRACE"<<std::endl;
-	for (size_type i=1; i<=n; ++i ) {
-	    std::cout << traceA[i] << " ";
-	}
-	std::cout<<std::endl;
-    }
+    //if (debug_out) {std::cout << "TRACE"<<std::endl;
+    //	for (size_type i=1; i<=n; ++i ) {
+    //	    std::cout << traceA[i] << " ";
+    //	}
+    //	std::cout<<std::endl;
+    //}
     
     size_t val = (pos==0)?0:traceA[pos];
     
@@ -814,6 +795,20 @@ AlignmentScore::choice(RNAalignment &s,
 	}
     }	    
     
+    
+    if (minval==(size_t)s.MD[pos].min() && maxval==(size_t)s.MD[pos].max()) {
+	
+	size_t medval = (maxval-minval)/2+minval;
+	
+	// choose according to trace
+	
+	if (val<=medval) { 
+	    maxval=medval;
+	} else {
+	    minval=medval+1;
+	}
+    }
+        
     if (debug_out) { 
 	if (minval==maxval) {
 	    if (debug_out) std::cout << " IN: " << minval;
@@ -823,11 +818,7 @@ AlignmentScore::choice(RNAalignment &s,
 	std::cout << std::endl;
     }
     
-    if (minval==(size_t)s.MD[pos].min() && maxval==(size_t)s.MD[pos].max()) {
-	maxval=(maxval-minval)/2+minval;
-    }
-    
-    
+    // copy choice to the space
     s.minval=minval;
     s.maxval=maxval;
     
@@ -839,6 +830,11 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
     if (debug_out) {
 	std::cout << "AlignmentScore::propagate " <<std::endl;
+    }
+
+    if (debug_out) {
+	std::cout << "Begin propagation"<<std::endl;
+	print_vars();
     }
 
     // ----------------------------------------
@@ -858,13 +854,6 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 
     Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
 
-    // -------------------- RUN SIMPLE CONSISTENCY
-    ret |= simple_consistency(home);
- 
-    if (Gecode::me_failed(ret)) {
-	if (debug_out) std::cout << "simple consistency failed"<<std::endl;
-	return Gecode::ES_FAILED;
-    }
     
     const size_t n=seqA.length();
     const size_t m=seqB.length();
@@ -936,7 +925,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     //if (debug_out) {std::cout << "Bwd"<<std::endl<<Bwd <<std::endl;}
 
 
-    if (debug_out) {
+    if (false && debug_out) {
 	// ------------------------------------------------------------
 	// DEBUGGING: check trace
 	for (size_t i=1; i<=n; i++) {

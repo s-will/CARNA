@@ -91,6 +91,17 @@ my $inputfilename=$ARGV[0];
 
 my $tmpsuf="~$$.tmp~";
 
+
+## trap the control-C signal and clean up
+sub INT_handler {
+    print "Caught Ctrl-C. Cleanup and Exit.";
+    cleanup();
+    exit(0);
+}
+
+$SIG{'INT'} = 'INT_handler';
+
+
 ## -----------------------------------------------------------
 ## subs
 
@@ -200,8 +211,8 @@ sub convert_fix_structure_to_pp {
 }
 
 sub cleanup {
-    unlink "1.pp.$tmpsuf";
-    unlink "2.pp.$tmpsuf";
+    #unlink "1.pp.$tmpsuf";
+    #unlink "2.pp.$tmpsuf";
 }
 
 ## ------------------------------------------------------------
@@ -232,9 +243,8 @@ foreach my $name (@names) {
 my $cmd = "src/RNAalignment $RNAalignmentArgs "."1.pp.$tmpsuf 2.pp.$tmpsuf";
 # print "CALL: $cmd\n";
 
-if ( system($cmd) !=0 ) {
-    print STDERR "ERROR: CALL $cmd failed.\n"; exit(-1); 
-}
+system($cmd);
+
 
 cleanup();
 

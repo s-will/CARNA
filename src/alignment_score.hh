@@ -31,8 +31,7 @@ private:
     IntViewArray MD;
     BoolViewArray M;
     Gecode::Int::IntView Score;
-    
-    
+        
 protected:
   
     /// Constructor for cloning \a p
@@ -50,11 +49,12 @@ protected:
 		   Gecode::Int::IntView &Score
 		   );
 
+    virtual ~AlignmentScore();
+    
 protected:
 
     void
     print_vars() const;
-
     
     /*
     //! constrain an integer view to be less or undef
@@ -182,12 +182,6 @@ protected:
     //! @returns whether all vars are fixed
     bool
     all_vars_fixed() const;
-
-
-    //! first phase of propagation;
-    //! performs bound independent propagation on variables MD,M
-    Gecode::ModEvent
-    simple_consistency(Gecode::Space& home);
 
     void
     forward_algorithm(Gecode::Space& home, Matrix<infty_score_t> &Fwd);
