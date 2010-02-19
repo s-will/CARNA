@@ -103,8 +103,9 @@ protected:
 
     //! upper bound for the contribution of matching positions i
     //! and j of respective sequences R and S
+    //! if tight!=NULL && tight!=false, return in tight, whether the bound is tight
     score_t
-    ub_match(size_type i, size_type j,bool with_basematch=true) const;
+    ub_match(size_type i, size_type j, bool *tight=NULL) const;
 
     //! calculate the score for an alingment given by trace vectors
     //! @param traceA trace vector for positions in sequence A
@@ -142,7 +143,8 @@ protected:
     //! @param i position in sequence 1
     //! @param j position in sequence 2
     //! @returns whether the match between i and j is guaranteed
-    //! assume that all the consistency checking with other variables MD,M has been done 
+    //! assume that all the consistency checking with other variables MD,M has been done. 
+    //! match_forced(i,j) implies match_allowed(i,j)
     bool
     match_forced(size_type i,size_type j) const {
 	return MD[i].assigned() && (size_t)MD[i].val()==j && !M[i].in(0);
@@ -184,27 +186,69 @@ protected:
     all_vars_fixed() const;
 
     void
-    forward_algorithm(Gecode::Space& home, Matrix<infty_score_t> &Fwd);
+    forward_algorithm(Gecode::Space& home,
+		      Matrix<infty_score_t> &Fwd,
+		      const Matrix<score_t> &UBM);
 
     void
-    backtrace_forward(Gecode::Space &home, const Matrix<infty_score_t> &Fwd,
+    backtrace_forward(Gecode::Space &home, 
+		      const Matrix<infty_score_t> &Fwd,
+		      const Matrix<score_t> &UBM,
 		      std::vector<size_type> &traceA,
 		      std::vector<size_type> &traceB
 		      );
 
     void
-    backward_algorithm(Gecode::Space& home, Matrix<infty_score_t> &Bwd);
-	
+    backward_algorithm(Gecode::Space& home, 
+		       Matrix<infty_score_t> &Bwd,
+		       const Matrix<score_t> &UBM);
+    
+    //! set the MD and M variables in the range [start..end] to
+    //! the values described by the trace
+    //! @param start Begin of range
+    //! @param end End of range
+    //! @param traceA The trace
+    //! @returns Modification event
+    //! @pre the range must describe a run
+    Gecode::ModEvent
+    fix_vars_to_trace(Gecode::Space &home,
+		      size_t start,
+		      size_t end,
+		      const std::vector<size_type> &traceA,
+		      const std::vector<size_type> &traceB);
+
+    Gecode::ModEvent
+    fix_tight_runs(Gecode::Space &home,
+		   const std::vector<size_type> &traceA,
+		   const std::vector<size_type> &traceB,
+		   const Matrix<bool> &tight);
+
     Gecode::ModEvent 
     prune(Gecode::Space& home, 
-			  const Matrix<infty_score_t> &Fwd,
-			  const Matrix<infty_score_t> &Bwd);
+	  const Matrix<infty_score_t> &Fwd,
+	  const Matrix<infty_score_t> &Bwd,
+	  const Matrix<score_t> &UBM);
 
-
+    //! determines the indices of arcs that are forced to occur in any
+    //! arc match.  return result in the output parameters forcedA and
+    //! forcedB
+    template<class AdjList>
+    void
+    determine_forced_arcs(const AdjList &adjlA,
+			  const AdjList &adjlB,
+			  std::vector<bool> &forcedA, 
+			  std::vector<bool> &forcedB,
+			  bool right,
+			  bool *tight) const;
+	
     //! bound on all arcmatches to the right (left) from i,j
+    //! if tight!=null and tight!=false return in tight, whether the bound is tight
     template<class AdjList>
     score_t
-    bound_arcmatches(size_t i, size_t j, AdjList adjlA, AdjList adjlB, bool right) const;
+    bound_arcmatches(const AdjList &adjlA, 
+		     const AdjList &adjlB,
+		     bool right,
+		     bool *tight) const;
     
     // computes choice for the current space
     void
@@ -212,7 +256,9 @@ protected:
 	   const Matrix<infty_score_t> &Fwd,
 	   const Matrix<infty_score_t> &Bwd,
 	   const std::vector<size_type> &traceA,
-	   const std::vector<size_type> &traceB) const;
+	   const std::vector<size_type> &traceB,
+	   const Matrix<score_t> &UBM
+	   ) const;
  
 public:
     //! post a binary neighbor constraint

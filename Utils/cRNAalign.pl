@@ -108,6 +108,7 @@ $SIG{'INT'} = 'INT_handler';
 sub parse_mfasta {
     my ($file) = @_;
     my %mfasta;
+    my @names;
     
     local *PMF_IN;
     
@@ -124,6 +125,9 @@ sub parse_mfasta {
                 print STDERR "Duplicate name in mfasta: $name\n";
                 exit -1;
             }
+	    
+	    push @names,$name;
+
             while (defined($line=<PMF_IN>) && ($line !~ /^>/)) {
                 chomp $line;
                 $line =~ s/^\s+//; # strip leading and ending blanks
@@ -139,7 +143,7 @@ sub parse_mfasta {
 	    }
         }
     }
-    return %mfasta;
+    return (\%mfasta,\@names);
 }
 
 
@@ -211,16 +215,17 @@ sub convert_fix_structure_to_pp {
 }
 
 sub cleanup {
-    #unlink "1.pp.$tmpsuf";
-    #unlink "2.pp.$tmpsuf";
+    unlink "1.pp.$tmpsuf";
+    unlink "2.pp.$tmpsuf";
 }
 
 ## ------------------------------------------------------------
 ## main part
 
-my %mfasta=parse_mfasta($inputfilename);
+my ($mfasta_ref,$names_ref) = parse_mfasta($inputfilename);
 
-my @names=grep !/#S$/, keys %mfasta;
+my %mfasta = %{ $mfasta_ref };
+my @names = @{ $names_ref };
 
 if ($#names!=1) {
     print STDERR "ERROR: Need exactly two sequences in input.\n";

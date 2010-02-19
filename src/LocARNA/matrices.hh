@@ -73,6 +73,18 @@ public:
     elem_t & operator() (size_type i,size_type j) {
 	return mat_[addr(i,j)];
     }
+
+    //! read only access to (i,j)
+    const elem_t get(size_type i,size_type j) const {
+	return mat_[addr(i,j)];
+    }
+
+    //! write access to (i,j)
+    void
+    set(size_type i,size_type j, const elem_t &x) {
+	mat_[addr(i,j)]=x;
+    }
+
     
     //! fill the whole matrix with the given value 
     void 

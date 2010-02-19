@@ -79,6 +79,7 @@ public:
 	    Gecode::BoolVar greater(*this,0,1);
 	    rel(*this,MD[i],Gecode::IRT_GR,MD[i-1],greater);
 	    rel(*this,M[i],Gecode::IRT_LQ,greater); // M[i] implies greater
+	    
 	}
 		
 	
@@ -160,13 +161,21 @@ public:
 		    b+='-';
 		}
 	    }
-	    
+	    for (; j<=m; j++) {
+		a+='-';
+		b+=seqB[j];
+	    }
+
+
 	    a.write( std::cout );
 	    b.write( std::cout );
-	} else {
-	    std::cout << "Matches/Deletions:    " << MD << std::endl;
-	    std::cout << "Match Flags:          " << M << std::endl;
+	} 
+
+	std::cout << "Matches/Deletions:    ";
+	for (size_t i=0; i<=seqA.length(); i++) {
+	    std::cout <<i<<(M[i].assigned()?(M[i].val()==0?"g":"~"):"?")<<MD[i]<<", "; 
 	}
+	std::cout << std::endl;
 	std::cout << "Score:      " << Score << std::endl;
 	
 	if (wind!=NULL) wind->update(MD,M);

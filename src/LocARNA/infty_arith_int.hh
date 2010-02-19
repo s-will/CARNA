@@ -143,6 +143,11 @@ public:
     bool
     operator >(const InftyArithInt x1,
 	       const InftyArithInt x2);
+
+    friend
+    bool
+    operator >=(const InftyArithInt x1,
+	       const InftyArithInt x2);
   
     friend
     bool
@@ -251,6 +256,14 @@ bool
 operator >(const InftyArithInt x1,
 	   const InftyArithInt x2) {
     return x1.val > x2.val;
+}
+
+
+inline
+bool
+operator >=(const InftyArithInt x1,
+	   const InftyArithInt x2) {
+    return x1.val >= x2.val;
 }
 
 inline
