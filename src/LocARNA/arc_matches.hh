@@ -91,7 +91,7 @@ private:
     //! decide according to constraints
     //! and heuristics whether an arc match is valid
     bool is_valid_arcmatch(const Arc &arcA,const Arc &arcB) const;
-        
+    
     /* END constraints and heuristics */
     
     bool maintain_explicit_scores; //!< whether scores are maintained explicitely or computed from pair probabilities

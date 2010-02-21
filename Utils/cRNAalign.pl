@@ -20,6 +20,8 @@ Options:
 
 =item  B<-q, --quiet>                   Quiet
 
+=item  B<-q, --norun>                   Don't run RNAalignment, but generate input
+
 =item  B<--args>                        Arguments passed to RNAalignment
 
 
@@ -67,6 +69,9 @@ my $help;
 my $man;
 my $quiet;
 my $verbose;
+
+my $norun;
+
 my $RNAalignmentArgs="";
 
 ## Getopt::Long::Configure("no_ignore_case");
@@ -76,6 +81,7 @@ GetOptions(
     "quiet" => \$quiet,   
     "help"=> \$help,
     "man" => \$man,
+    "norun" => \$norun,
     "args=s" => \$RNAalignmentArgs
     ) || pod2usage(2);
 
@@ -248,9 +254,9 @@ foreach my $name (@names) {
 my $cmd = "src/RNAalignment $RNAalignmentArgs "."1.pp.$tmpsuf 2.pp.$tmpsuf";
 # print "CALL: $cmd\n";
 
-system($cmd);
-
-
-cleanup();
+if (!$norun) {
+    system($cmd);
+    cleanup();
+}
 
 ## ------------------------------------------------------------

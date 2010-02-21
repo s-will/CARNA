@@ -105,16 +105,26 @@ protected:
     //! and j of respective sequences R and S
     //! if tight!=NULL && tight!=false, return in tight, whether the bound is tight
     score_t
-    ub_match(size_type i, size_type j, bool *tight=NULL) const;
+    ub_match(size_type i, size_type j,
+	     const Matrix<bool> &considered_ams,
+	     const Matrix<score_t> &match_scores,
+	     bool *tight=NULL) const;
 
     //! calculate the score for an alingment given by trace vectors
     //! @param traceA trace vector for positions in sequence A
     //! @param traceB trace vector for positions in sequence B
     score_t
-    evaluate_trace(const std::vector<size_type> &traceA,const std::vector<size_type> &traceB) const;
+    evaluate_trace(const std::vector<size_type> &traceA,
+		   const std::vector<size_type> &traceB,
+		   const Matrix<bool> &considered_ams,
+		   const Matrix<score_t> &match_scores		   
+		   ) const;
 
     score_t
-    evaluate_tracematch(const std::vector<size_type> &traceA,const std::vector<size_type> &traceB,
+    evaluate_tracematch(const std::vector<size_type> &traceA,
+			const std::vector<size_type> &traceB,
+			const Matrix<bool> &considered_ams,
+			const Matrix<score_t> &match_scores,
 			size_type i,size_type j) const;
 
 
@@ -247,6 +257,7 @@ protected:
     score_t
     bound_arcmatches(const AdjList &adjlA, 
 		     const AdjList &adjlB,
+		     const Matrix<bool> &considered_ams,
 		     bool right,
 		     bool *tight) const;
     
