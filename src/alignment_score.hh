@@ -270,6 +270,10 @@ protected:
 	   const std::vector<size_type> &traceB,
 	   const Matrix<score_t> &UBM
 	   ) const;
+    
+    void
+    prune_decided_arc_matches(Matrix<bool> &considered_ams, Matrix<score_t> &match_scores);
+
  
 public:
     //! post a binary neighbor constraint

@@ -218,12 +218,12 @@ AlignmentScore::bound_arcmatches(const AdjList &adjlA,
 	for (typename AdjList::const_iterator arcB=adjlB.begin();
 	     arcB!=adjlB.end() ; ++arcB, ++j) {
 
-	    //size_t k=(right)?arcA->left():arcA->right();
-	    //size_t l=(right)?arcB->left():arcB->right();
+	    size_t k=(right)?arcA->left():arcA->right();
+	    size_t l=(right)?arcB->left():arcB->right();
 	    
 	    
 	    infty_score_t entry=infty_score_t::neg_infty;
-	    if ( considered_ams.get(arcA->idx(), arcB->idx()) ) { // note: for considered am the match k,l is allowed
+	    if ( match_allowed(k,l) && considered_ams.get(arcA->idx(), arcB->idx()) ) {
 		entry = MAT_match + scoring.arcmatch(*arcA,*arcB);
 	    }
 	   
@@ -327,10 +327,12 @@ AlignmentScore::evaluate_tracematch(const std::vector<size_type> &traceA,
 	
 	const ArcMatch &am = arc_matches.arcmatch(*it);
 
-	if (!considered_ams.get(am.arcA().idx(),am.arcB().idx())) continue;
 	
 	if ( traceA[am.arcA().left()] == am.arcB().left() ) { 
 	    // if the left ends of arcs arcA and arcB match 
+	    
+	    if (!considered_ams.get(am.arcA().idx(),am.arcB().idx())) continue;
+	    
 	    matchscore += scoring.arcmatch(am);
 	}
     }
@@ -341,10 +343,11 @@ AlignmentScore::evaluate_tracematch(const std::vector<size_type> &traceA,
 	
 	const ArcMatch &am = arc_matches.arcmatch(*it);
 	
-	if (!considered_ams.get(am.arcA().idx(),am.arcB().idx())) continue;
-	
 	if ( traceA[am.arcA().right()] == am.arcB().right() ) { 
 	    // if the right ends of arcs arcA and arcB  match 
+	    
+	    if (!considered_ams.get(am.arcA().idx(),am.arcB().idx())) continue;
+	    
 	    matchscore += scoring.arcmatch(am);
 	}
     }
@@ -947,6 +950,79 @@ AlignmentScore::fix_tight_runs(Gecode::Space &home,
     return ret;
 }
 
+void
+AlignmentScore::prune_decided_arc_matches(Matrix<bool> &considered_ams, Matrix<score_t> &match_scores) {
+    const size_t n=seqA.length();
+    const size_t m=seqB.length();
+
+    const BasePairs &bpsA = arc_matches.get_base_pairsA();
+    const BasePairs &bpsB = arc_matches.get_base_pairsB();    
+
+    considered_ams.resize(bpsA.num_bps(), bpsB.num_bps());
+    
+    match_scores.resize(n+1,m+1);
+    
+    // initialize match_score matrix
+    for(size_type i=1; i<=n; i++) {
+	for(size_type j=MD[i].min(); j<=(size_t)MD[i].max(); j++) {
+	    match_scores(i,j)=2*scoring.basematch(i,j);
+	}
+    }
+    
+    
+    for(size_t i=1; i<=n; ++i) {
+	for(size_t j=MD[i].min(); j<=(size_t)MD[i].max(); ++j) {	    
+	    if (match_allowed(i,j)) {
+		
+		bool forced_ij=match_forced(i,j);
+		
+		// iterate through all arc matches to the right
+		// if match_forced(i,j) transfer arcmatch score to the right end
+		// otherwise if other right end is forced transfer arcmatch score to match i,j
+		
+		for(ArcMatchIdxVec::const_iterator it=arc_matches.common_left_end_list(i,j).begin();
+		    arc_matches.common_left_end_list(i,j).end() != it; ++it ) {
+		    
+		    const ArcMatch &am = arc_matches.arcmatch(*it);
+		    
+		    const Arc &arcA = am.arcA();
+		    const Arc &arcB = am.arcB();
+		    
+		    size_t k=arcA.right();
+		    size_t l=arcB.right();
+		    
+		    if (!match_allowed(k,l)) continue;
+		    
+		    bool forced_kl=match_forced(k,l);
+		    
+		    if ( forced_ij && forced_kl ) {
+			match_scores(i,j) += scoring.arcmatch(arcA,arcB);
+			match_scores(k,l) += scoring.arcmatch(arcA,arcB);
+			considered_ams.set(arcA.idx(),arcB.idx(),false); // don't consider arc match anymore
+		    }
+		    else if ( forced_ij && !forced_kl ) {
+			match_scores(k,l) += 2 * scoring.arcmatch(arcA,arcB);
+			considered_ams.set(arcA.idx(),arcB.idx(),false); // don't consider arc match anymore
+		    }
+		    else if ( !forced_ij && forced_kl ) {
+			match_scores(i,j) += 2 * scoring.arcmatch(arcA,arcB);
+			considered_ams.set(arcA.idx(),arcB.idx(),false); // don't consider arc match anymore
+		    } else {
+			considered_ams.set(arcA.idx(),arcB.idx(),true); // consider arc match anymore
+		    }
+		}
+	    }
+	    // else: for !allowed_match(i,j) nothing is to do
+	}
+    }
+    // end of determining considered arcs and transferring scores
+    ////////////////////////////////////////////////////////////
+
+}
+
+
+
+
 Gecode::ExecStatus
 AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
@@ -992,66 +1068,15 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     //     unassigned end or, if both ends are matched, 
     //     arbitrarily to the left end
 
-    
-    const BasePairs &bpsA = arc_matches.get_base_pairsA();
-    const BasePairs &bpsB = arc_matches.get_base_pairsB();
-
-    // boolean Matrix giving for every arc match if we still consider
+    // boolean Matrix giving for every arc match with allowed left and right match if we still consider
     // the arc match.
+    // NOTE: entries where one match in the arc match is not allowed are undefined!!!
     Matrix<bool> considered_ams;
-    considered_ams.resize(bpsA.num_bps(), bpsB.num_bps());
-    
 
-    Matrix<score_t> match_scores(n+1,m+1);
-    // initialize match_score matrix
-    for(size_type i=1; i<=n; i++) {
-	for(size_type j=MD[i].min(); j<=(size_t)MD[i].max(); j++) {
-	    match_scores(i,j)=2*scoring.basematch(i,j);
-	}
-    }
+    // matrix for base match scores
+    Matrix<score_t> match_scores;
     
-    
-    for(size_t i=0; i<bpsA.num_bps(); ++i) {
-	for(size_t j=0; j<bpsB.num_bps(); ++j) {
-	    
-	    const Arc &arcA=bpsA.arc(i);
-	    const Arc &arcB=bpsB.arc(j);
-	    
-	    // check whether both ends can match
-	    if (match_allowed(arcA.left(),arcB.left())
-		&&
-		match_allowed(arcA.right(),arcB.right())) {
-		
-		// if arc match allowed but none of the ends is forced
-		// then the arc match is considered
-		considered_ams.set(i,j,true); 
-		
-		// if one end is forced to match, then add twice the arc match score 
-		// to the match score of the other end
-		// Note: if both ends are forced, we add arc match scores arbitrarily to both ends
-		//
-		if (match_forced(arcA.right(),arcB.right())
-		    &&
-		    match_forced(arcA.left(),arcB.left())) {
-		    match_scores(arcA.left(),arcB.left()) += scoring.arcmatch(arcA,arcB);
-		    match_scores(arcA.right(),arcB.right()) += scoring.arcmatch(arcA,arcB);
-		    considered_ams.set(i,j,false); // don't consider arc match  anymore
-		} else if (match_forced(arcA.right(),arcB.right())) {
-		    match_scores(arcA.left(),arcB.left()) += 2 * scoring.arcmatch(arcA,arcB);
-		    considered_ams.set(i,j,false); // don't consider arc match  anymore
-		} else if (match_forced(arcA.left(),arcB.left())) {
-		    match_scores(arcA.right(),arcB.right()) += 2 * scoring.arcmatch(arcA,arcB);
-		    considered_ams.set(i,j,false); // don't consider arc match  anymore
-		}		
-	    } else {
-		// invalid arc match
-		considered_ams.set(i,j,false);
-	    } 
-	}
-    }
-    // end of determining considered arcs and transferring scores
-    ////////////////////////////////////////////////////////////
-
+    prune_decided_arc_matches(considered_ams,match_scores);
 
 
     ////////////////////////////////////////////////////////////
