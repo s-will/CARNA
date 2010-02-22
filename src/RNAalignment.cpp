@@ -9,7 +9,6 @@
 #include <gecode/gist.hh>
 #include <gecode/minimodel.hh>
 
-#include "WinDisplay.hh"
 #include "RNAalignment.hh"
 
 

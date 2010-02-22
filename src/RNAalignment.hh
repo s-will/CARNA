@@ -1,7 +1,7 @@
 #ifndef RNA_ALIGNMENT
 #define RNA_ALIGNMENT
 
-
+#include "WinHandler.hh"
 #include "alignment_score.hh"
 
 
@@ -36,7 +36,7 @@ protected:
     size_t minval;
     size_t maxval;
 
-    WinDisplay* wind;
+    WinHandler* wind;
     
     Gecode::IntVarArray MD; // MD[i] is position of match or deletion in row i
     Gecode::BoolVarArray M; // M[i] is true iff i~MD[i] is a match
@@ -57,7 +57,7 @@ public:
 	Score(*this,Gecode::Int::Limits::min,Gecode::Int::Limits::max)
     {
 	if (opt_graphical_output) 
-	    wind=new WinDisplay(n+1,m+1,"Display variables status");
+	    wind=new WinHandler(n+1,m+1,"Display variables status");
 	else {
 	    wind=NULL;
 	}
