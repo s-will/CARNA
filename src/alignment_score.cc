@@ -2,25 +2,12 @@
 #include "alignment_score.hh"
 #include "LocARNA/arc_matches.hh"
 
-#include "WinDisplay.hh"
+//#include "WinDisplay.hh"
 #include "RNAalignment.hh"
 
 #include <limits>
 
 #include <assert.h>
-
-
-/*
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  IDEA OF TIGHTNESS IS NOT WORKING
-  
-  TO MAKE IT WORK:
-  Score arc matchs only for non-guaranteed matches
-  For all guaranteed matches transfer their arc match score to the bsae match score of
-  the other arc match end
-  
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- */
 
 
 

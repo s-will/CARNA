@@ -4,7 +4,8 @@
 #include "WinHandler.hh"
 #include "alignment_score.hh"
 
-
+// EXPERIMENTAL: therefore only global var
+//const size_t discrepancy_limit=7;
 
 
 const bool custom_branching=true;
@@ -23,7 +24,7 @@ class RNAalignment : public Gecode::Space {
     friend class AlignmentScore;
       
 protected:
-
+    
     const Sequence &seqA; // only used for output
     const Sequence &seqB;
 
@@ -43,6 +44,7 @@ protected:
     
     Gecode::IntVar Score;
 
+    //size_t discrepancy; // experimental for simulating LDS
  
 public:
     RNAalignment(const Sequence &seqA_, const Sequence &seqB_, const ArcMatches &arcmatches,
@@ -55,6 +57,7 @@ public:
 	MD(*this,n+1,0,m), //we only need MD_1,...,MD_n ==> ignore MD_0
 	M(*this,n+1,0,1),
 	Score(*this,Gecode::Int::Limits::min,Gecode::Int::Limits::max)
+	//, discrepancy(0)
     {
 	if (opt_graphical_output) 
 	    wind=new WinHandler(n+1,m+1,"Display variables status");
@@ -84,7 +87,7 @@ public:
 		
 	
 	// test the case where a good score is known
-	// rel(*this,Score,IRT_GR, 4000);
+	//rel(*this,Score,Gecode::IRT_GR, 33592);
 	
 	if (custom_branching) {
 	    RNAalignBrancher::post(*this);
@@ -115,6 +118,7 @@ public:
 	val(s.val),
 	minval(s.minval),
 	maxval(s.maxval)
+	//, discrepancy(s.discrepancy)
     {
 	MD.update(*this, share, s.MD);
 	M.update(*this, share, s.M);
@@ -250,7 +254,7 @@ public:
     virtual Gecode::ExecStatus commit(Gecode::Space& home, 
 				      const Gecode::Choice& _c,
 				      unsigned int a) {
-	const RNAalignment& s = static_cast<const RNAalignment&>(home);
+	RNAalignment& s = static_cast<RNAalignment&>(home);
 	const Choice& c = static_cast<const Choice&>(_c);
 	
 	/*
@@ -273,6 +277,10 @@ public:
 	    ret = Gecode::Int::IntView(s.MD[c.pos]).inter_r(home, r,false);
 	} else {
 	    ret = Gecode::Int::IntView(s.MD[c.pos]).minus_r(home, r,false);
+	    
+	    // EXPERIMENTAL limiting of discrepancy
+	    // s.discrepancy++;
+	    // if (s.discrepancy>discrepancy_limit) { return Gecode::ES_FAILED; } 
 	}
 	
 	return Gecode::me_failed(ret)

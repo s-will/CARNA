@@ -199,12 +199,14 @@ private:
   {
     //All we do here is call the do_work() function
     reinterpret_cast<WinHandler *>(obj)->do_work();
+    return obj;
   }
 
   static void* start_window_thread(void *obj)
   {
     //All we do here is call the do_work() function
     reinterpret_cast<WinHandler *>(obj)->window_thread();
+    return obj; 
   }
 
   void window_thread(){
