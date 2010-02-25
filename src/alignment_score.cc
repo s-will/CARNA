@@ -675,9 +675,23 @@ AlignmentScore::choice(RNAalignment &s,
     
     const size_t n=seqA.length();
     const size_t m=seqB.length();
+
+        // first check whehter to enumerate M variables
+    //
+    
+    //strategy: whenever a MD[i] variable is assigned, but M[i] is not
+    // enumerate M[i]
+    for (size_t i=0; i<=n; i++) {
+	if (MD[i].assigned() && !M[i].assigned()) {
+	    s.pos=i;
+	    s.enum_M=true;
+	    return; // choice done
+	}
+    }
+    s.enum_M=false;
+    
     
     // determine position with largest weight
-    // use tie-breaking
     
     if (debug_out) std::cout <<"Determine choice"<<std::endl;
     //if (debug_out) print_vars();

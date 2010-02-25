@@ -31,7 +31,7 @@ protected:
     const size_t n;
     const size_t m;
     
-    
+    bool enum_M;
     size_t pos;
     size_t val;
     size_t minval;
@@ -114,6 +114,7 @@ public:
 	seqB(s.seqB),
 	n(s.n),
 	m(s.m),
+	enum_M(s.enum_M),
 	pos(s.pos),
 	val(s.val),
 	minval(s.minval),
@@ -206,14 +207,16 @@ private:
 	// performed by a particular brancher.
     private:
     public:
+	bool enum_M;
 	size_t pos;
 	size_t val;
 	size_t minval;
 	size_t maxval;
 	
 
-	Choice(const Brancher& b,size_t pos_, size_t val_,size_t minval_,size_t maxval_)
+	Choice(const Brancher& b,bool enum_M_,size_t pos_, size_t val_,size_t minval_,size_t maxval_)
 	    : Gecode::Choice(b,2),
+	      enum_M(enum_M_),
 	      pos(pos_),val(val_),
 	      minval(minval_),
 	      maxval(maxval_)
@@ -247,7 +250,7 @@ public:
 	// move decision about choice to the propagator
 	
 	//std::cout << "CHOICE "<<s.pos<<" "<<s.val<<" "<<s.minval<<" "<<s.maxval<<" "<<s.MD[s.pos]<<std::endl;
-	return new Choice(*this,s.pos,s.val,s.minval,s.maxval);
+	return new Choice(*this,s.enum_M,s.pos,s.val,s.minval,s.maxval);
     }
     
     // commits the choice c and alternative a 
@@ -269,18 +272,29 @@ public:
 		: Gecode::ES_OK;
 	}
 	*/
-
-	Gecode::Iter::Ranges::Singleton r((int)c.minval,(int)c.maxval);
-	
-	Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
-	if (a==0) {
-	    ret = Gecode::Int::IntView(s.MD[c.pos]).inter_r(home, r,false);
-	} else {
-	    ret = Gecode::Int::IntView(s.MD[c.pos]).minus_r(home, r,false);
 	    
-	    // EXPERIMENTAL limiting of discrepancy
-	    // s.discrepancy++;
-	    // if (s.discrepancy>discrepancy_limit) { return Gecode::ES_FAILED; } 
+	Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
+
+	if (c.enum_M) {
+	    if (a==0) {
+		ret = Gecode::Int::BoolView(s.M[c.pos]).eq(home, 1);
+	    } else {
+		ret = Gecode::Int::BoolView(s.M[c.pos]).eq(home, 0);
+	    }
+	} else {
+	    
+	    
+	    Gecode::Iter::Ranges::Singleton r((int)c.minval,(int)c.maxval);
+
+	    if (a==0) {
+		ret = Gecode::Int::IntView(s.MD[c.pos]).inter_r(home, r,false);
+	    } else {
+		ret = Gecode::Int::IntView(s.MD[c.pos]).minus_r(home, r,false);
+		
+		// EXPERIMENTAL limiting of discrepancy
+		// s.discrepancy++;
+		// if (s.discrepancy>discrepancy_limit) { return Gecode::ES_FAILED; } 
+	    }
 	}
 	
 	return Gecode::me_failed(ret)
