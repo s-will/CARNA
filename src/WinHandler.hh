@@ -39,6 +39,7 @@ public:
     img_x=Cols;
     img_y=Rows;
 
+    
     imageOut = CImg<>(img_x,img_y,1,3,0);
     cout << "allocating image: " << img_x << " " << img_y << "\n";
     
@@ -239,8 +240,54 @@ private:
   {
     //printf("Working\n");
     main_disp=CImgDisplay(imageOut,title,0);
-    main_disp.display(imageOut);  
 
+    
+    // --------------------
+    // here we can set the initial display size
+    // set image dimensions in order to fit minimal and maximal 
+    // dimensions
+    
+    // set dimensions such that each is at least 300 and at least
+    // twice sequence length+1
+    // except this exceeds some maximal dimensions
+
+    size_t wdim_x=img_x;
+    size_t wdim_y=img_y;
+    
+    const size_t mindim=max(300,min(2*img_x,2*img_y));
+    const size_t maxdim_x=1000;
+    const size_t maxdim_y=750;
+    
+    double ratio=1;
+    
+    if ((size_t)min(wdim_x,wdim_y) < mindim) {
+	ratio = ((double)mindim/min(wdim_x,wdim_y));
+    }
+    
+    wdim_x *= ratio;
+    wdim_y *= ratio;
+    
+    ratio=1;
+
+    if ((size_t)wdim_x>maxdim_x) {
+	ratio = ((double)maxdim_x/wdim_x);
+    }
+    if ((size_t)wdim_y*ratio>maxdim_y) {
+	ratio = ((double)maxdim_y/wdim_y);
+    }
+    wdim_x *= ratio;
+    wdim_y *= ratio;
+
+    main_disp.resize(wdim_x,wdim_y,true);
+    // end resizing
+    // --------------------
+
+
+    main_disp.display(imageOut);
+    
+    
+    
+    
     while (m_stoprequested==false){
       // wait for something to do
       sem_wait(&s1);
