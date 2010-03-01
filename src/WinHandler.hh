@@ -303,6 +303,7 @@ private:
       if (main_disp.is_closed()){
 	//printf("Window closed -> show\n");
 	main_disp.show();
+	main_disp.resize(wdim_x,wdim_y,true);
       }
       //sem_post(&lock);
       
