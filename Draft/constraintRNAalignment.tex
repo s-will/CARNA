@@ -1,12 +1,18 @@
 \documentclass[11pt]{llncs}
 
 \usepackage{amsmath}
+\usepackage{multicol}
 
 \newcommand{\SET}[1]{\{#1\}} 
 \newcommand*{\PSET}[2]{\{\,#1\mid#2\,\}}
 
 \newcommand{\score}{\operatorname{score}}
 \newcommand{\argmax}{\operatorname*{arg max}}
+
+\addtolength{\hoffset}{-0.6cm}
+\addtolength{\textwidth}{1.2cm}
+\addtolength{\voffset}{-1.05cm}
+\addtolength{\textheight}{2.1cm}
 
 \title{Alignnment of RNA with Structures of Unlimited Complexity}
 
@@ -25,7 +31,7 @@
 
 \begin{abstract}
   Sequence-structure alignment of RNAs with arbitrary secondary
-  structures is MAXSNP-hard. Therefore, the problem of RNA alignment
+  structures is Max-SNP-hard. Therefore, the problem of RNA alignment
   is commonly restricted to nested structure, where dynamic
   programming yields efficient solutions. However, nested structure
   cannot model pseudoknots or even more complex structural
@@ -36,9 +42,9 @@
   structures in the even more general class of structures with
   unlimited complexity. Our central contribution is a new RNA
   alignment propagator. It is based on an efficient $O(n^2)$
-  relaxation of the RNA alignment problem. Specifically our approach
-  solves the alignment problem for sequences with given input
-  structure of unlimited complexity. The method is implemented using
+  relaxation of the RNA alignment problem. Specifically, our approach
+  Carna solves the alignment problem for sequences with given input
+  structure of unlimited complexity. Carna is implemented using
   Gecode.
 \end{abstract}
 
@@ -47,7 +53,7 @@ studying non-coding RNA molecules with catalytic and regulatory
 activity as central players in biological systems. 
 %
 The computational analysis of non-coding RNA requires to take
-strucural information into account.
+structural information into account.
 % is more involved than the analysis of DNA
 %and proteins, because many non-coding RNAs, like proteins, form
 %structure that is essential for their function and is consequently
@@ -56,7 +62,7 @@ strucural information into account.
 %visible at the sequence level but almost exclusively in their
 %structure.  
 %
-Whereas RNAs form three-dimensional strucures, structural analysis of
+Whereas RNAs form three-dimensional structures, structural analysis of
 RNA is usually concerned with the secondary structure of an RNA, i.e.
 the set of RNA base pairs $(i,j)$ that form contacts between the bases
 $i$ and $j$ via H-bonds. The RNA alignment problem is to align two RNA
@@ -68,28 +74,30 @@ structures was introduced. Most RNA analysis is done for the class of
 nested structures $P$, where base-pairs do not cross, because for this
 class one can find efficient dynamic programming algorithms for
 structure prediction and alignment for reasonable scoring
-schemes~\cite{Zuker,Jiang}. The class of crossing RNA structures $P$
-restricts the degree of base pairing to at most one, as it is commonly
-assumed for single RNA structure. Prediction and alignment in this
-class is NP-hard in general~\cite{...}. However, one can devise a
-number of algorithms that efficiently predict or align RNAs with
-structures from classes in between non-crossing and arbitrary
-crossing.~\cite{PK,structure,prediction,Moehl:Lifting}. However these
-algorithms have complexities that limit their application range. A
-different approach is to handle nested structures with parametrized
-complexity, where the parameter describes the complexity of the
-structure(s), an example is~\cite{Moehl:CPM} for alignment.  Finally,
-the ILP approach Lara aligns arbitrarily complex crossing structures
-and turns out to be more effective than the dynamic programming based
-approaches. The success of this AI technique was a strong motivation
-for this work, where we study the alignment of RNAs with structures of
-unlimited comlexity using constraint programming.
+schemes~\cite{Zuker:Stiegler:Optim_compu_foldi:NAR1981,Jiang:Lin:Ma:Gener_Edit_Dista:JCB2002}. The
+class of crossing RNA structures $P$ restricts the degree of base
+pairing to at most one, as it is commonly assumed for single RNA
+structure. Prediction and alignment in this class is NP-hard in
+general~\cite{blin07:_exten_hardn_rna_secon_struc_compar}. However,
+one can devise a number of algorithms that efficiently predict or
+align RNAs with structures from classes in between non-crossing and
+arbitrary
+crossing.~\cite{Rivas:Eddy:dynam_progr_algor:JMB1999,Reeder:Giegerich:Desig_imple_and:2004,Moehl:Will:Backofen:PKalign:JCB2010}. However
+these algorithms have complexities that limit their application
+range. A different approach is to handle nested structures with
+parametrized complexity, where the parameter describes the complexity
+of the structure(s), an example is~\cite{Moehl:Will:Backofen:CPM2008} for alignment.
+Finally, the ILP approach Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} aligns arbitrarily complex
+crossing structures and turns out to be more effective than dynamic
+programming based approaches. The success of this AI technique was a
+strong motivation for this work, where we study the alignment of RNAs
+with structures of unlimited complexity using constraint programming.
 \paragraph{Contribution} We devise a constraint algorithm for the
 problem of aligning two RNA molecules with given sequences and
 arbitrary, i.e. unlimited secondary structures. We describe the
-constraint model, develop a special RNA alignment propagator, and
-present a specific search strategy. The approach was implemented using
-the Gecode constraint programming system. Finally, we give preliminary
+constraint model, develop a new RNA alignment propagator, and present
+a specific search strategy. The approach was implemented using the
+Gecode constraint programming system. Finally, we give preliminary
 results of our approach.
 
 \section{Methods}
@@ -132,9 +140,9 @@ $A\cap(\PSET{(j,j')}{j>i,j'>i'}\cup\PSET{(j,-)|j>i}\cup\PSET{(-,j')|j'>i'}$.
 
 
 %% Define alignment problem, i.p. scoring for unlimited structure.
-Fix two arc-annotated sequences $(S_a,P_a)$ and $(S_b,P_b)$ with for
-unlimited structures $P_a$ and $P_b$. Define the score of an
-alignment A of $(S_a,P_a)$ and $(S_b,P_b)$ as
+Fix two arc-annotated sequences $(S_a,P_a)$ and $(S_b,P_b)$ with
+unlimited structures $P_a$ and $P_b$. Define the score of alignment $A$
+of $(S_a,P_a)$ and $(S_b,P_b)$ as
 \begin{displaymath}
   \score(A_m\cup A_g) :=
   \sum_{(i,i')\in A_m} \sigma(i,i')
@@ -189,25 +197,25 @@ regardless of $\var{M}_i$.
 We introduce a constraint \texttt{Alignment}$(\vec{MD},\vec{M})$ that is
 satisfied by any valuation with a corresponding alignment.  
 
-In addition to modelling alignments, we need to model the score of the
-alignment. Therefore, we introduce a variable $\var{Score}$ together
-with a constraint
-\texttt{AlignmentScore}$(\vec{MD},\vec{M},\var{Score})$. This constraint
-relates a valuation of $\var{MD}$ and $\var{M}$ to the score of its
-corresponding alignment.
+Furthermore, we model the score of the
+alignment. Therefore, we introduce a variable $\var{Score}$ and a
+constraint
+\texttt{AlignmentScore}$(\vec{MD},\vec{M},\var{Score})$. This
+constraint relates a valuation of $\var{MD}$ and $\var{M}$ to the
+score of its corresponding alignment.
 
 Both constraints are propagated by the propagator of the next
 subsection. For finding optimal alignments we perform a
 branch-and-bound search enumerating $\var{MD}$ and $\var{M}$ according
 to a specific search strategy described at the end of the next
-section. Applying branch-and-bound succesfully requires good upper
+section. Applying branch-and-bound successfully requires good upper
 bounds for the alignment score, such that large parts of the search
 tree can be pruned. Computing such a bound efficiently is the central
 job of the alignment propagator.
 
 \subsection{The Alignment Propagator}
 
-The alignment propagator computes hyper-arc consistency for constraint
+The alignment propagator computes hyper-arc consistency for the constraint
 \texttt{Alignment}$(\vec{MD},\vec{M})$ and propagates
 \texttt{AlignmentScore}$(\vec{MD},\vec{M},\var{Score})$.
 
@@ -240,10 +248,11 @@ of \var{Score}.
 For a moment, postpone how to efficiently compute
 $\operatorname{ubound}_D(i,i')$. Then, because the relaxed score has
 the form of a sequence similarity score, one can apply the
-Smith-Waterman algorithm~\cite{SmithWaterman} to maximize the relaxed
-score in $O(n^2)$ by dynamic programming. The optimization problem is
-easily constrained due to domain $D$, because domains directly
-restrict the valid cases in the dynamic programming recursion.
+Smith-Waterman algorithm~\cite{smith81:_compar_bioseq} to maximize the
+relaxed score in $O(n^2)$ by dynamic programming. The optimization
+problem is easily constrained due to domain $D$, because domains
+directly restrict the valid cases in the dynamic programming
+recursion.
 
 Tracing back through the dynamic programming matrix yields an alignment
 $A^l$ such that $\score{A^l}$ is a lower bound of $\var{Score}$.
@@ -272,11 +281,11 @@ maximization of $\sum_{\substack{(i,j)\in P_a,(i',j')\in
 in $\cA(D)$. A match (j,j') is valid in any alignment in $\cA(D)$ if
 and only of $j'\in D(\var{MD}_j)$ and $1\in D(\var{M}_j)$. However, we
 look for the best set of simultaneously valid matches $(j,j')$. This
-subproblem has a similar struture to sequence alignment and is thus
+subproblem has a similar structure to sequence alignment and is thus
 solved efficiently by dynamic programming and
 $\operatorname{ubound}(i,i')$ is computed in $O(kk')$ time, where $k$
 and $k'$ are the respective number of base pairs incident to $i$ and
-$i'$. For many applications $k$ and $k'$ can be constanly bounded
+$i'$. For many applications $k$ and $k'$ can be constantly bounded
 such that the propagator runs in $O(n^2)$ time and space.
 
 \paragraph{Propagator-guided search strategy}
@@ -298,34 +307,67 @@ this variable to select the 20\% highest relaxed scores first.
 
 \section{Results}
 
-The method is implemented in C++ using the constraint programming
-system Gecode. 
+The method, called Carna, is implemented in C++ using the constraint
+programming system Gecode. For handling input and output as well as
+for special datastructures reuse code of
+LocARNA~\cite{Will:etal:_infer_non_codin_rna_famil:PLOS2007}.
 
-{\bf Here we need to add some more concrete results. We can write about the following:}
-We run preliminary tests for several application scenarios. First, we
-try the behavior with crossing input structure, where our alignment
-problem is comparable to the problems solved by PKalign, ... and Lara
-on fixed input structures. Our prototype solves alignments from all
-Rfam families with crossing structure in very fast time and was able
-to align RNaseP and tmRNA. Compared to this, our dynamic programming
-for alignment of pseudoknotted RNA is already much slower on the less
-complex instances of the test set.  The performance of Lara on this
-benchmark set is comparable to our approach.
+We run tests for two application scenarios. First, we explore Carna's
+behavior on crossing input structure and compare the results to
+Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} in
+Table~\ref{tab:results}. Carna solves alignments from all Rfam
+families with crossing structure. The performance of Lara and Carna on
+this benchmark set is comparable. In contrast to Lara, which
+heuristically limits its run-time, Carna always solves the problem to
+optimality.
 
-Our second application scenario is aligning dot-plot matrices. RNA
-dot-plots as computed by RNAfold\cite{RNAfold} contain probabilities
-for each base pair. By filtering with a probability cut-off, we obtain
-an unlimited structure that contains only interesting base pairs. We
-align such unlimited structures using base pair similarities that are
-derived from the base pair probabilities. This approach is known from
-PMcomp or LocARNA. The result is an alignment that is not only guided
-by a single common structure but the common structural potential of
-both RNAs.
+In our second scenario we align dot-plot matrices as computed by
+RNAfold\cite{Hofacker:Fontana:Stadler:Bonhoeffer:Tacker:Schuster:MonChem1994}. We
+obtain unlimited input structures by base pair filtering as e.g. done
+in LocARNA. As in LocARNA and
+PMcomp~\cite{Hofacker:Bernhart:Stadler:Align_RNA_base:2004} base pair
+similarities are weighted according to the base pair
+probabilities. This results in alignments that are not only guided by
+a single common structure but the common structural potential of both
+RNAs. We align two tRNAs closing the search tree after nine nodes. Two
+TPP riboswitches of sizes 108 and 111 are aligned in 0.24 seconds
+closing the tree after 100 nodes.
+
+\begin{table}
+  \centering
+  \begin{tabular}{c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}}
+    Family           
+    & \multicolumn{2}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c@{\hspace{3pt}}}{Lengths} 
+    & \multicolumn{2}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c@{\hspace{3pt}}}{Run-time (s)} 
+    & \multicolumn{4}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c}{Carna Search Tree} \\
+    \hline\hline
+                     &$S_a$&$S_b$& Carna& Lara & Depth & Sols & Fails & Size\\ %% user time
+    \hline
+    Alpha\_RBS       & 109 & 106 & 0.06 & 0.03 & 63 & 5 & 59 & 63 \\
+    Antizyme\_FSE    &  59 &  56 & 0.00 & 0.01 &  0 & 1 &  0 &  0 \\
+    Corona\_FSE      &  79 &  87 & 0.01 & 0.02 & 22 & 1 & 22 & 22 \\
+    Corona\_pk3      &  62 &  63 & 0.05 & 0.01 & 18 & 1 & 18 & 18 \\
+    Entero\_OriR     & 126 & 130 & 0.03 & 0.18 & 46 & 5 & 42 & 46 \\
+    Intron\_gpI      & 443 & 436 & 0.1  & 0.2  & 0  & 1 &  0 &  0 \\
+    IRES\_Cripavirus & 202 & 199 & 0.2  & 0.04 &204 &12 &221 &232 \\
+    Parecho\_CRE     & 113 & 115 & 0.04 & 0.03 & 71 & 1 & 71 & 71 \\
+    Prion\_pknot     &  41 &  41 & 0.0  & 0.03 & 7  & 1 &  7 &  7 \\
+    RNaseP\_arch     & 303 & 367 & 0.5  & 1.4  & 66 & 1 & 66 & 66 \\
+    RNaseP\_bact\_b  & 408 & 401 & 4.4  & 2.3  &416 &23 &1282&1304\\
+    RNaseP\_nuc      & 317 & 346 & 0.07 & 2.9  & 29 & 2 & 28 & 29 \\
+    RydC             &  64 &  66 & 0.01 & 0.0  & 0  & 1 & 0  & 0  \\
+    Telomerase-vert  & 448 & 451 & 0.56 & 2.3  &181 & 7 &175 &181 \\
+    tmRNA            & 384 & 367 & 76   & 3.7  &478 &28 &18937&18964\\
+    Tymo\_tRNA-like  &  84 &  84 & 0.02 & 0.02 &67  & 1 & 67 & 67\\
+  \end{tabular}\\[6pt]
+  \caption{Results for the benchmark set with crossing structures.}
+  \label{tab:results}
+\end{table}
 
 \section{Discussion}
 
-We could demonstrate that a constraint-based approach to RNA alignment
-could be competitive with the ILP based method Lara for crossing
+We showed that a constraint-based approach to RNA alignment
+can be competitive with the ILP based method Lara for crossing
 structures. Moreover, the approach is the first such method for
 unlimited structure. The full potential of this method and potential
 biological applications, e.g. for aligning dot-plots have still to be
@@ -334,5 +376,11 @@ further extensions and improvements. Solving relaxed problems in
 propagators for handling crossing and unlimited RNA structure was
 shown to be a viable approach and appears to be generalizable to
 related problems.
+
+\paragraph{Acknowledgments} This work is supported by the German
+Research Foundation DFG grant WI 3628/1-1.
+
+\bibliographystyle{plain}
+\bibliography{all}
 
 \end{document}
