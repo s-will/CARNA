@@ -43,9 +43,6 @@
   with crossing structures. Here, we present a constraint approach for
   alignment of structures in the even more general class of unlimited
   structures.
-  \mm{I like this better than "class of structures with unlimited
-  complexity" since grammatically one can then also think that the
-   approach has unlimited complexity}
   Our central contribution is a new RNA alignment constraint
   propagator. It is based on an efficient $O(n^2)$ relaxation of the
   RNA alignment problem. Our constraint-based approach Carna solves
@@ -93,10 +90,6 @@ Other approaches for RNA alignment handle crossing structures with
 parameterized complexity, were the parameter captures the complexity
 of the
 structures~\cite{Evans:finding:CPM99,Moehl:Will:Backofen:CPM2008}.
-\mm{I changed the sentence, since I think parameterized complexity
- only works for alignment with fixed structures and not for
- prediction (where the structures are not fix). Maybe the additional
- evans reference is not necessary, if it takes too much space.}
 %A different approach is to handle nested structures with
 %parametrized complexity, where the parameter describes the complexity
 %of the structure(s), an example is~\cite{Moehl:Will:Backofen:CPM2008}
@@ -104,7 +97,9 @@ structures~\cite{Evans:finding:CPM99,Moehl:Will:Backofen:CPM2008}.
 Finally, the ILP approach
 Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} aligns
 arbitrarily complex crossing structures and turns out to be more
-effective than dynamic programming based approaches. \mm{is Lara not also able to align unlimited instead of crossing structures?}The success of
+effective than dynamic programming based approaches. 
+\mm{is Lara not also able to align unlimited instead of crossing structures?} 
+The success of
 this AI technique was a strong motivation for this work, where we
 study the alignment of RNAs with structures of unlimited complexity
 using constraint programming.
@@ -260,8 +255,10 @@ over all alignments in $\cA(D)$, where
   \operatorname{ubound}_D(i,i') := & \max_{A\in\cA(D)} \sum_{\substack{(i,j)\in P_a,\\(i',j')\in P_b,\\(i,i')\in A,\\(j,j')\in A}} \tau(i,j,i',j')
   & + \max_{A\in\cA(D)} \sum_{\substack{(j,i)\in P_a,\\(j',i')\in P_b,\\(i,i')\in A,\\(j,j')\in A}} \tau(j,i,j',i').
 \end{align*}
-\mm{I changed the order of the arguments from $\tau(i,i',j,j')$ to
-  $\tau(i,j,i',j')$ etc to be consistent to previous occurences. Should we write $(i,i')\in A_m$ instead of $(i,i')\in A$? But then we should probably also write $A=A_m\cup A_g\in\cA(D)$. I am not sure.}.
+\mm{
+%I changed the order of the arguments from $\tau(i,i',j,j')$ to
+%$\tau(i,j,i',j')$ etc to be consistent to previous occurences. 
+Should we write $(i,i')\in A_m$ instead of $(i,i')\in A$? But then we should probably also write $A=A_m\cup A_g\in\cA(D)$. I am not sure.}.
 
 
 Here, $\operatorname{ubound}_D$ works as an upper bound for the score
@@ -304,8 +301,9 @@ $\vec{M}$ using the two matrices.
 It remains to describe the efficient computation of
 $\operatorname{ubound}_D(i,i')$. It suffices to describe the
 maximization of $\sum_{\substack{(i,j)\in P_a,(i',j')\in
-    P_b,\\(i,i')\in A,(j,j')\in A}} \tau(i,j,i',j')$ \mm{reordered
-  arguments of $\tau$, see earlier comment} over alignments in
+    P_b,\\(i,i')\in A,(j,j')\in A}} \tau(i,j,i',j')$ 
+%\mm{reordered  arguments of $\tau$, see earlier comment} OK
+over alignments in
 $\cA(D)$. A single match $(j,j')$ can occur in an alignment in
 $\cA(D)$ if $j'\in D(\var{MD}_j)$ and $1\in D(\var{M}_j)$. However, we
 look for the best set of simultaneously valid matches $(j,j')$. This
