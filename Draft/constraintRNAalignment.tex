@@ -3,7 +3,7 @@
 \usepackage{amsmath}
 \usepackage{multicol}
 
-\newcommand{\SET}[1]{\{#1\}} 
+\newcommand{\SET}[1]{\{#1\}}
 \newcommand*{\PSET}[2]{\{\,#1\mid#2\,\}}
 
 \newcommand{\score}{\operatorname{score}}
@@ -14,11 +14,13 @@
 \addtolength{\voffset}{-1.05cm}
 \addtolength{\textheight}{2.1cm}
 
+\newcommand{\ale}[1]{{\bfseries [Ale:\ #1]}}
+
 \title{Alignnment of RNA with Structures of Unlimited Complexity}
 
-\author{Alessandro Dal Pal{\'u}$^1$, Mathias M{\"o}hl$^2$, and Sebastian Will$^{2,3}$}
+\author{Alessandro Dal Pal{\`u}$^1$, Mathias M{\"o}hl$^2$, and Sebastian Will$^{2,3}$}
 
-\institute{Dipartimento di Matematica, Universit√† degli Studi di
+\institute{Dipartimento di Matematica, Universit\`a† degli Studi di
   Parma, Parma, Italy, \email{alessandro.dalpalu@unipr.it} \and
   Bioinformatics, Institute of Computer Science,
   Albert-Ludwigs-Universit\"{a}t, Freiburg, Germany,
@@ -49,7 +51,7 @@
 
 In the post-genomic era, biologists get more and more interested in
 studying non-coding RNA molecules with catalytic and regulatory
-activity as central players in biological systems. 
+activity as central players in biological systems.
 %
 The computational analysis of non-coding RNA requires to take
 structural information into account.
@@ -59,7 +61,7 @@ structural information into account.
 %evolutionary conserved. However, unlike for proteins, it is much more
 %common for homologuous non-coding RNAs that their similarity is barely
 %visible at the sequence level but almost exclusively in their
-%structure.  
+%structure.
 %
 Whereas RNAs form three-dimensional structures, structural analysis of
 RNA is usually concerned with the secondary structure of an RNA, i.e.
@@ -150,12 +152,14 @@ of $(S_a,P_a)$ and $(S_b,P_b)$ as
   + \sum_{\substack{(i,j)\in P_a,(i',j')\in P_b,\\(i,i')\in A_m,(j,j')\in A_m}} \tau(i,j,i',j')
   \quad + \quad\gamma |A_g|,
 \end{displaymath}
-where $\sigma(i,j)$ is the similarity of bases $S_a[i]$ and $S_b[j]$
-and $\tau(i,j,i',j')$ is the similarity of base pairs $(i,j)\in P_a$
-and $(i',j')\in P_b$.
+where $\sigma(i,j)$ is the similarity of bases $S_a[i]$ and $S_b[j]$,
+$\tau(i,j,i',j')$ is the similarity of base pairs $(i,j)\in P_a$
+and $(i',j')\in P_b$ and $\gamma$ is the gap cost.
 % For $i'<i$, define $\tau(i',i,j',j):=\tau(i,i',j,j')$.
 
-The \emph{alignment problem} is to determine 
+\ale{gamma was not mentioned}
+
+The \emph{alignment problem} is to determine
 \begin{displaymath}
   \argmax_{\text{$A$ alignment of $(S_a,P_a)$ and $(S_b,P_b)$}} \score(A).
 \end{displaymath}
@@ -194,6 +198,7 @@ $\begin{array}{c}
 corresponds to the valuation $\vec{MD}=(1,4,4,5)$ and $\vec{M}=(1,1,0,1)$.
 
 Notably, alignments corresponding to a valuation that assigns $M_i=j$
+\ale{shouldnt be $MD_i=j$?}
 can be composed from an alignment of prefixes $S_a[1..i]$ and
 $S_b[1..j]$ and an alignment of suffixes $S_a[i+1..|S_a|]$ and $S_b[j+1..|S_b|]$
 regardless of $\var{M}_i$.
@@ -254,7 +259,7 @@ For a moment, postpone how to efficiently compute
 $\operatorname{ubound}_D(i,i')$. Then, because the relaxed score has
 the form of a sequence similarity score, one can apply the
 Smith-Waterman algorithm~\cite{smith81:_compar_bioseq} to maximize the
-relaxed score in $O(n^2)$ by dynamic programming. The optimization
+relaxed score in $O(n^2)$ by dynamic programming.\ale{I would replace $n$ by $\max(|S_a|,|S_b|)$} The optimization
 problem is easily constrained due to domain $D$, because domains
 directly restrict the valid cases in the dynamic programming
 recursion.
@@ -345,9 +350,9 @@ closing the tree after 100 nodes.
 \begin{table}
   \centering
   \begin{tabular}{c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}}
-    Family           
-    & \multicolumn{2}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c@{\hspace{3pt}}}{Lengths} 
-    & \multicolumn{2}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c@{\hspace{3pt}}}{Run-time (s)} 
+    Family
+    & \multicolumn{2}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c@{\hspace{3pt}}}{Lengths}
+    & \multicolumn{2}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c@{\hspace{3pt}}}{Run-time (s)}
     & \multicolumn{4}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c}{Carna Search Tree} \\
     \hline\hline
                      &$S_a$&$S_b$& Carna& Lara & Depth & Sols & Fails & Size\\ %% user time
