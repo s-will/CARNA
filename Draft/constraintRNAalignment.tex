@@ -1,6 +1,7 @@
 \documentclass[11pt]{llncs}
 
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{multicol}
 
 \newcommand{\SET}[1]{\{#1\}}
@@ -15,7 +16,7 @@
 \addtolength{\textheight}{2.1cm}
 
 %\newcommand{\ale}[1]{{\bfseries [Ale:\ #1]}}
-
+\newcommand{\mm}[1]{{\bfseries [Mathias:\ #1]}}
 \title{Alignnment of RNA with Structures of Unlimited Complexity}
 
 \author{Alessandro Dal Pal{\`u}$^1$, Mathias M{\"o}hl$^2$, and Sebastian Will$^{2,3}$}
@@ -40,13 +41,16 @@
   dependencies.  Nevertheless those dependencies are essential and
   conserved features of many RNAs. Only few existing approaches deal
   with crossing structures. Here, we present a constraint approach for
-  alignment of structures in the even more general class of structures
-  with unlimited complexity. Our central contribution is a new RNA
-  alignment constraint propagator. It is based on an efficient
-  $O(n^2)$ relaxation of the RNA alignment problem. Our
-  constraint-based approach Carna solves the alignment problem for
-  sequences with given input structures of unlimited complexity. Carna
-  is implemented using Gecode.
+  alignment of structures in the even more general class of unlimited
+  structures.
+  \mm{I like this better than "class of structures with unlimited
+  complexity" since grammatically one can then also think that the
+   approach has unlimited complexity}
+  Our central contribution is a new RNA alignment constraint
+  propagator. It is based on an efficient $O(n^2)$ relaxation of the
+  RNA alignment problem. Our constraint-based approach Carna solves
+  the alignment problem for sequences with given input structures of
+  unlimited complexity. Carna is implemented using Gecode.
 \end{abstract}
 
 In the post-genomic era, biologists get more and more interested in
@@ -76,22 +80,31 @@ class of nested structures $P$, where base-pairs do not cross, because
 for this class one can find efficient dynamic programming algorithms
 for structure prediction and alignment under reasonable scoring
 schemes~\cite{Zuker:Stiegler:Optim_compu_foldi:NAR1981,Jiang:Lin:Ma:Gener_Edit_Dista:JCB2002}. The
-class of crossing RNA structures $P$ restricts the degree of base
-pairing to at most one, as it is commonly assumed for single RNA
-structure. Prediction and alignment in this class is NP-hard in
+more general class of crossing RNA structures $P$ restricts the degree
+of base pairing to at most one, as it is commonly assumed for single
+RNA structure. Prediction and alignment in this class is NP-hard in
 general~\cite{blin07:_exten_hardn_rna_secon_struc_compar}. However,
 one can devise a number of algorithms that efficiently predict or
 align RNAs with structures from classes in between non-crossing and
 arbitrary
 crossing.~\cite{Rivas:Eddy:dynam_progr_algor:JMB1999,Reeder:Giegerich:Desig_imple_and:2004,Moehl:Will:Backofen:PKalign:JCB2010}. However
-these algorithms have complexities that limit their application
-range. A different approach is to handle nested structures with
-parametrized complexity, where the parameter describes the complexity
-of the structure(s), an example is~\cite{Moehl:Will:Backofen:CPM2008}
-for alignment.  Finally, the ILP approach
+these algorithms have complexities that limit their application range.
+Other approaches for RNA alignment handle crossing structures with
+parameterized complexity, were the parameter captures the complexity
+of the
+structures~\cite{Evans:finding:CPM99,Moehl:Will:Backofen:CPM2008}.
+\mm{I changed the sentence, since I think parameterized complexity
+ only works for alignment with fixed structures and not for
+ prediction (where the structures are not fix). Maybe the additional
+ evans reference is not necessary, if it takes too much space.}
+%A different approach is to handle nested structures with
+%parametrized complexity, where the parameter describes the complexity
+%of the structure(s), an example is~\cite{Moehl:Will:Backofen:CPM2008}
+%for alignment.  
+Finally, the ILP approach
 Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} aligns
 arbitrarily complex crossing structures and turns out to be more
-effective than dynamic programming based approaches. The success of
+effective than dynamic programming based approaches. \mm{is Lara not also able to align unlimited instead of crossing structures?}The success of
 this AI technique was a strong motivation for this work, where we
 study the alignment of RNAs with structures of unlimited complexity
 using constraint programming.
@@ -113,10 +126,10 @@ $\{A,U,C,G\}$ and an \emph{RNA structure} $P$ is a set of \emph{base
 and RNA structure and denote the $i$-th symbol of $S$ by $S[i]$.
 
 One constructs a hierarchy of RNA structure classes based on the
-following properties. Two arcs $(i,j)$ and $(i','j)$ are called
+following properties. Two arcs $(i,j)$ and $(i',j')$ are called
 \emph{nested} iff $i<i'<j'<j$ or $i'<i<j<j'$, they are
-\emph{independent} iff $i<j<i'<j'$ or $i'<j'<'<j$.
-
+\emph{independent} iff $i<j<i'<j'$ or $i'<j'<i<j$.
+%
 A RNA structure $P$ is called \emph{nested} if all differing base
 pairs $(i,j),(i',j')\in P$ are either nested or independent.  In a
 crossing RNA structure $P$ each base is involved in at most one base
@@ -132,8 +145,8 @@ $(S_a,P_a)$ and $(S_b,P_b)$ is a set $A_m\cup A_g$, where
 $A_m\subseteq [1..|S_a|] \times [1..|S_b|]$ is a set of \emph{match
   edges} such that for all $(i,j),(i',j')\in A_m$ holds 1.) $i>i'$
 implies $j>j'$ and 2.)  $i=i'$ if and only if $j=j'$ and $A_g$ is the
-set of \emph{gap edges} $\PSET{(x,-)}{x\in [1..|S_a|]\land \not\exists
-  y: (x,y)\in A_m}\cup\PSET{(-,y)}{y\in [1..|S_b|]\land \not\exists x:
+set of \emph{gap edges} $\PSET{(x,-)}{x\in [1..|S_a|]\land \nexists
+  y: (x,y)\in A_m}\cup\PSET{(-,y)}{y\in [1..|S_b|]\land \nexists x:
   (x,y)\in A_m}$.
 %
 We define the \emph{$(i,i')$-prefix of $A$} as
@@ -162,6 +175,7 @@ The \emph{alignment problem} is to determine
   \argmax_{\text{$A$ alignment of $(S_a,P_a)$ and $(S_b,P_b)$}} \score(A).
 \end{displaymath}
 
+\mm{maybe we should insert here some words how this is related to the Lara model?}
 
 \newcommand{\var}{\texttt}
 \newcommand{\cA}{{\mathcal A}}
@@ -243,9 +257,12 @@ pair match are decoupled. Thus in the \emph{relaxed optimization
 \vspace{-8pt}
 over all alignments in $\cA(D)$, where
 \begin{align*}
-  \operatorname{ubound}_D(i,i') := & \max_{A\in\cA(D)} \sum_{\substack{(i,j)\in P_a,\\(i',j')\in P_b,\\(i,i')\in A,\\(j,j')\in A}} \tau(i,i',j,j')
-  & + \max_{A\in\cA(D)} \sum_{\substack{(j,i)\in P_a,\\(j',i')\in P_b,\\(i,i')\in A,\\(j,j')\in A}} \tau(i',i,j',j).
+  \operatorname{ubound}_D(i,i') := & \max_{A\in\cA(D)} \sum_{\substack{(i,j)\in P_a,\\(i',j')\in P_b,\\(i,i')\in A,\\(j,j')\in A}} \tau(i,j,i',j')
+  & + \max_{A\in\cA(D)} \sum_{\substack{(j,i)\in P_a,\\(j',i')\in P_b,\\(i,i')\in A,\\(j,j')\in A}} \tau(j,i,j',i').
 \end{align*}
+\mm{I changed the order of the arguments from $\tau(i,i',j,j')$ to
+  $\tau(i,j,i',j')$ etc to be consistent to previous occurences. Should we write $(i,i')\in A_m$ instead of $(i,i')\in A$? But then we should probably also write $A=A_m\cup A_g\in\cA(D)$. I am not sure.}.
+
 
 Here, $\operatorname{ubound}_D$ works as an upper bound for the score
 contributions by arc matches involving $(i,i')$ and consequently
@@ -287,12 +304,15 @@ $\vec{M}$ using the two matrices.
 It remains to describe the efficient computation of
 $\operatorname{ubound}_D(i,i')$. It suffices to describe the
 maximization of $\sum_{\substack{(i,j)\in P_a,(i',j')\in
-    P_b,\\(i,i')\in A,(j,j')\in A}} \tau(i,i',j,j')$ over alignments
-in $\cA(D)$. A single match $(j,j')$ can occur in an alignment in
+    P_b,\\(i,i')\in A,(j,j')\in A}} \tau(i,j,i',j')$ \mm{reordered
+  arguments of $\tau$, see earlier comment} over alignments in
+$\cA(D)$. A single match $(j,j')$ can occur in an alignment in
 $\cA(D)$ if $j'\in D(\var{MD}_j)$ and $1\in D(\var{M}_j)$. However, we
 look for the best set of simultaneously valid matches $(j,j')$. This
 subproblem has a similar structure to sequence alignment and is thus
-solved efficiently by dynamic programming. Thus,
+solved efficiently by dynamic programming.\mm{can we add a little bit
+  more detail here?It this essentially, that we only want to consider
+  sets of $(j,j')$'s that can be aligned simultaneously?} Thus,
 $\operatorname{ubound}(i,i')$ is computed in $O(kk')$ time, where $k$
 and $k'$ are the respective number of base pairs incident to $i$ and
 $i'$. For many applications $k$ and $k'$ can be constantly bounded
@@ -319,7 +339,7 @@ variable to select the 20\% highest relaxed scores first.
 
 The method, called Carna, is implemented in C++ using the constraint
 programming system Gecode. For handling input and output as well as
-for special datastructures reuse code of
+for special datastructures we reused code of
 LocARNA~\cite{Will:etal:_infer_non_codin_rna_famil:PLOS2007}.
 
 We run tests for two application scenarios. First, we explore Carna's
