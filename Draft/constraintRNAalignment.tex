@@ -14,7 +14,7 @@
 \addtolength{\voffset}{-1.05cm}
 \addtolength{\textheight}{2.1cm}
 
-\newcommand{\ale}[1]{{\bfseries [Ale:\ #1]}}
+%\newcommand{\ale}[1]{{\bfseries [Ale:\ #1]}}
 
 \title{Alignnment of RNA with Structures of Unlimited Complexity}
 
@@ -24,7 +24,7 @@
   Parma, Parma, Italy, \email{alessandro.dalpalu@unipr.it} \and
   Bioinformatics, Institute of Computer Science,
   Albert-Ludwigs-Universit\"{a}t, Freiburg, Germany,
-  \email{\{mmohl,will\}@informatik.uni-freiburg.de} \and Computational
+  \email{\{mmohl,will\}@informatik.uni-freiburg.de} \and Computation and
   Biology Lab, CSAIL, MIT, Cambridge MA, USA,
   \email{swill@csail.mit.edu}}
 
@@ -157,8 +157,6 @@ $\tau(i,j,i',j')$ is the similarity of base pairs $(i,j)\in P_a$
 and $(i',j')\in P_b$ and $\gamma$ is the gap cost.
 % For $i'<i$, define $\tau(i',i,j',j):=\tau(i,i',j,j')$.
 
-\ale{gamma was not mentioned}
-
 The \emph{alignment problem} is to determine
 \begin{displaymath}
   \argmax_{\text{$A$ alignment of $(S_a,P_a)$ and $(S_b,P_b)$}} \score(A).
@@ -197,8 +195,7 @@ $\begin{array}{c}
 \end{array},$
 corresponds to the valuation $\vec{MD}=(1,4,4,5)$ and $\vec{M}=(1,1,0,1)$.
 
-Notably, alignments corresponding to a valuation that assigns $M_i=j$
-\ale{shouldnt be $MD_i=j$?}
+Notably, alignments corresponding to a valuation that assigns $MD_i=j$
 can be composed from an alignment of prefixes $S_a[1..i]$ and
 $S_b[1..j]$ and an alignment of suffixes $S_a[i+1..|S_a|]$ and $S_b[j+1..|S_b|]$
 regardless of $\var{M}_i$.
@@ -259,10 +256,10 @@ For a moment, postpone how to efficiently compute
 $\operatorname{ubound}_D(i,i')$. Then, because the relaxed score has
 the form of a sequence similarity score, one can apply the
 Smith-Waterman algorithm~\cite{smith81:_compar_bioseq} to maximize the
-relaxed score in $O(n^2)$ by dynamic programming.\ale{I would replace $n$ by $\max(|S_a|,|S_b|)$} The optimization
-problem is easily constrained due to domain $D$, because domains
-directly restrict the valid cases in the dynamic programming
-recursion.
+relaxed score in $O(n^2)$ by dynamic programming, where
+$n=\max(|S_a|,|S_b|)$. The optimization problem is easily constrained
+due to domain $D$, because domains directly restrict the valid cases
+in the dynamic programming recursion.
 
 Tracing back through the dynamic programming matrix yields an alignment
 $A^l$ such that $\score{A^l}$ is a lower bound of $\var{Score}$.
