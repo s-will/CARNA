@@ -282,13 +282,13 @@ $A^l$ such that $\score{A^l}$ is a lower bound of $\var{Score}$.
 %
 Furthermore, we compute upper bounds for each single variable
 valuation. This requires to complement the above ``forward algorithm''
-that computes the matrix
+that computes the matrix entries
 \vspace{-4pt}
 \begin{displaymath}
   \operatorname{Prefix}{(i,i')} := \max_{\text{$(i,i')$-prefix
       $A^p_{ii'}$ of }A\in\cA(D)} \score_\text{relaxed}(A^p_{ii'})\\[-6pt]
 \end{displaymath}
-by a symmetric ``backward algorithm'' computing the matrix entries
+by a symmetric ``backward algorithm'' that computes the entries
 \begin{math}
  \operatorname{Suffix}{(i,i')} :=
   \max_{\text{$(i,i')$-suffix $A^s_{ii'}$ of }A\in\cA(D)}
