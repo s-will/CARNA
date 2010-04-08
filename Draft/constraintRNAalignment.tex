@@ -319,13 +319,10 @@ space.
 
 \paragraph{Affine gap cost}
 The method is straightforwardly extended to affine gap cost by using a
-Gotoh-like algorithm in the propagator without increasing its
-complexity. It appears that this modification, which doesn't require
-any change of the model, comes more natural in our approach than the
-corresponding extensions in ILP.  \mm{I think this would be clearer:
-  It appears that this modification comes more natural in our approach
-  than the corresponding extension in ILP, since it does not require
-  any change of the model.}
+Gotoh-like forward and backward algorithm in the propagator without
+increasing its complexity. It appears that this modification comes
+more natural in our approach than the corresponding extension in ILP,
+because it does not require any change of the model.
 
 \paragraph{Propagator-guided search strategy}
 %Idea of guiding the search by backtrace.
@@ -421,8 +418,9 @@ extensions and improvements. Solving relaxed problems in propagators
 for handling crossing and unlimited RNA structure was shown to be a
 viable approach and appears to be generalizable to related problems.
 
-\paragraph{Acknowledgments} This work is partially supported by the German
-Research Foundation (DFG grant WI 3628/1-1).
+%\paragraph{Acknowledgments} This work is partially supported by the German
+%Research Foundation (DFG grant WI 3628/1-1).
+\paragraph{Acknowledgments} This work is partially supported by DFG grant WI 3628/1-1.
 
 \bibliographystyle{plain}
 \bibliography{all}
