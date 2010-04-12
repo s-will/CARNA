@@ -70,12 +70,19 @@ the set of RNA base pairs $(i,j)$ that form contacts (H-bonds) between
 the bases $i$ and $j$. The RNA alignment problem is to align two RNA
 sequences $A$ and $B$ with given secondary structure for each RNA such
 that a score based on sequence and structure similarity is
-optimized. The difficulty of this problem depends on the complexity of
-the RNA structures. Therefore, a complexity hierarchy of RNA
-structures was introduced. Most RNA analysis is performed for the
-class of nested structures $P$, where base-pairs do not cross, because
-for this class one can find efficient dynamic programming algorithms
-for structure prediction and alignment under reasonable scoring
+optimized. A more general variant, the problem of simultaneous
+alignment and folding (SAF), works with non-fixed structures as
+input. It does not only generate the alignment, but simultaneously
+selects a structure for each of the two sequences such that a score
+that may depend on both the alignment and the selected structures is
+maximized.
+
+The difficulty of these problems depends on the complexity of the RNA
+structures. Therefore, a complexity hierarchy of RNA structures was
+introduced. Most RNA analysis is performed for the class of nested
+structures $P$, where base-pairs do not cross, because for this class
+one can find efficient dynamic programming algorithms for structure
+prediction and alignment under reasonable scoring
 schemes~\cite{Zuker:Stiegler:Optim_compu_foldi:NAR1981,Jiang:Lin:Ma:Gener_Edit_Dista:JCB2002}. The
 more general class of crossing RNA structures $P$ restricts the degree
 of base pairing to at most one, as it is commonly assumed for single
@@ -86,11 +93,10 @@ align RNAs with structures from classes in between non-crossing and
 arbitrary
 crossing.~\cite{Rivas:Eddy:dynam_progr_algor:JMB1999,Reeder:Giegerich:Desig_imple_and:2004,Moehl:Will:Backofen:PKalign:JCB2010}. However
 these algorithms have complexities that limit their application range.
-Other approaches for RNA alignment handle crossing structures with
-parametrized complexity, were the parameter captures the complexity
-of the
-structures~\cite{%Evans:finding:CPM99,
-Moehl:Will:Backofen:CPM2008}.
+Other approaches for RNA alignment handle fixed crossing structures
+with parametrized complexity, were the parameter captures the
+complexity of the structures~\cite{%Evans:finding:CPM99,
+  Moehl:Will:Backofen:CPM2008}.
 %A different approach is to handle nested structures with
 %parametrized complexity, where the parameter describes the complexity
 %of the structure(s), an example is~\cite{Moehl:Will:Backofen:CPM2008}
@@ -104,13 +110,16 @@ study the alignment of RNAs with structures of unlimited complexity
 using constraint programming.
 \paragraph{Contribution} We devise a constraint algorithm for the
 problem of aligning two RNA molecules with given sequences and
-unlimited secondary structures. By modeling and propagating
-constraints on integers, the method goes beyond rephrasing the ILP
+unlimited secondary structures. We consider both the case with fixed
+input structures and the more general case with non-fixed input
+structures where the algorithm has to find the best structures and the
+alignment simultaneously. By modeling and propagating constraints on
+integers and integer sets, the method goes beyond rephrasing the ILP
 approach~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} in CP. We
-describe the constraint model, develop a new RNA alignment propagator,
-and present a specific search strategy. It is implemented using the
-Gecode constraint programming system. Finally, we give preliminary
-results of our approach.
+describe the constraint model for each of the two problem variants,
+develop a new RNA alignment propagator, and present a specific search
+strategy. It is implemented using the Gecode constraint programming
+system. Finally, we give preliminary results of our approach.
 
 \section{Methods}
 
