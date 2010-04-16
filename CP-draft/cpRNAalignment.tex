@@ -1,4 +1,4 @@
-\documentclass[11pt]{llncs}
+\documentclass{llncs}
 
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -6,9 +6,11 @@
 
 \newcommand{\SET}[1]{\{#1\}}
 \newcommand*{\PSET}[2]{\{\,#1\mid#2\,\}}
-
-\newcommand{\score}{\operatorname{score}}
+ 
+\newcommand{\weight}{\operatorname{weight}}
 \newcommand{\argmax}{\operatorname*{arg max}}
+\newcommand{\var}{\texttt}
+\newcommand{\cA}{{\mathcal A}}
 
 % \addtolength{\hoffset}{-0.6cm}
 % \addtolength{\textwidth}{1.2cm}
@@ -16,8 +18,9 @@
 % \addtolength{\textheight}{2.1cm}
 
 %\newcommand{\ale}[1]{{\bfseries [Ale:\ #1]}}
-\newcommand{\mm}[1]{{\bfseries [Mathias:\ #1]}}
-\title{A Propagator for Weighted Ordered Partial Matching with Arbitrary Pairwise Dependencies}
+%\newcommand{\mm}[1]{{\bfseries [Mathias:\ #1]}}
+
+\title{A Propagator for Maximum Weight String Matching with Arbitrary Pairwise Dependencies}
 
 \author{Alessandro Dal Pal{\`u}$^1$, Mathias M{\"o}hl$^2$, and Sebastian Will$^{2,3}$}
 
@@ -34,9 +37,9 @@
 \maketitle
 
 \begin{abstract}
-  The optimization of weighted ordered partial matchings is a well
-  studied problem recurring in a number of application domains and can
-  be solved efficiently. The problem becomes MAX-SNP-hard as soon as
+  The optimization of weighted string matchings is a well studied
+  problem recurring in a number of application domains and can be
+  solved efficiently. The problem becomes MAX-SNP-hard as soon as
   arbitrary pairwise dependencies among the matching edges are
   introduced.  We present a global propagator for this problem which
   is based on efficiently solving a relaxation of the problem.  In the
@@ -47,144 +50,108 @@
   with state of the art methods. For the general problem with
   unrestricted dependencies, our tool constitutes the first available
   method with promising applications in this field.
-  % Sequence-structure alignment of RNA with arbitrary secondary
-  % structure is Max-SNP-hard. Therefore, the problem of RNA alignment
-  % is commonly restricted to nested structure, where dynamic
-  % programming yields efficient solutions. However, nested structure
-  % cannot model pseudoknots or even more complex structural
-  % dependencies.  Nevertheless those dependencies are essential and
-  % conserved features of many RNAs. Only few existing approaches deal
-  % with crossing structures. Here, we present a constraint approach for
-  % alignment of structures in the even more general class of unlimited
-  % structures.
-  % Our central contribution is a new RNA alignment constraint
-  % propagator. It is based on an efficient $O(n^2)$ relaxation of the
-  % RNA alignment problem. Our constraint-based approach Carna solves
-  % the alignment problem for sequences with given input structures of
-  % unlimited complexity. Carna is implemented using Gecode.
 \end{abstract}
 
+% WHAT TO SOLVE
+% what is a weighted ordered partial matching?
+The maximum weight string matching problem for strings $S_a$ and $S_b$
+asks for a partial matching of positions in $S_A$ and $S_B$ that
+preserves the string order and has maximum weight. This problem is
+efficiently solved by dynamic programming
+(DP)~\cite{smith81:_compar_bioseq}. An extended variant of the problem
+introduces pairwise dependencies among positions in each string $S_a$
+and $S_b$. In this problem variant, one optimizes the sum of weights,
+where a weight is associated with each pair of matched positions and
+with each pair of matched dependencies.  In general, this problem is
+MAX-SNP-hard~\cite{blin07:_exten_hardn_rna_secon_struc_compar}.
+
+% WHY TO SOLVE
+% applications in Bioinformatics? "Arc-annotated sequence"
+
+In bioinformatics, the problem has been studied as alignment of
+arc-annotated sequences, where each arc represents a
+dependency. There, the problem has applications in aligning RNA or
+protein molecules that can be abstracted as sequences of monomers and
+structural dependencies among those.
+
+% what are arbitrary binary dependencies?
+% - restricted dependencies (nested, restricted crossing) --> efficient
+
+Due to the hardness of the problem, restricted versions with limited
+dependencies, in particular nested and crossing ones, have been
+considered. Nested and certain restricted crossing dependencies allow
+for efficient DP
+algorithms.~\cite{Jiang:Lin:Ma:Gener_Edit_Dista:JCB2002,Moehl:Will:Backofen:PKalign:JCB2010}
+% - arbitrary crossing or unlimited --> MAX-SNP --> CP-application interesting
+
+Heuristic approach based on Integer Linear Programming (ILP) are
+available for crossing dependencies specialized to RNA
+~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} and for unlimited
+dendencies specialized to proteins~\cite{caprara02:_struc}.
+
+\paragraph{Contribution} In this work, we consider a constraint
+programming approach to the arc-annotated sequence alignment problem
+with unlimited dependencies.  Our main contribution is a general
+propagator for the maximum weight string matching with arbitrary
+pairwise dependencies. The propagator is based on a relaxation that
+resolves the dependencies by bounding their weight contribution. It
+propagates on the upper bound of the total weight and prunes the valid
+matchings accordingly. Furthermore, we discuss decomposition into
+independent subproblems for optimization using our propagator.
+
+% HOW TO SOLVE
+% Propagator
+
+% RESULTS/EVALUATION
+% comparable to ILP,
+% new applications possible (Riboswitch alignment)
+
+% CONTRIBUTIONS
+% - propagator
+% - problem specific symmetry breaking technique in optimization problem
+% - specialization and application for RNA alignment
+We apply the technique to RNA sequence-structure alignment and show
+that results are comparable to the state-of-the-art ILP approach
+Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007}. Finally, we
+explore a new method for the comparison of riboswitches that could not
+be handled by previous approaches for RNA, because they score at most
+crossing dependencies.
 
 
-In the post-genomic era, biologists get more and more interested in
-studying non-coding RNA molecules with catalytic and regulatory
-activity as central players in biological systems.
-%
-The computational analysis of non-coding RNA requires to take
-structural information into account.
-% is more involved than the analysis of DNA
-%and proteins, because many non-coding RNAs, like proteins, form
-%structure that is essential for their function and is consequently
-%evolutionary conserved. However, unlike for proteins, it is much more
-%common for homologuous non-coding RNAs that their similarity is barely
-%visible at the sequence level but almost exclusively in their
-%structure.
-%
-Whereas RNAs form three-dimensional structures, structural analysis of
-RNA is usually concerned with the secondary structure of an RNA, i.e.
-the set of RNA base pairs $(i,j)$ that form contacts (H-bonds) between
-the bases $i$ and $j$. The RNA alignment problem is to align two RNA
-sequences $A$ and $B$ with given secondary structure for each RNA such
-that a score based on sequence and structure similarity is
-optimized. A more general variant, the problem of simultaneous
-alignment and folding (SAF), works with non-fixed structures as
-input. It does not only generate the alignment, but simultaneously
-selects a structure for each of the two sequences such that a score
-that may depend on both the alignment and the selected structures is
-maximized.
+\section{Preliminaries}
+An \emph{arc-annotated sequence} is a pair $(S,P)$, where the
+\emph{sequence} $S$ is a string over some alphabet $\Sigma$ and $P$ is
+a set of \emph{arcs} $(i,j)$ with $1 \leq i< j \leq |S|$. We denote
+the $i$-th symbol of $S$ by $S[i]$ and $S[i..j]$ is the subsequence
+$S_iS_{i+1}\dots S_j$.
 
-The difficulty of these problems depends on the complexity of the RNA
-structures. Therefore, a complexity hierarchy of RNA structures was
-introduced. Most RNA analysis is performed for the class of nested
-structures $P$, where base-pairs do not cross, because for this class
-one can find efficient dynamic programming algorithms for structure
-prediction and alignment under reasonable scoring
-schemes~\cite{Zuker:Stiegler:Optim_compu_foldi:NAR1981,Jiang:Lin:Ma:Gener_Edit_Dista:JCB2002}. The
-more general class of crossing RNA structures $P$ restricts the degree
-of base pairing to at most one, as it is commonly assumed for single
-RNA structure. Prediction and alignment in this class is NP-hard in
-general~\cite{blin07:_exten_hardn_rna_secon_struc_compar}. However,
-one can devise a number of algorithms that efficiently predict or
-align RNAs with structures from classes in between non-crossing and
-arbitrary
-crossing.~\cite{Rivas:Eddy:dynam_progr_algor:JMB1999,Reeder:Giegerich:Desig_imple_and:2004,Moehl:Will:Backofen:PKalign:JCB2010}. However
-these algorithms have complexities that limit their application range.
-Other approaches for RNA alignment handle fixed crossing structures
-with parametrized complexity, were the parameter captures the
-complexity of the structures~\cite{%Evans:finding:CPM99,
-  Moehl:Will:Backofen:CPM2008}.
-%A different approach is to handle nested structures with
-%parametrized complexity, where the parameter describes the complexity
-%of the structure(s), an example is~\cite{Moehl:Will:Backofen:CPM2008}
-%for alignment.  
-Finally, the ILP approach
-Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} computes
-alignments of arbitrarily complex crossing structures and appears to be more
-effective than dynamic programming based approaches.  The success of
-this AI technique was a strong motivation for this work, where we
-study the alignment of RNAs with structures of unlimited complexity
-using constraint programming.
-\paragraph{Contribution} We devise a constraint algorithm for the
-problem of aligning two RNA molecules with given sequences and
-unlimited secondary structures. We consider both the case with fixed
-input structures and the more general case with non-fixed input
-structures where the algorithm has to find the best structures and the
-alignment simultaneously. By modeling and propagating constraints on
-integers and integer sets, the method goes beyond rephrasing the ILP
-approach~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} in CP. We
-describe the constraint model for each of the two problem variants,
-develop a new RNA alignment propagator, and present a specific search
-strategy. It is implemented using the Gecode constraint programming
-system. Finally, we give preliminary results of our approach.
-
-\section{Methods}
-
-\subsection{Preliminaries}
-An \emph{RNA sequence} $S$ is a string over the set of bases
-$\{A,U,C,G\}$ and an \emph{RNA structure} $P$ is a set of \emph{base
-  pairs} (also called \emph{arcs}) $(i,j)$ with $1 \leq i< j \leq
-|S|$. We define an \emph{arc-annotated sequence} as pair of RNA sequence
-and RNA structure and denote the $i$-th symbol of $S$ by $S[i]$.
-
-One constructs a hierarchy of RNA structure classes based on the
-following properties. Two arcs $(i,j)$ and $(i',j')$ are called
-\emph{nested} iff $i<i'<j'<j$ or $i'<i<j<j'$, they are
-\emph{independent} iff $i<j<i'<j'$ or $i'<j'<i<j$.
-%
-A RNA structure $P$ is called \emph{nested} if all differing base
-pairs $(i,j),(i',j')\in P$ are either nested or independent.  In a
-crossing RNA structure $P$ each base is involved in at most one base
-pair, i.e. $\forall (i,j)\neq(i',j')\in P: i\neq i' \land j\neq j'
-\land i\neq j \land i'\neq j'$. We use the term \emph{unlimited} to
-refer to an arbitrary RNA structure. Note that by definition each
-nested structure is crossing, and each crossing structure is
-unlimited, such that these classes form a class hierarchy.
+We distinguish crossing and unlimited sets of arcs.  A set $P$, where
+each sequence position is involved in at most one arc, i.e. $\forall
+(i,j)\neq(i',j')\in P: i\neq i' \land j\neq j' \land i\neq j \land
+i'\neq j'$, is called \emph{crossing}. Otherwise it is called
+\emph{unlimited}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%% ALIGNMENT (OF ENTIRE SEQUENCES)
-An \emph{alignment $A$} of two \emph{arc-annotated sequences}
-$(S_a,P_a)$ and $(S_b,P_b)$ is a set $A_m\cup A_g$, where
-$A_m\subseteq [1..|S_a|] \times [1..|S_b|]$ is a set of \emph{match
-  edges} such that for all $(i,j),(i',j')\in A_m$ holds 1.) $i>i'$
-implies $j>j'$ and 2.)  $i=i'$ if and only if $j=j'$ and $A_g$ is the
-set of \emph{gap edges} $\PSET{(x,-)}{x\in [1..|S_a|]\land \nexists
-  y: (x,y)\in A_m}\cup\PSET{(-,y)}{y\in [1..|S_b|]\land \nexists x:
-  (x,y)\in A_m}$.
+An \emph{alignment $A$} of two arc-annotated sequences $(S_a,P_a)$ and
+$(S_b,P_b)$ is a ordered partial matching between the positions of
+$S_a$ and $S_b$. More precisely, $A\subseteq \{1,\dots,|S_a|\} \times
+\{1,\dots,|S_b|\}$ has to satisfy for all
+$(i,j),(i',j')\in A$ that 1.) $i>i'$ implies $j>j'$ and 2.)  $i=i'$
+if and only if $j=j'$.
 %
 We define the \emph{$(i,i')$-prefix of $A$} as
-$A\cap(\PSET{(j,j')}{j\leq i,j'\leq i'}\cup\PSET{(j,-)}{j\leq i}\cup\PSET{(-,j')}{j'\leq i'})$
-and the  \emph{$(i,i')$-suffix of $A$} as
-$A\cap(\PSET{(j,j')}{j>i,j'>i'}\cup\PSET{(j,-)}{j>i}\cup\PSET{(-,j')}{j'>i'})$.
-
+$A\cap\PSET{(j,j')}{j\leq i,j'\leq i'}$ and the \emph{$(i,i')$-suffix
+  of $A$} as $A\cap\PSET{(j,j')}{j>i,j'>i'}$.
 
 %% Define alignment problem, i.p. scoring for unlimited structure.
 Fix two arc-annotated sequences $(S_a,P_a)$ and $(S_b,P_b)$ with
-unlimited structures $P_a$ and $P_b$. Define the score of alignment $A$
-of $(S_a,P_a)$ and $(S_b,P_b)$ as
+unlimited structures $P_a$ and $P_b$. Define the \emph{weight of alignment $A$
+of $(S_a,P_a)$ and $(S_b,P_b)$} as
 \begin{displaymath}
-  \score(A_m\cup A_g) :=
-  \sum_{(i,i')\in A_m} \sigma(i,i')
-  + \sum_{\substack{(i,j)\in P_a,(i',j')\in P_b,\\(i,i')\in A_m,(j,j')\in A_m}} \tau(i,j,i',j')
-  \quad + \quad\gamma |A_g|,
+  \weight(A) :=\!\!
+  \sum_{(i,i')\in A} \!\!\sigma(i,i')
+  \,+ \sum_{\substack{(i,j)\in P_a,(i',j')\in P_b,\\(i,i')\in A,(j,j')\in A}} \!\!\tau(i,j,i',j')\!\!
+  \quad + \quad\gamma (|S_a|+|S_b|-2|A|),
 \end{displaymath}
 where $\sigma(i,j)$ is the similarity of bases $S_a[i]$ and $S_b[j]$,
 $\tau(i,j,i',j')$ is the similarity of base pairs $(i,j)\in P_a$
@@ -193,20 +160,16 @@ and $(i',j')\in P_b$ and $\gamma$ is the gap cost.
 
 The \emph{alignment problem} is to determine
 \begin{math}
-  \displaystyle\argmax_{\text{$A$ alignment of $(S_a,P_a)$ and $(S_b,P_b)$}} \score(A).
+  \displaystyle\argmax_{\text{$A$ alignment of $(S_a,P_a)$ and $(S_b,P_b)$}} \weight(A).
 \end{math}\\[3pt]
 %
-Please note that unlike
-Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007}, we score all
-matched base pairs even if base pairs share bases and thus are
-mutually exclusive in a crossing structure. Whereas this design choice
-does not affect the alignment of crossing structure, its potential
-advantages for unlimited structures have still to be explored (see
-Discussion).
+On crossing arc annotation, the ILP approach
+Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} solves
+essentially the same problem. On unlmited input, Lara scores only a
+crossing subset of the matched dependencies whereas our approach
+scores all matches of dependencies.
 
-\newcommand{\var}{\texttt}
-\newcommand{\cA}{{\mathcal A}}
-\subsection{Constraint Model}
+\section{Constraint Model}
 
 We model an alignment of arc-annotated sequences $(S_a,P_a)$ and
 $(S_b,P_b)$ by variables $\var{MD}_i$ and $\var{M}_i$ for $1\leq i\leq
@@ -219,7 +182,7 @@ A valuation $V$ of these variables corresponds to a class $\cA(V)$ of
 alignments $A$ of $(S_a,P_a)$ and $(S_b,P_b)$ as defined by
 \begin{align*}
   V(\var{MD}_i)=j \land V(\var{M}_i)=1 &\text{ iff } (i,j) \in A  \\
-  V(\var{MD}_i)=j \land V(\var{M}_i)=0 &\text{ iff } (i,-) \in A \\&\quad\land \forall (i',j')\in A: i'< i \rightarrow j'\leq j \land i'>i \rightarrow j'>j.
+  V(\var{MD}_i)=j \land V(\var{M}_i)=0 &\text{ iff } \nexists j \text{ with } (i,j) \in A \\&\quad\land \forall (i',j')\in A: i'< i \rightarrow j'\leq j \land i'>i \rightarrow j'>j.
 \end{align*}
 
 In this way, $M_i$ tells whether $i$ is matched or deleted and the
@@ -228,102 +191,103 @@ $j$. One can show that $\cA(V)$ has at most one element and that for
 each alignment $A$ of $(S_a,P_a)$ and $(S_b,P_b)$ there is a
 corresponding valuation.
 
-For example, the following alignment and valuation correspond to each
-other: $A=\{(1,1),(-,2),(-,3),(2,4),(3,-),(4,5)\}$, which is often written as
+For example, the following alignment $A=\{(1,1),(2,4),(4,5)\}$ of
+$S_a=ACUG$ and $S_b=ACACG$, which is often written as
 $\begin{array}{c}
-\texttt{A--CUG}\\
-\texttt{ACAC-G}
-\end{array},$
+  \texttt{A--CUG}\\
+  \texttt{ACAC-G}
+\end{array},$ 
 corresponds to the valuation $\vec{MD}=(1,4,4,5)$ and $\vec{M}=(1,1,0,1)$.
 
-Notably, alignments corresponding to a valuation that assigns $MD_i=j$
-can be composed from an alignment of prefixes $S_a[1..i]$ and
-$S_b[1..j]$ and an alignment of suffixes $S_a[i+1..|S_a|]$ and $S_b[j+1..|S_b|]$
-regardless of $\var{M}_i$.
-
-We introduce a constraint \texttt{Alignment}$(\vec{MD},\vec{M})$ that
+We introduce a constraint \texttt{StringMatching}$(\vec{MD},\vec{M})$ that
 is satisfied by any valuation with a corresponding alignment.
-Furthermore, we model the score of the alignment. Therefore, we
-introduce a variable $\var{Score}$ and a constraint
-\texttt{AlignmentScore}$(\vec{MD},\vec{M},\var{Score})$. This
+Furthermore, we model the weight of the alignment. Therefore, we
+introduce a variable $\var{Weight}$ and a constraint
+\texttt{StringMatchingWeight}$(\vec{MD},\vec{M},\var{Weight})$. This
 constraint relates a valuation of $\var{MD}$ and $\var{M}$ to the
-score of its corresponding alignment.
+weight of its corresponding alignment.
 
-Both constraints are propagated by the propagator of the next
-subsection. For finding optimal alignments we perform a
+Both constraints are propagated by our propagator described in the
+next section. For finding optimal alignments we perform a
 branch-and-bound search enumerating $\var{MD}$ and $\var{M}$ according
-to a specific search strategy described at the end of the next
-section. Successfully applying branch-and-bound requires good upper
-bounds for the alignment score, such that large parts of the search
-tree can be pruned. Computing such bounds efficiently is the central
-job of the alignment propagator.
+to a specific search strategy described after introducing the
+propagator itself. 
 
-\subsection{The Alignment Propagator}
+\section{The Alignment Propagator}
 
 The alignment propagator computes hyper-arc consistency for the constraint
-\texttt{Alignment}$(\vec{MD},\vec{M})$ and propagates
-\texttt{AlignmentScore}$(\vec{MD},\vec{M},\var{Score})$.
+\texttt{StringMatching}$(\vec{MD},\vec{M})$ and propagates
+\texttt{StringMatchingWeight}$(\vec{MD},\vec{M},\var{Weight})$.
 
-It prunes $\vec{MD}$ and $\vec{M}$ due to the score by computing upper
-score bounds for single variable assignments and furthermore computes
-lower and upper bounds for $\var{Score}$ based on $\vec{MD}$ and
-$\vec{M}$.
+It prunes $\vec{MD}$ and $\vec{M}$ due to the weight by computing
+upper bounds of weights for single variable assignments and
+furthermore computes lower and upper bounds for $\var{Weight}$ based
+on $\vec{MD}$ and $\vec{M}$.
+%
+% Successfully applying branch-and-bound requires
+% good upper bounds for the alignment weight, such that large parts of
+% the search tree can be pruned.
+Computing such bounds efficiently is the central job of the alignment
+propagator and essential for branch-and-bound optimization.
 
 Define the class $\cA(D)$ as union of $\cA(V)$ over all valuations $V$
-that satisfy D. The computation of bounds is based on a relaxation of
+that satisfy $D$. The computation of bounds is based on a relaxation of
 the alignment problem. In this relaxation the two ends of each base
 pair match are decoupled. Thus in the \emph{relaxed optimization
-  problem for $D$}, we maximize a relaxed score
-\vspace{-6pt}
+  problem for $D$}, we maximize a relaxed weight
  \begin{displaymath}
-  \score_\text{relaxed}(A_m\cup A_g) :=
-  \sum_{(i,i')\in A_m} \left[
-  \sigma(i,i') + \frac{1}{2}\operatorname{ub}D(i,i') \right]
-  \quad + \quad \gamma |A_g|,
+   \weight^{n,m}_\text{relaxed}(A) :=
+   \sum_{(i,i')\in A} \left[
+     \sigma(i,i') + \operatorname{ub}_D(i,i') \right]
+  \quad + \quad \gamma (n+m-|A|),
 \end{displaymath}
 \vspace{-8pt}
-over all alignments in $\cA(D)$, where
+over all alignments in $\cA(D)$, where $n=|S_a|$ and $m=|S_b|$ and
 \begin{displaymath}
-  \operatorname{ub}_D(i,i') :=\! \max_{A_m\cup A_g\in\cA(D)} \sum_{\substack{(i,j)\in P_a,(i',j')\in P_b,\\(i,i')\in A_m,(j,j')\in A_m}} \!\!\!\tau(i,j,i',j')\,\,\,
-   + \!\!\!\sum_{\substack{(j,i)\in P_a,(j',i')\in P_b,\\(i,i')\in A_m,(j,j')\in A_m}} \!\!\!\tau(j,i,j',i').
+  \operatorname{ub}_D(i,i') :=\!\frac{1}{2} \max_{A\in\cA(D)} \sum_{\substack{(i,j)\in P_a,(i',j')\in P_b,\\(i,i')\in A,(j,j')\in A}} \!\!\!\tau(i,j,i',j')\,\,\,
+   + \!\!\!\sum_{\substack{(j,i)\in P_a,(j',i')\in P_b,\\(i,i')\in A,(j,j')\in A}} \!\!\!\tau(j,i,j',i').
 \end{displaymath}
 
-Here, $\operatorname{ub}_D$ works as an upper bound for the score
+Here, $\operatorname{ub}_D$ works as an upper bound for the weight
 contributions by arc matches involving $(i,i')$ and consequently
-$\score_\text{relaxed}(A) \geq \score(A)$ for $A\in\cA(D)$. Thus,
-solving the relaxed problem yields an upper bound of \var{Score}.
+$\weight^{|S_a|,|S_b|}_\text{relaxed}(A) \geq \weight(A)$ for $A\in\cA(D)$. Thus,
+solving the relaxed problem yields an upper bound of \var{Weight}.
 
 For a moment, postpone how to efficiently compute
-$\operatorname{ub}_D(i,i')$. Then, because the relaxed score has
+$\operatorname{ub}_D(i,i')$. Then, because the relaxed weight has
 the form of a sequence similarity score, one can apply the
 Smith-Waterman algorithm~\cite{smith81:_compar_bioseq} to maximize the
-relaxed score in $O(n^2)$ by dynamic programming, where
+relaxed weight in $O(n^2)$ by dynamic programming, where
 $n=\max(|S_a|,|S_b|)$. The optimization problem is easily constrained
 due to domain $D$, because domains directly restrict the valid cases
 in the dynamic programming recursion.
 
-Tracing back through the dynamic programming matrix yields an alignment
-$A^l$ such that $\score{A^l}$ is a lower bound of $\var{Score}$.
+Tracing back through the dynamic programming matrix yields an
+alignment $A^l$. If $A_l$ also satisfies all other constraints of the
+constraint problem $\weight(A^l)$ is a lower bound of $\var{Weight}$
+if $A_l$. For the later studied RNA alignment problem, this bound can
+always be propagated, since there are no other constraints.
 %
 Furthermore, we compute upper bounds for each single variable
 valuation. This requires to complement the above ``forward algorithm''
-that computes the matrix
+that computes the matrix entries
 \vspace{-4pt}
 \begin{displaymath}
   \operatorname{Prefix}{(i,i')} := \max_{\text{$(i,i')$-prefix
-      $A^p_{ii'}$ of }A\in\cA(D)} \score_\text{relaxed}(A^p_{ii'})\\[-6pt]
+      $A^p_{ii'}$ of }A\in\cA(D)} \weight^{i,i'}_\text{relaxed}(A^p_{ii'})
 \end{displaymath}
-by a symmetric ``backward algorithm'' computing the matrix entries
-\begin{math}
+by a symmetric ``backward algorithm'' that computes the matrix entries
+\begin{displaymath}
  \operatorname{Suffix}{(i,i')} :=
   \max_{\text{$(i,i')$-suffix $A^s_{ii'}$ of }A\in\cA(D)}
-  \score_\text{relaxed}(A^s_{ii'}).
-\end{math}
+  \weight^{|S_a|-i,|S_b|-i'}_\text{relaxed}(A^s_{ii'}).
+\end{displaymath}
 
 Now the variables $\vec{MD}$ can be pruned efficiently, because
 $\operatorname{Prefix}{(i,i')}+\operatorname{Suffix}{(i,i')}$ is an
 upper bound for the assignment $\var{MD}_i=j$. Similarly, we prune
 $\vec{M}$ using the two matrices.
+
 
 It remains to describe the efficient computation of
 $\operatorname{ub}_D(i,i')$. It suffices to describe the
@@ -336,41 +300,54 @@ valid matches $(j,j')$. The structure of this subproblem is analogous
 to sequence alignment. Thus, it is solved efficiently by dynamic
 programming.
 %% maybe give recursion equation? add details later
-Thus, $\operatorname{ub}(i,i')$ is computed in $O(kk')$
-time, where $k$ and $k'$ are the respective number of base pairs
-incident to $i$ and $i'$. For many applications $k$ and $k'$ can be
-constantly bounded such that the propagator runs in $O(n^2)$ time and
-space.
+Therefore, $\operatorname{ub}(i,i')$ is computed in $O(kk')$ time,
+where $k$ and $k'$ are the respective number of base pairs incident to
+$i$ and $i'$. For crossing dependencies $k=k'=1$ and for many other
+applications $k$ and $k'$ can be constantly
+bounded~\cite{Will:etal:_infer_non_codin_rna_famil:PLOS2007} such that
+the propagator runs in $O(n^2)$ time and space.
 
-\paragraph{Affine gap cost}
-The method is straightforwardly extended to affine gap cost by using a
-Gotoh-like algorithm in the propagator without increasing its
-complexity. It appears that this modification, which doesn't require
-any change of the model, comes more natural in our approach than the
-corresponding extensions in ILP.  \mm{I think this would be clearer:
-  It appears that this modification comes more natural in our approach
-  than the corresponding extension in ILP, since it does not require
-  any change of the model.}
+\paragraph{Affine Gap Cost}
+In bioinformatics, penalizing unmatched positions using an affine
+weighting function yields more realistic results. Our method is
+straightforwardly extended to such a weighting scheme by using a
+Gotoh-like forward and backward algorithm~\cite{Gotoh:82} in the
+propagator without increasing its complexity.  It appears that this
+modification comes more natural in our approach than the corresponding
+extension in ILP, because it does not require any change of the model.
 
-\paragraph{Propagator-guided search strategy}
-%Idea of guiding the search by backtrace.
-Our search strategy guides the search to disprove overestimated bounds
-fast and to find valid good alignments quickly. Because information
-for achieving both goals is computed during propagation and is
-expensive to recompute, we reuse propagation results for guiding the
-search. We select a variable with large domain size that yields a high
-undecided contribution to the upper bound. We split the domain of this
-variable to select the 20\% highest relaxed scores first.
+\paragraph{Propagator-guided Search Strategy}
+To maximize the use of the propagator in a branch-and-bound setting,
+we suggest a search strategy that aims to disprove overestimated
+bounds fast and to find valid good alignments quickly. To achieve
+this, information computed in each propagation step can be used to
+guide the search. In particular, this allows to select a variable that
+yields a high undecided contribution to the upper bound of the total
+weight. Furthermore, the computed backtrace provides a good candidate
+for a solution, which can be favored by the search strategy.
 
-%\subsection{Visualization of partial solutions}
+In our application to RNA, we select a variable with highest undecided
+contribution to the upper bound and domain size as tie breaking. Its
+domain is split such that the 20\% highest relaxed weights are chosen
+first.
 
-%\subsection{Implementation details}
-%Use of LocARNA code.
+\section{Problem Decomposition}
 
-%Hacks that were applied to make things work in Gecode.
+%% string matching suggests a special kind of decomposition into subproblems along the string order (i.e. substrings)
+%% matching edges resolve the dependency due to "preserving string order"
+%% remaining dependencies: distinguish internal (due to the arcs) and external.
+%% arc, where one end is fixed does not introduce dependency
+%% Gecode: no easy/efficient way to test for external dependency => implement only internal
+
+%% Independent sub problems can be solved independently (Dechter), supported by lower bounds due to propagator
+
+%% special case: for independent subproblems without any arcs, trace yields best
+%% solution and fixing variables to best solution does not remove the
+%% COP solution
+
+
 
 \section{Results}
-
 The method, called Carna, is implemented in C++ using the constraint
 programming system Gecode. For handling input and output as well as
 for special datastructures we reused code of
@@ -381,24 +358,11 @@ behavior on crossing input structure using instances from all 16 Rfam
 families with crossing structure. Table~\ref{tab:results} compares our
 results to Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007}. The
 table omits all 8 instances where both approaches run in less than 0.1
-seconds.  In all but one of the omitted cases, Carna solves the
-problem without backtracking. In terms of performance, both programs
-are on a par. However, we want to emphasize that, in contrast to Lara, which
-heuristically limits its run-time, Carna always solves the problem to
-optimality. This explains behavior as for tmRNA in
-Table~\ref{tab:results}.
+seconds. In all but one of the omitted cases, Carna solves the problem
+without backtracking. In terms of performance, with the single
+exception of tmRNA, both programs are on a par for the simpler class
+of crossing structures.
 
-In our second scenario, we align dot-plot matrices as computed by
-RNAfold\cite{Hofacker:Fontana:Stadler:Bonhoeffer:Tacker:Schuster:MonChem1994}. We
-obtain unlimited input structures by base pair filtering as e.g. done
-in LocARNA. As in LocARNA and
-PMcomp~\cite{Hofacker:Bernhart:Stadler:Align_RNA_base:2004} base pair
-similarities are weighted according to the base pair
-probabilities. This results in alignments that are guided by the
-common structural potential of both RNAs and not only a single common
-structure. We align two tRNAs closing the search tree after nine
-nodes. Two TPP riboswitches of sizes 108 and 111 are aligned in 0.24
-seconds closing the tree after 100 nodes.
 
 \begin{table}
   \centering
@@ -433,21 +397,20 @@ seconds closing the tree after 100 nodes.
   \label{tab:results}
 \end{table}
 
-\subsection{Alignment of Riboswitches}
-
-We apply the approach to the alignment of riboswitches, which are RNA
-molecules with more than one evolutionary conserved structure.
-Therefore, we annotate the RNA sequences by the set of all base pairs
-with sufficiently high probability in the RNA's structure
-ensemble~\cite{McCaskill}. This set approximates the overlay of the
-different riboswitch structures. In consequence, the alignment is
-optimized with respect to all these structures simultaneously. Since
-the set of base pairs is unlimited this application has not been
-possible for existing approaches which at most score crossing
-structure. To benchmark the approach, we align 100 random instances
-from each out of 10 Rfam RNA families, which are annotated as
-Riboswitch and confirmed by literature. We set a time limit of 1
-minute for each instance. The results are given in
+In our second scenario, we evaluate the behavior on the general class
+of unlimited structures. Therefore, we apply the approach to the
+alignment of riboswitches, which are RNA molecules with more than one
+evolutionary conserved structure.  We annotate the RNA sequences by
+the set of all base pairs with sufficiently high probability in the
+RNA's structure ensemble~\cite{McCaskill:1990}. This set approximates
+the overlay of the different riboswitch structures. In consequence,
+the alignment is optimized with respect to all these structures
+simultaneously. Since the set of base pairs is unlimited this
+application has not been possible for existing approaches which at
+most score crossing structure. To benchmark the approach, we align 100
+random instances from each out of 10 Rfam RNA families, which are
+annotated as Riboswitch and confirmed by literature. We set a time
+limit of 1 minute for each instance. The results are given in
 Table~\ref{tab:riboswitches}.
 
 \begin{table}
@@ -466,37 +429,25 @@ Table~\ref{tab:riboswitches}.
                 %& \multicolumn{2}{c|}{Median Instance Size} & Median & Maximum & Exceeded\\
 Family          & Length & Base pairs & Time (s) & Memory (MB) & Limit\\
 \hline
-Cobalamin 	& 204 & 237 & 60 & 18.7 &  71\% \\
-SAM-IV 	        & 116 & 128 & 0.05 &  3.7 &  2\% \\
-Lysine 	        & 181 & 210 & 60 & 14.5 &  60\% \\
-Glycine         & 101 &  83 & 0.44 &  5.0 &  3\% \\
 SAH\_riboswitch &  79 &  81 & 0.13 &  3.3 &  2\% \\
-SAM 	        & 106 &  74 & 0.06 &  6.0 &  0\% \\
 SAM\_alpha 	&  79 &  96 & 0.03 &  1.9 &  0\% \\
 Purine 	        & 101 &  74 & 0.07 &  2.3 &  0\% \\
-MOCO\_RNA\_motif& 141 & 111 & 0.24 &  9.4 &  10\% \\
+Glycine         & 101 &  83 & 0.44 &  5.0 &  3\% \\
+SAM 	        & 106 &  74 & 0.06 &  6.0 &  0\% \\
 TPP     	& 107 &  96 & 0.43 &  8.7 &  13\% \\
+SAM-IV 	        & 116 & 128 & 0.05 &  3.7 &  2\% \\
+MOCO\_RNA\_motif& 141 & 111 & 0.24 &  9.4 &  10\% \\
+Lysine 	        & 181 & 210 & 60 & 14.5 &  60\% \\
+Cobalamin 	& 204 & 237 & 60 & 18.7 &  71\% \\
 %
   \end{tabular}
   \caption{Rfam Riboswitches. For 100 instances from each Rfam family annotated as riboswitch and confirmed by literature: Medians of average sequence length, average number of base pairs, and run-time, maximal memory requirement and percentage of instances not solved to optimality within a given time limit of 1 min.}
   \label{tab:riboswitches}
 \end{table}
 
-
-
-
-
-
-
-
-
-
-
-
-
 \section{Discussion}
 
-
+{\bf FOCUS propagator}
 We showed that a constraint-based approach to RNA alignment can be
 competitive with the ILP based method Lara for crossing
 structures. Moreover, the approach is the first such method that
@@ -508,8 +459,8 @@ extensions and improvements. Solving relaxed problems in propagators
 for handling crossing and unlimited RNA structure was shown to be a
 viable approach and appears to be generalizable to related problems.
 
-\paragraph{Acknowledgments} This work is partially supported by the German
-Research Foundation (DFG grant WI 3628/1-1).
+\paragraph{Acknowledgments} This work is partially supported by DFG grant WI 3628/1-1
+{\bf FEHLT: Mathias' grant}.
 
 \bibliographystyle{plain}
 \bibliography{all}
