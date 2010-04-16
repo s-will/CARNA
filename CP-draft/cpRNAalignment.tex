@@ -10,14 +10,14 @@
 \newcommand{\score}{\operatorname{score}}
 \newcommand{\argmax}{\operatorname*{arg max}}
 
-\addtolength{\hoffset}{-0.6cm}
-\addtolength{\textwidth}{1.2cm}
-\addtolength{\voffset}{-1.05cm}
-\addtolength{\textheight}{2.1cm}
+% \addtolength{\hoffset}{-0.6cm}
+% \addtolength{\textwidth}{1.2cm}
+% \addtolength{\voffset}{-1.05cm}
+% \addtolength{\textheight}{2.1cm}
 
 %\newcommand{\ale}[1]{{\bfseries [Ale:\ #1]}}
 \newcommand{\mm}[1]{{\bfseries [Mathias:\ #1]}}
-\title{Alignnment of RNA with Structures of Unlimited Complexity}
+\title{A Propagator for Weighted Ordered Partial Matching with Arbitrary Pairwise Dependencies}
 
 \author{Alessandro Dal Pal{\`u}$^1$, Mathias M{\"o}hl$^2$, and Sebastian Will$^{2,3}$}
 
@@ -29,26 +29,42 @@
   Biology Lab, CSAIL, MIT, Cambridge MA, USA,
   \email{swill@csail.mit.edu}}
 
+
 \begin{document}
 \maketitle
 
 \begin{abstract}
-  Sequence-structure alignment of RNA with arbitrary secondary
-  structure is Max-SNP-hard. Therefore, the problem of RNA alignment
-  is commonly restricted to nested structure, where dynamic
-  programming yields efficient solutions. However, nested structure
-  cannot model pseudoknots or even more complex structural
-  dependencies.  Nevertheless those dependencies are essential and
-  conserved features of many RNAs. Only few existing approaches deal
-  with crossing structures. Here, we present a constraint approach for
-  alignment of structures in the even more general class of unlimited
-  structures.
-  Our central contribution is a new RNA alignment constraint
-  propagator. It is based on an efficient $O(n^2)$ relaxation of the
-  RNA alignment problem. Our constraint-based approach Carna solves
-  the alignment problem for sequences with given input structures of
-  unlimited complexity. Carna is implemented using Gecode.
+  The optimization of weighted ordered partial matchings is a well
+  studied problem recurring in a number of application domains and can
+  be solved efficiently. The problem becomes MAX-SNP-hard as soon as
+  arbitrary pairwise dependencies among the matching edges are
+  introduced.  We present a global propagator for this problem which
+  is based on efficiently solving a relaxation of the problem.  In the
+  context of bioinformatics, this problem is known as alignment of arc
+  annotated sequences, which is e.g. used for comparing RNA
+  molecules. For a restricted version of this alignment problem, we
+  show that a constraint program based on our propagator is on par
+  with state of the art methods. For the general problem with
+  unrestricted dependencies, our tool constitutes the first available
+  method with promising applications in this field.
+  % Sequence-structure alignment of RNA with arbitrary secondary
+  % structure is Max-SNP-hard. Therefore, the problem of RNA alignment
+  % is commonly restricted to nested structure, where dynamic
+  % programming yields efficient solutions. However, nested structure
+  % cannot model pseudoknots or even more complex structural
+  % dependencies.  Nevertheless those dependencies are essential and
+  % conserved features of many RNAs. Only few existing approaches deal
+  % with crossing structures. Here, we present a constraint approach for
+  % alignment of structures in the even more general class of unlimited
+  % structures.
+  % Our central contribution is a new RNA alignment constraint
+  % propagator. It is based on an efficient $O(n^2)$ relaxation of the
+  % RNA alignment problem. Our constraint-based approach Carna solves
+  % the alignment problem for sequences with given input structures of
+  % unlimited complexity. Carna is implemented using Gecode.
 \end{abstract}
+
+
 
 In the post-genomic era, biologists get more and more interested in
 studying non-coding RNA molecules with catalytic and regulatory
@@ -417,7 +433,69 @@ seconds closing the tree after 100 nodes.
   \label{tab:results}
 \end{table}
 
+\subsection{Alignment of Riboswitches}
+
+We apply the approach to the alignment of riboswitches, which are RNA
+molecules with more than one evolutionary conserved structure.
+Therefore, we annotate the RNA sequences by the set of all base pairs
+with sufficiently high probability in the RNA's structure
+ensemble~\cite{McCaskill}. This set approximates the overlay of the
+different riboswitch structures. In consequence, the alignment is
+optimized with respect to all these structures simultaneously. Since
+the set of base pairs is unlimited this application has not been
+possible for existing approaches which at most score crossing
+structure. To benchmark the approach, we align 100 random instances
+from each out of 10 Rfam RNA families, which are annotated as
+Riboswitch and confirmed by literature. We set a time limit of 1
+minute for each instance. The results are given in
+Table~\ref{tab:riboswitches}.
+
+\begin{table}
+  \centering
+  \begin{tabular}{l|r|r|r|r|r}
+% RF00059 & TPP  & TPP riboswitch THI element  \\
+% RF00162 & SAM & SAM riboswitch S box leader \\
+% RF00167 & Purine & Purine riboswitch \\
+% RF00168 & Lysine & Lysine riboswitch \\
+% RF00174 & Cobalamin &Cobalamin riboswitch \\
+% RF00504 & Glycine   & Glycine riboswitch \\
+% RF00521 & SAM\_alpha & SAM riboswitch alpha proteobacteria \\
+% RF00634 & SAM-IV & S adenosyl methionine SAM riboswitch \\
+% RF01055 & MOCO\_RNA\_motif & Moco molybdenum cofactor riboswitch \\
+% RF01057 & SAH\_riboswitch & S adenosyl L homocysteine riboswitch \\
+                %& \multicolumn{2}{c|}{Median Instance Size} & Median & Maximum & Exceeded\\
+Family          & Length & Base pairs & Time (s) & Memory (MB) & Limit\\
+\hline
+Cobalamin 	& 204 & 237 & 60 & 18.7 &  71\% \\
+SAM-IV 	        & 116 & 128 & 0.05 &  3.7 &  2\% \\
+Lysine 	        & 181 & 210 & 60 & 14.5 &  60\% \\
+Glycine         & 101 &  83 & 0.44 &  5.0 &  3\% \\
+SAH\_riboswitch &  79 &  81 & 0.13 &  3.3 &  2\% \\
+SAM 	        & 106 &  74 & 0.06 &  6.0 &  0\% \\
+SAM\_alpha 	&  79 &  96 & 0.03 &  1.9 &  0\% \\
+Purine 	        & 101 &  74 & 0.07 &  2.3 &  0\% \\
+MOCO\_RNA\_motif& 141 & 111 & 0.24 &  9.4 &  10\% \\
+TPP     	& 107 &  96 & 0.43 &  8.7 &  13\% \\
+%
+  \end{tabular}
+  \caption{Rfam Riboswitches. For 100 instances from each Rfam family annotated as riboswitch and confirmed by literature: Medians of average sequence length, average number of base pairs, and run-time, maximal memory requirement and percentage of instances not solved to optimality within a given time limit of 1 min.}
+  \label{tab:riboswitches}
+\end{table}
+
+
+
+
+
+
+
+
+
+
+
+
+
 \section{Discussion}
+
 
 We showed that a constraint-based approach to RNA alignment can be
 competitive with the ILP based method Lara for crossing
