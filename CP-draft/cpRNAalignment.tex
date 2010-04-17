@@ -87,7 +87,7 @@ algorithms.~\cite{Jiang:Lin:Ma:Gener_Edit_Dista:JCB2002,Moehl:Will:Backofen:PKal
 Heuristic approach based on Integer Linear Programming (ILP) are
 available for crossing dependencies specialized to RNA
 ~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} and for unlimited
-dendencies specialized to proteins~\cite{caprara02:_struc}.
+dependencies specialized to proteins~\cite{caprara02:_struc}.
 
 \paragraph{Contribution} In this work, we consider a constraint
 programming approach to the arc-annotated sequence alignment problem
@@ -165,7 +165,7 @@ The \emph{alignment problem} is to determine
 %
 On crossing arc annotation, the ILP approach
 Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} solves
-essentially the same problem. On unlmited input, Lara scores only a
+essentially the same problem. On unlimited input, Lara scores only a
 crossing subset of the matched dependencies whereas our approach
 scores all matches of dependencies.
 
@@ -290,20 +290,40 @@ $\vec{M}$ using the two matrices.
 
 
 It remains to describe the efficient computation of
-$\operatorname{ub}_D(i,i')$. It suffices to describe the
-maximization of $\sum_{\substack{(i,j)\in P_a,(i',j')\in
-    P_b,\\(i,i')\in A,(j,j')\in A}} \tau(i,j,i',j')$ 
-over alignments in $\cA(D)$. A single match $(j,j')$ can occur in an
-alignment in $\cA(D)$ if $j'\in D(\var{MD}_j)$ and $1\in
-D(\var{M}_j)$. However, we look for the best set of simultaneously
-valid matches $(j,j')$. The structure of this subproblem is analogous
-to sequence alignment. Thus, it is solved efficiently by dynamic
-programming.
+$\operatorname{ub}_D(i,i')$. It suffices to describe the maximization
+of $\sum_{\substack{(i,j)\in P_a,(i',j')\in P_b,\\(i,i')\in
+    A,(j,j')\in A}} \tau(i,j,i',j')$ over alignments in $\cA(D)$. A
+single match $(j,j')$ can occur in an alignment in $\cA(D)$ if $j'\in
+D(\var{MD}_j)$ and $1\in D(\var{M}_j)$. However, we look for the best
+set of simultaneously valid matches $(j,j')$. The structure of this
+subproblem is analogous to sequence alignment. 
+% DETAILS of upper bound by dynamic programming
+For solving it efficiently, we define sorted lists
+$j_1,\dots,j_l$ and $j'_1,\dots,j'_{l'}$ such that $(j_h,i)\in P_a$
+for all $1\leq h\leq l$ and $(j'_{h'},i')\in P_b$ for all $1\leq
+h'\leq l'$. We apply dynamic programming for evaluating 
+\begin{align*}
+  \operatorname{UL}(0,0) &= 0 \quad 
+  \operatorname{UL}(h,0) = 0 \quad \operatorname{UL}(0,h') = 0\\
+  \operatorname{UL}(h,h') &= \\
+  &\hspace{-24pt}\max
+  \begin{cases}
+    UL(h-1,h') & \text{unless $\var{MD}_{j_h}=j'_{h'}$ and $\var{M}_{j_h}=1$}\\
+    UL(h,h'-1) & \text{unless $\var{MD}_{j_h}=j'_{h'}$ and $\var{M}_{j_h}=1$}\\
+    UL(h-1,h'-1) + \tau(j_h,j'_{h'},i,i') & \text{$j'_{h'} \in D(\var{MD}_{j_h})$ and $1\in D(\var{M}_{j_h})$}
+  \end{cases}
+\end{align*}
+for $1\leq h\leq l$, $1\leq h'\leq l'$. Then, we perform the same
+construction for the respective $r$ and $r'$ many arcs to the right of
+$i$ and $i'$ and evaluate the corresponding recursion equation
+$UR(h,h')$ for $1\leq h\leq r$, $1\leq h'\leq r'$.  Then,
+$\operatorname{ub}_D(i,i') =
+\operatorname{UL}(l,l')+\operatorname{UL}(r,r')$.
+
 %% maybe give recursion equation? add details later
-Therefore, $\operatorname{ub}(i,i')$ is computed in $O(kk')$ time,
-where $k$ and $k'$ are the respective number of base pairs incident to
-$i$ and $i'$. For crossing dependencies $k=k'=1$ and for many other
-applications $k$ and $k'$ can be constantly
+Therefore, $\operatorname{ub}_D(i,i')$ is computed in $O(ll'+rr')$ time.
+For crossing dependencies $l+r=l'+r'=1$ and for many other applications $l+r$
+and $l'+r'$ can be constantly
 bounded~\cite{Will:etal:_infer_non_codin_rna_famil:PLOS2007} such that
 the propagator runs in $O(n^2)$ time and space.
 
@@ -334,21 +354,51 @@ first.
 \section{Problem Decomposition}
 
 %% string matching suggests a special kind of decomposition into subproblems along the string order (i.e. substrings)
+Certain constraint optimization problems can be solved faster by
+detecting independent subproblems and optimizing these subproblems
+independently of each other~\cite{Dechter:and_or_bab:AI}. In general,
+this introduces overhead for detecting dependencies and even interferes
+with Branch-and-Bound when subproblems cannot be bounded
+well. However, the string matching problem suggests a special form of
+decomposition along the string order, where our propagator provides
+upper bounds for the partial problems.
 %% matching edges resolve the dependency due to "preserving string order"
+The dependency due to the string order between the two subproblems for
+variables $\var{MD}_1,\dots,\var{MD}_{i-1}$, $\var{M}_1,\dots,\var{M}_{i-1}$ and  $\var{MD}_{i+1},\dots,\var{MD}_{|S_a|}$, $\var{M}_{i+1},\dots,\var{M}_{|S_a|}$ is resolved as soon as a
+matching edge $(i,j)$ is assigned (i.e. $\var{MD}_i=j$ and $\var{M}_i=1$).
 %% remaining dependencies: distinguish internal (due to the arcs) and external.
+The problem can be decomposed, if further the dependencies due
+to arcs are resolved and the corresponding variables do not have
+dependencies by constraints other than \texttt{StringMatching} and
+\texttt{StringMatchingWeight}.
 %% arc, where one end is fixed does not introduce dependency
+Notably, the dependencies due to an arc
+$(i,j)$ can be resolved if one of its ends is matched, i.e. $\forall
+A\in D(\cA): (i,i')\in A$ (or $\forall A\in D(\cA): (j,j')\in A$) by
+moving the weight of each arc match $(i,j;i',j')$ to the match weight
+of the other end $(j,j')$ (or $(i,i')$ respectively).
 %% Gecode: no easy/efficient way to test for external dependency => implement only internal
 
-%% Independent sub problems can be solved independently (Dechter), supported by lower bounds due to propagator
-
-%% special case: for independent subproblems without any arcs, trace yields best
-%% solution and fixing variables to best solution does not remove the
-%% COP solution
-
+In the RNA alignment problem, all constraint dependencies are known to
+the propagator, which allows for testing independence within the
+propagator.\footnote{This is important for our implementation, because
+  general dependency checking for variables is expensive in Gecode.}
+To avoid overhead, we apply the decomposition only if an independent
+subproblem for $\var{MD}_{i},\dots,\var{MD}_{j}$,
+$\var{M}_{i},\dots,\var{M}_{j}$ can be solved to optimality by the
+propagator alone. This is the case, if all arc dependencies in the
+subproblem are resolved. Then, the problem reduces to maximum
+weighted string matching without dependencies and the traceback
+alignment represents an optimal solution.  Assigning the traceback of
+the subproblem to $\var{MD}_{i},\dots,\var{MD}_{j}$,
+$\var{M}_{i},\dots,\var{M}_{j}$ is a form of symmetry breaking,
+because it discards alignments with less or equal weight that are
+systematically generated from other alignments in $\cA(D)$.
 
 
 \section{Results}
-The method, called Carna, is implemented in C++ using the constraint
+The propagator and its application to RNA sequence-structure
+alignment, called Carna, is implemented in C++ using the constraint
 programming system Gecode. For handling input and output as well as
 for special datastructures we reused code of
 LocARNA~\cite{Will:etal:_infer_non_codin_rna_famil:PLOS2007}.
@@ -441,33 +491,42 @@ Lysine 	        & 181 & 210 & 60 & 14.5 &  60\% \\
 Cobalamin 	& 204 & 237 & 60 & 18.7 &  71\% \\
 %
   \end{tabular}
-  \caption{Rfam Riboswitches. For 100 instances from each Rfam family annotated as riboswitch and confirmed by literature: Medians of average sequence length, average number of base pairs, and run-time, maximal memory requirement and percentage of instances not solved to optimality within a given time limit of 1 min.}
+  \caption{%
+    Rfam Riboswitches. For 100 instances from each Rfam family annotated
+    as riboswitch and confirmed by literature: Medians of average sequence
+    length, average number of base pairs, and run-time, maximal memory
+    requirement and percentage of instances not solved to optimality
+    within a given time limit of 1 min.
+  }
   \label{tab:riboswitches}
 \end{table}
 
+
+
 \section{Discussion}
 
-We presented a propagator for the problem of weighted string matching with arbitrary dependencies which is also known as the alignment problem for arc annotated sequences with unlimited structure.   
-Whereas the problem itself is MAX-SNP-hard, our propagator relies on a relaxation of the problem that makes it tractable in a constraint programming framework. We also propose a search strategy that optimizes the benefit of the propagator and show how to decompose the weighted string matching problem into independent subproblems during search. 
+We presented a propagator for the problem of weighted string matching
+with arbitrary dependencies which is also known as the alignment
+problem for arc annotated sequences with unlimited structure.  Whereas
+the problem itself is MAX-SNP-hard, our propagator relies on a
+relaxation of the problem that makes it tractable in a constraint
+programming framework. We also propose a search strategy that
+optimizes the benefit of the propagator and show how to decompose the
+weighted string matching problem into independent subproblems during
+search.
 
-To evaluate the applicablilty of our method in practice, we apply it to the alignment of RNA structures. While all previous approaches in this area are limited to score at most crossing subsets of the input structures, our approach is able to align unlimited structures. This is useful, for example, to align Riboswitches and allows to consider all their potential structural conformations simultaneously.
+To evaluate the applicability of our method in practice, we apply it
+to the alignment of RNA structures. While all previous approaches in
+this area are limited to score at most crossing subsets of the input
+structures, our approach is able to align unlimited structures. This
+is useful, for example, to align Riboswitches and allows to consider
+all their potential structural conformations simultaneously.
 
-%{\bf FOCUS propagator}
-%We showed that a constraint-based approach to RNA alignment can be
-%competitive with the ILP based method Lara for crossing
-%structures. Moreover, the approach is the first such method that
-%scores unlimited structure. The full potential of this method and
-%potential biological applications, e.g. for aligning dot-plots of
-%riboswitches and RNAs with conserved folding dynamics have still to be
-%explored. A constraint-based method promises flexibility for further
-%extensions and improvements. Solving relaxed problems in propagators
-%for handling crossing and unlimited RNA structure was shown to be a
-%viable approach and appears to be generalizable to related problems.
 
-\paragraph{Acknowledgments} This work is partially supported by DFG grant WI 3628/1-1
-{\bf FEHLT: Mathias' grant}.
+\paragraph{Acknowledgments} This work is partially supported by DFG
+grant WI 3628/1-1 {\bf FEHLT: Mathias' grant}.
 
 \bibliographystyle{plain}
-\bibliography{all}
+\bibliography{all,refs}
 
 \end{document}
