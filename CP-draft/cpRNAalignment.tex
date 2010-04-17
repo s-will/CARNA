@@ -447,17 +447,22 @@ Cobalamin 	& 204 & 237 & 60 & 18.7 &  71\% \\
 
 \section{Discussion}
 
-{\bf FOCUS propagator}
-We showed that a constraint-based approach to RNA alignment can be
-competitive with the ILP based method Lara for crossing
-structures. Moreover, the approach is the first such method that
-scores unlimited structure. The full potential of this method and
-potential biological applications, e.g. for aligning dot-plots of
-riboswitches and RNAs with conserved folding dynamics have still to be
-explored. A constraint-based method promises flexibility for further
-extensions and improvements. Solving relaxed problems in propagators
-for handling crossing and unlimited RNA structure was shown to be a
-viable approach and appears to be generalizable to related problems.
+We presented a propagator for the problem of weighted string matching with arbitrary dependencies which is also known as the alignment problem for arc annotated sequences with unlimited structure.   
+Whereas the problem itself is MAX-SNP-hard, our propagator relies on a relaxation of the problem that makes it tractable in a constraint programming framework. We also propose a search strategy that optimizes the benefit of the propagator and show how to decompose the weighted string matching problem into independent subproblems during search. 
+
+To evaluate the applicablilty of our method in practice, we apply it to the alignment of RNA structures. While all previous approaches in this area are limited to score at most crossing subsets of the input structures, our approach is able to align unlimited structures. This is useful, for example, to align Riboswitches and allows to consider all their potential structural conformations simultaneously.
+
+%{\bf FOCUS propagator}
+%We showed that a constraint-based approach to RNA alignment can be
+%competitive with the ILP based method Lara for crossing
+%structures. Moreover, the approach is the first such method that
+%scores unlimited structure. The full potential of this method and
+%potential biological applications, e.g. for aligning dot-plots of
+%riboswitches and RNAs with conserved folding dynamics have still to be
+%explored. A constraint-based method promises flexibility for further
+%extensions and improvements. Solving relaxed problems in propagators
+%for handling crossing and unlimited RNA structure was shown to be a
+%viable approach and appears to be generalizable to related problems.
 
 \paragraph{Acknowledgments} This work is partially supported by DFG grant WI 3628/1-1
 {\bf FEHLT: Mathias' grant}.
