@@ -159,9 +159,9 @@ and $(i',j')\in P_b$ and $\gamma$ is the gap cost.
 % For $i'<i$, define $\tau(i',i,j',j):=\tau(i,i',j,j')$.
 
 The \emph{alignment problem} is to determine
-\begin{math}
+\begin{displaymath}
   \displaystyle\argmax_{\text{$A$ alignment of $(S_a,P_a)$ and $(S_b,P_b)$}} \weight(A).
-\end{math}\\[3pt]
+\end{displaymath}
 %
 On crossing arc annotation, the ILP approach
 Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} solves
@@ -199,11 +199,11 @@ $\begin{array}{c}
 \end{array},$ 
 corresponds to the valuation $\vec{MD}=(1,4,4,5)$ and $\vec{M}=(1,1,0,1)$.
 
-We introduce a constraint \texttt{StringMatching}$(\vec{MD},\vec{M})$ that
+We introduce a constraint \textsf{StringMatching}$(\vec{MD},\vec{M})$ that
 is satisfied by any valuation with a corresponding alignment.
 Furthermore, we model the weight of the alignment. Therefore, we
 introduce a variable $\var{Weight}$ and a constraint
-\texttt{StringMatchingWeight}$(\vec{MD},\vec{M},\var{Weight})$. This
+\textsf{StringMatchingWeight}$(\vec{MD},\vec{M},\var{Weight})$. This
 constraint relates a valuation of $\var{MD}$ and $\var{M}$ to the
 weight of its corresponding alignment.
 
@@ -215,9 +215,9 @@ propagator itself.
 
 \section{The Alignment Propagator}
 
-The alignment propagator computes hyper-arc consistency for the constraint
-\texttt{StringMatching}$(\vec{MD},\vec{M})$ and propagates
-\texttt{StringMatchingWeight}$(\vec{MD},\vec{M},\var{Weight})$.
+Our propagator computes hyper-arc consistency for
+\textsf{StringMatching}$(\vec{MD},\vec{M})$ and propagates
+\textsf{StringMatchingWeight}$(\vec{MD},\vec{M},\var{Weight})$.
 
 It prunes $\vec{MD}$ and $\vec{M}$ due to the weight by computing
 upper bounds of weights for single variable assignments and
@@ -227,8 +227,8 @@ on $\vec{MD}$ and $\vec{M}$.
 % Successfully applying branch-and-bound requires
 % good upper bounds for the alignment weight, such that large parts of
 % the search tree can be pruned.
-Computing such bounds efficiently is the central job of the alignment
-propagator and essential for branch-and-bound optimization.
+Computing such bounds efficiently is essential for branch-and-bound
+optimization.
 
 Define the class $\cA(D)$ as union of $\cA(V)$ over all valuations $V$
 that satisfy $D$. The computation of bounds is based on a relaxation of
@@ -264,7 +264,7 @@ in the dynamic programming recursion.
 
 Tracing back through the dynamic programming matrix yields an
 alignment $A^l$. If $A_l$ also satisfies all other constraints of the
-constraint problem $\weight(A^l)$ is a lower bound of $\var{Weight}$
+constraint problem, then $\weight(A^l)$ is a lower bound of $\var{Weight}$
 if $A_l$. For the later studied RNA alignment problem, this bound can
 always be propagated, since there are no other constraints.
 %
@@ -338,13 +338,14 @@ extension in ILP, because it does not require any change of the model.
 
 \paragraph{Propagator-guided Search Strategy}
 To maximize the use of the propagator in a branch-and-bound setting,
-we suggest a search strategy that aims to disprove overestimated
-bounds fast and to find valid good alignments quickly. To achieve
-this, information computed in each propagation step can be used to
-guide the search. In particular, this allows to select a variable that
-yields a high undecided contribution to the upper bound of the total
-weight. Furthermore, the computed backtrace provides a good candidate
-for a solution, which can be favored by the search strategy.
+we suggest a search strategy that aims at disproving overestimated
+bounds fast and finding valid good alignments quickly. To achieve
+this, information computed by the propagator in each propagation step
+can be used to guide the search. In particular, this allows to select
+a variable that yields a high undecided contribution to the upper
+bound of the total weight. Furthermore, the computed backtrace
+provides a good candidate for a solution, which can be favored by the
+search strategy.
 
 In our application to RNA, we select a variable with highest undecided
 contribution to the upper bound and domain size as tie breaking. Its
@@ -371,8 +372,8 @@ matching edge $(i,j)$ is assigned (i.e. $\var{MD}_i=j$ and $\var{M}_i=1$).
 %% remaining dependencies: distinguish internal (due to the arcs) and external.
 The problem can be decomposed, if further the dependencies due
 to arcs are resolved and the corresponding variables do not have
-dependencies by constraints other than \texttt{StringMatching} and
-\texttt{StringMatchingWeight}.
+dependencies by constraints other than \textsf{StringMatching} and
+\textsf{StringMatchingWeight}.
 %% arc, where one end is fixed does not introduce dependency
 Notably, for resolving the dependencies due to an arc $(i,j)$ it
 suffices that one of its ends is matched, i.e. $\forall A\in D(\cA):
@@ -473,7 +474,7 @@ RNA's structure ensemble~\cite{McCaskill:1990}. This set approximates
 the overlay of the different riboswitch structures. In consequence,
 the alignment is optimized with respect to all these structures
 simultaneously. Since the set of base pairs is unlimited this
-application has not been possible for existing approaches which at
+application has not been possible for existing approaches, which at
 most score crossing structure. To benchmark the approach, we align 100
 random instances from each out of 10 Rfam RNA families, which are
 annotated as Riboswitch and confirmed by literature. We set a time
