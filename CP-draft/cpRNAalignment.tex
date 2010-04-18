@@ -355,13 +355,15 @@ first.
 
 %% string matching suggests a special kind of decomposition into subproblems along the string order (i.e. substrings)
 Certain constraint optimization problems can be solved faster by
-detecting independent subproblems and optimizing these subproblems
-independently of each other~\cite{Dechter:and_or_bab:AI}. In general,
-this introduces overhead for detecting dependencies and even interferes
-with Branch-and-Bound when subproblems cannot be bounded
-well. However, the string matching problem suggests a special form of
-decomposition along the string order, where our propagator provides
-upper bounds for the partial problems.
+detecting independent subproblems during search and optimizing these
+subproblems independently of each other. In general, this introduces
+overhead for detecting dependencies and even interferes with
+Branch-and-Bound when subproblems cannot be bounded well (confer
+AND/OR search~\cite{Dechter:and_or_bab:AI}, which however doesn't
+discuss decomposition in the presence of global propagators). However,
+the string matching problem suggests a special form of decomposition
+along the string order, where our propagator provides upper bounds for
+the partial problems.
 %% matching edges resolve the dependency due to "preserving string order"
 The dependency due to the string order between the two subproblems for
 variables $\var{MD}_1,\dots,\var{MD}_{i-1}$, $\var{M}_1,\dots,\var{M}_{i-1}$ and  $\var{MD}_{i+1},\dots,\var{MD}_{|S_a|}$, $\var{M}_{i+1},\dots,\var{M}_{|S_a|}$ is resolved as soon as a
@@ -372,25 +374,24 @@ to arcs are resolved and the corresponding variables do not have
 dependencies by constraints other than \texttt{StringMatching} and
 \texttt{StringMatchingWeight}.
 %% arc, where one end is fixed does not introduce dependency
-Notably, the dependencies due to an arc
-$(i,j)$ can be resolved if one of its ends is matched, i.e. $\forall
-A\in D(\cA): (i,i')\in A$ (or $\forall A\in D(\cA): (j,j')\in A$) by
-moving the weight of each arc match $(i,j;i',j')$ to the match weight
-of the other end $(j,j')$ (or $(i,i')$ respectively).
+Notably, for resolving the dependencies due to an arc $(i,j)$ it
+suffices that one of its ends is matched, i.e. $\forall A\in D(\cA):
+(i,i')\in A$ (or $\forall A\in D(\cA): (j,j')\in A$). Then one can
+move the weight of each arc match $(i,j;i',j')$ to the match weight of
+the other end $(j,j')$ (or $(i,i')$ respectively) and discard the dependency.
 %% Gecode: no easy/efficient way to test for external dependency => implement only internal
 
-In the RNA alignment problem, all constraint dependencies are known to
-the propagator, which allows for testing independence within the
-propagator.\footnote{This is important for our implementation, because
-  general dependency checking for variables is expensive in Gecode.}
-To avoid overhead, we apply the decomposition only if an independent
-subproblem for $\var{MD}_{i},\dots,\var{MD}_{j}$,
+In the RNA alignment problem, all dependencies can be checked within
+the propagator.\footnote{This is important for our implementation,
+  because general dependency checking for variables is expensive in
+  Gecode.}  To avoid overhead, we apply the decomposition only if an
+independent subproblem for $\var{MD}_{i},\dots,\var{MD}_{j}$,
 $\var{M}_{i},\dots,\var{M}_{j}$ can be solved to optimality by the
 propagator alone. This is the case, if all arc dependencies in the
-subproblem are resolved. Then, the problem reduces to maximum
-weighted string matching without dependencies and the traceback
-alignment represents an optimal solution.  Assigning the traceback of
-the subproblem to $\var{MD}_{i},\dots,\var{MD}_{j}$,
+subproblem are resolved. Then, the problem reduces to maximum weighted
+string matching without dependencies and the traceback alignment
+represents an optimal solution.  Assigning the traceback of the
+subproblem to $\var{MD}_{i},\dots,\var{MD}_{j}$,
 $\var{M}_{i},\dots,\var{M}_{j}$ is a form of symmetry breaking,
 because it discards alignments with less or equal weight that are
 systematically generated from other alignments in $\cA(D)$.
@@ -403,49 +404,65 @@ programming system Gecode. For handling input and output as well as
 for special datastructures we reused code of
 LocARNA~\cite{Will:etal:_infer_non_codin_rna_famil:PLOS2007}.
 
-We run tests for two application scenarios. First, we explore Carna's
-behavior on crossing input structure using instances from all 16 Rfam
-families with crossing structure. Table~\ref{tab:results} compares our
-results to Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007}. The
-table omits all 8 instances where both approaches run in less than 0.1
-seconds. In all but one of the omitted cases, Carna solves the problem
-without backtracking. In terms of performance, with the single
-exception of tmRNA, both programs are on a par for the simpler class
-of crossing structures.
+We run tests for two application scenarios. All experiments were
+performed under 32-bit Linux on a T400s notebook with Intel P9600
+CPU. First, we explore Carna's behavior on crossing input structure
+using instances from all 16 Rfam families with crossing
+structure. Table~\ref{tab:results} compares our results to
+Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007}. The table omits
+all 8 instances where both approaches run in less than 0.1 seconds. In
+all but one of the omitted cases, Carna solves the problem without
+backtracking. In terms of performance, with the single exception of
+tmRNA, both programs are on a par for the simpler class of crossing
+structures.
 
 
 \begin{table}
   \centering
-  \begin{tabular}{c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}}
+  \begin{tabular}{c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}}
     Family
     & \multicolumn{2}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c@{\hspace{3pt}}}{Lengths}
     & \multicolumn{2}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c@{\hspace{3pt}}}{Run-time (s)}
-    & \multicolumn{4}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c}{Carna Search Tree} \\
+    & \multicolumn{3}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c}{Carna Search Tree} \\
     \hline\hline
-                     &$S_a$&$S_b$& Carna& Lara & Depth & Sols & Fails & Size\\ %% user time
+                     &$S_a$&$S_b$& Carna& Lara & Depth & Fails & Size\\ %% user time
     \hline
-    %Alpha\_RBS       & 109 & 106 & 0.06 & 0.03 & 63 & 5 & 59 & 63 \\
-    %Antizyme\_FSE    &  59 &  56 & 0.00 & 0.01 &  0 & 1 &  0 &  0 \\
-    %Corona\_FSE      &  79 &  87 & 0.01 & 0.02 & 22 & 1 & 22 & 22 \\
-    %Corona\_pk3      &  62 &  63 & 0.05 & 0.01 & 18 & 1 & 18 & 18 \\
-    Entero\_OriR     & 126 & 130 & 0.03 & 0.18 & 46 & 5 & 42 & 46 \\
-    Intron\_gpI      & 443 & 436 & 0.1  & 0.2  & 0  & 1 &  0 &  0 \\
-    IRES\_Cripavirus & 202 & 199 & 0.2  & 0.04 &204 &12 &221 &232 \\
-    %Parecho\_CRE     & 113 & 115 & 0.04 & 0.03 & 71 & 1 & 71 & 71 \\
-    %Prion\_pknot     &  41 &  41 & 0.0  & 0.03 & 7  & 1 &  7 &  7 \\
-    RNaseP\_arch     & 303 & 367 & 0.46  & 1.4  & 66 & 1 & 66 & 66 \\
-    RNaseP\_bact\_b  & 408 & 401 & 3.0  & 2.3  &416 &23 &1282&1304\\
-    RNaseP\_nuc      & 317 & 346 & 0.07 & 2.9  & 29 & 2 & 28 & 29 \\
-    %RydC             &  64 &  66 & 0.01 & 0.0  & 0  & 1 & 0  & 0  \\
-    Telomerase-vert  & 448 & 451 & 0.47 & 2.3  &181 & 7 &175 &181 \\
-    tmRNA            & 384 & 367 & 63   & 3.7  &478 &28 &18937&18964\\
-    %Tymo\_tRNA-like  &  84 &  84 & 0.02 & 0.02 &67  & 1 & 67 & 67\\
+    Entero\_OriR     & 126 & 130 & 0.03 & 0.18 & 38 & 13 & 50 \\
+    Intron\_gpI      & 443 & 436 & 0.1  & 0.2  & 0  &  0 &  1 \\
+    IRES\_Cripavirus & 202 & 199 & 0.2  & 0.04 &157 &127 &296 \\
+    RNaseP\_arch     & 303 & 367 & 0.46 & 1.4  & 63 &  8 & 64 \\
+    RNaseP\_bact\_b  & 408 & 401 & 3.0  & 2.3  &370 &677 &1463\\
+    RNaseP\_nuc      & 317 & 346 & 0.07 & 2.9  & 14 &  4 & 16 \\
+    Telomerase-vert  & 448 & 451 & 0.47 & 2.3  &146 & 32 &161 \\
+    tmRNA            & 384 & 367 & 63   & 3.7  &433 &14347&28785\\
   \end{tabular}\\[6pt]
   \caption{Results for the eight harder instances of the benchmark set with crossing structures. 
-    We omit details for 8 instances where both programs run in less than 0.1 seconds. 
+    We omit details for 8 instances where both programs run in less than 0.1 seconds. All times are given as user times.
   }
   \label{tab:results}
 \end{table}
+
+%% generated by svn r82
+%% on T400s:  Intel(R) Core(TM)2 Duo CPU     P9600  @ 2.53GHz
+%% : for i in Data/*.pk.fa ; do echo -n "$i "; echo `Utils/cRNAalign.pl $i 2>&1 | egrep '(Nodes|Fail|Depth|Memory|real|user|sys)'`; done
+
+%%%% Data/Alpha_RBS.pk.fa Nodes: 90 Fail: 36 Depth: 54 Memory: 332296 real 0.06 user 0.06 sys 0.00
+%%%% Data/Antizyme_FSE.pk.fa Nodes: 1 Fail: 0 Depth: 0 Memory: 19436 real 0.01 user 0.00 sys 0.00
+%%%% Data/Corona_FSE.pk.fa Nodes: 25 Fail: 3 Depth: 24 Memory: 108928 real 0.01 user 0.01 sys 0.00
+%%%% Data/Corona_pk3.pk.fa Nodes: 17 Fail: 2 Depth: 16 Memory: 51108 real 0.01 user 0.01 sys 0.00
+% Data/Entero_OriR.pk.fa Nodes: 50 Fail: 13 Depth: 38 Memory: 265712 real 0.04 user 0.04 sys 0.00
+% Data/Intron_gpI.pk.fa Nodes: 1 Fail: 0 Depth: 0 Memory: 134124 real 0.12 user 0.10 sys 0.01
+% Data/IRES_Cripavirus.pk.fa Nodes: 296 Fail: 127 Depth: 157 Memory: 1717512 real 0.29 user 0.17 sys 0.12
+%%%% Data/Parecho_CRE.pk.fa Nodes: 46 Fail: 6 Depth: 45 Memory: 233140 real 0.03 user 0.03 sys 0.00
+%%%% Data/Prion_pknot.pk.fa Nodes: 6 Fail: 1 Depth: 5 Memory: 30056 real 0.01 user 0.00 sys 0.00
+% Data/RNaseP_arch.pk.fa Nodes: 64 Fail: 8 Depth: 63 Memory: 1151660 real 0.60 user 0.46 sys 0.13
+% Data/RNaseP_bact_b.pk.fa Nodes: 1463 Fail: 677 Depth: 370 Memory: 6646572 real 5.45 user 3.06 sys 2.40
+% Data/RNaseP_nuc.pk.fa Nodes: 16 Fail: 4 Depth: 14 Memory: 264256 real 0.13 user 0.10 sys 0.03
+%%%% Data/RydC.pk.fa Nodes: 1 Fail: 0 Depth: 0 Memory: 19436 real 0.01 user 0.00 sys 0.00
+% Data/Telomerase-vert.pk.fa Nodes: 161 Fail: 32 Depth: 146 Memory: 2895672 real 0.87 user 0.47 sys 0.40
+% Data/tmRNA.pk.fa Nodes: 28785 Fail: 14347 Depth: 433 Memory: 6848712 real 120.58 user 62.96 sys 57.61
+%%%% Data/Tymo_tRNA-like.pk.fa Nodes: 51 Fail: 7 Depth: 50 Memory: 208944 real 0.02 user 0.01 sys 0.00
+
 
 In our second scenario, we evaluate the behavior on the general class
 of unlimited structures. Therefore, we apply the approach to the
@@ -461,7 +478,11 @@ most score crossing structure. To benchmark the approach, we align 100
 random instances from each out of 10 Rfam RNA families, which are
 annotated as Riboswitch and confirmed by literature. We set a time
 limit of 1 minute for each instance. The results are given in
-Table~\ref{tab:riboswitches}.
+Table~\ref{tab:riboswitches}. For this new problem, not all instances
+could be solved within our strict time limit. However, the results
+show that the approach handles all Riboswitch families sufficiently
+well for bioinformatics applications with the only limitations for the
+very longest sequences.
 
 \begin{table}
   \centering
@@ -494,7 +515,7 @@ Cobalamin 	& 204 & 237 & 60 & 18.7 &  71\% \\
   \caption{%
     Rfam Riboswitches. For 100 instances from each Rfam family annotated
     as riboswitch and confirmed by literature: Medians of average sequence
-    length, average number of base pairs, and run-time, maximal memory
+    length, average number of base pairs, and run-time (user time), maximal memory
     requirement and percentage of instances not solved to optimality
     within a given time limit of 1 min.
   }
@@ -506,21 +527,23 @@ Cobalamin 	& 204 & 237 & 60 & 18.7 &  71\% \\
 \section{Discussion}
 
 We presented a propagator for the problem of weighted string matching
-with arbitrary dependencies which is also known as the alignment
+with arbitrary dependencies, which is also known as the alignment
 problem for arc annotated sequences with unlimited structure.  Whereas
-the problem itself is MAX-SNP-hard, our propagator relies on a
-relaxation of the problem that makes it tractable in a constraint
-programming framework. We also propose a search strategy that
-optimizes the benefit of the propagator and show how to decompose the
-weighted string matching problem into independent subproblems during
-search.
+the problem itself is MAX-SNP-hard, our propagator makes it tractable
+in a constraint programming framework by efficiently solving a
+relaxation of the problem. Futhermore, we proposed a search strategy
+that improves the benefit due to the propagator. Finally, we showed
+that the weighted string matching problem can be decomposed into
+independent subproblems during search. This allows for a AND/OR-type
+optimization in the context of our global propagator.
 
 To evaluate the applicability of our method in practice, we apply it
 to the alignment of RNA structures. While all previous approaches in
 this area are limited to score at most crossing subsets of the input
 structures, our approach is able to align unlimited structures. This
-is useful, for example, to align Riboswitches and allows to consider
-all their potential structural conformations simultaneously.
+is useful to align Riboswitches and other molecules with more than one
+conserved structure, because it allows considering all their potential
+structural conformations simultaneously.
 
 
 \paragraph{Acknowledgments} This work is partially supported by DFG
