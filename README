@@ -3,3 +3,7 @@ installed gecode:
 /home/mmann/Software/src/gecode-3.0.2
 
 svn import http://cmt.math.unipr.it/svn/constraintRnaAlignment
+
+
+Results for crossing input/ PK Rfam families
+for i in Data/*.pk.fa ; do echo -n "$i "; echo `Utils/cRNAalign.pl $i 2>&1 | egrep '(Nodes|Fail|Depth|Memory|real|user|sys)'`; done

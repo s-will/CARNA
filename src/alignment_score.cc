@@ -491,7 +491,7 @@ backtrace_forward(Gecode::Space &home, const Matrix<infty_score_t> &Fwd,
 	    if ( match_allowed(i,j) && Fwd(i,j) == Fwd(i-1,j-1) + UBM(i,j) ) {
 		traceA[i]=j;
 		traceB[j]=i;
-		--i; 
+		--i;
 		--j;
 	    } else if ( deletion_allowed(i,j) && Fwd(i,j) == Fwd(i-1,j) + 2*scoring.gapA(i,j) ) {
 		traceA[i]=0;
@@ -668,7 +668,8 @@ AlignmentScore::choice(RNAalignment &s,
 		       const Matrix<infty_score_t> &Bwd,
 		       const std::vector<size_type> &traceA,
 		       const std::vector<size_type> &traceB,
-		       const Matrix<score_t> &UBM) const {
+		       const Matrix<score_t> &UBM,
+		       const Matrix<score_t> &match_scores) const {
     
     // NOTE: even more severe than in prune, UBM does not contain the best upper bounds anymore
     // to save time, we use UBM nevertheless instead of re-computing the bounds 
@@ -709,7 +710,7 @@ AlignmentScore::choice(RNAalignment &s,
 	    for (size_t j=s.MD[i].min(); j<=(size_t)s.MD[i].max(); j++) {
 		if (s.MD[i].in((int)j)) {
 		    weights[i]=max(weights[i],
-				   UBM(i,j)-2*scoring.basematch(i,j) //ub_match(i,j,false)
+				   UBM(i,j)-match_scores(i,j) //ub_match(i,j,false) //CHECK: -2*scoring.base_match(i,j) or -match_scores(i,j)
 				   + 
 				   (score_t)s.MD[i].size());
 		}
@@ -729,8 +730,8 @@ AlignmentScore::choice(RNAalignment &s,
     if(maxweight == numeric_limits<score_t>::min()) {	
 	return;
     }
-
-
+    
+    
     // determine longest run of vars that have weight maxweight
     
     int last_notchosen=-1;
@@ -1053,8 +1054,6 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     // ----------------------------------------
     
     
-    
-
     Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
     
     const size_t n=seqA.length();
@@ -1078,8 +1077,8 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     Matrix<score_t> match_scores;
     
     prune_decided_arc_matches(considered_ams,match_scores);
-
-
+    
+    
     ////////////////////////////////////////////////////////////
     // precompute upper bounds and determine tightness
     //
@@ -1217,7 +1216,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     // -------------------- select CHOICE for the space
     if (!Gecode::me_modified(ret)) {
 	// don't call choice if propagate will be called again anyway (due to modifications)
-	choice(static_cast<RNAalignment&>(home),Fwd,Bwd,traceA,traceB,UBM);
+	choice(static_cast<RNAalignment&>(home),Fwd,Bwd,traceA,traceB,UBM,match_scores);
     }
 
     return Gecode::me_modified(ret)?Gecode::ES_NOFIX:Gecode::ES_FIX;

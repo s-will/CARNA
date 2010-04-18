@@ -1,5 +1,8 @@
 #!/usr/bin/perl -w
 
+# change path to Carna Home directory
+my $CARNA_HOME="/home/will/Research/Projects/ConstraintRnaAlignment";
+
 =head1 NAME
 
 cRNAalign.pl
@@ -244,18 +247,19 @@ foreach my $name (@names) {
     if (exists $mfasta{$name."#S"}) {
 	convert_fix_structure_to_pp("$i.pp.$tmpsuf",$name,$mfasta{$name},$mfasta{$name."#S"});
     } else {
-	print STDERR "Computing structure not implemented yet. Please give structures.\n";
-	exit(-1);
+	system("printf \"$mfasta{$name}\" | RNAfold -p")==0 || die "Could not 'RNAfold -p' sequence $i\n";
+	rename "dot.ps", "$i.pp.$tmpsuf";
+	unlink "rna.ps";
     }
     $i++;
 }
 
 
-my $cmd = "src/RNAalignment $RNAalignmentArgs "."1.pp.$tmpsuf 2.pp.$tmpsuf";
+my $cmd = "$CARNA_HOME/src/RNAalignment $RNAalignmentArgs "."1.pp.$tmpsuf 2.pp.$tmpsuf";
 # print "CALL: $cmd\n";
 
 if (!$norun) {
-    system($cmd);
+    system("time -p $cmd");
     cleanup();
 }
 

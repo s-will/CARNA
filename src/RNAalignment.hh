@@ -176,13 +176,14 @@ public:
 	    b.write( std::cout );
 	} 
 
+	/*
 	std::cout << "Matches/Deletions:    ";
 	for (size_t i=0; i<=seqA.length(); i++) {
 	    std::cout <<i<<(M[i].assigned()?(M[i].val()==0?"g":"~"):"?")<<MD[i]<<", "; 
 	}
 	std::cout << std::endl;
 	std::cout << "Score:      " << Score << std::endl;
-	
+	*/
 	if (wind!=NULL) wind->update(MD,M);
     }
 

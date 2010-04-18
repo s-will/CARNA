@@ -129,6 +129,12 @@ bool opt_ignore_constraints;
 
 int pf_struct_weight;
 
+bool opt_c_d;
+int c_d;
+
+bool opt_time_limit;
+int time_limit;
+
 // bool opt_mea_gapcost;
 // int mea_alpha;
 // int mea_beta;
@@ -209,6 +215,10 @@ option_def my_options[] = {
     
     //{"",0,0,O_SECTION_HIDE,0,O_NODEFAULT,"","Mode of operation"},
     //{"eval",0,&opt_eval,O_NO_ARG,0,O_NODEFAULT,"","Turn on evaluation mode."},
+
+    {"",0,0,O_SECTION,0,O_NODEFAULT,"","Controlling Gecode"},
+    {"c_d",0,&opt_c_d,O_ARG_INT,&c_d,O_NODEFAULT,"distance","Recomputation distance"},
+    {"time-limit",0,&opt_time_limit,O_ARG_INT,&time_limit,O_NODEFAULT,"time","Search time limit"},
     
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Standard options"},
 
@@ -429,16 +439,48 @@ main(int argc, char* argv[]) {
 	Gist::Options o;
 	o.inspect.click(&p);
 	
+	if (opt_c_d) {
+	    o.c_d =  c_d;
+	}
+	
 	//Gist::dfs(s,o);
 	Gist::bab(s,o);
     } else {
-	BAB<RNAalignment> e(s);
+	Search::Options o;
+	
+	if (opt_c_d) {
+	    o.c_d =  c_d;
+	}
+	
+	if (opt_time_limit) {
+	    Gecode::Search::Stop *timestop=0L;
+	    timestop = new Gecode::Search::TimeStop(time_limit);
+	    o.stop=timestop;
+	}
+
+	BAB<RNAalignment> e(s,o);
 	
 	RNAalignment* ex;
 	while ((ex = e.next()) && (ex != NULL)) {
 	    ex->print(std::cout);
 	    delete ex;
 	}
+	
+
+	Gecode::Search::Statistics stats = e.statistics();
+	
+	cout << "Nodes:  "<<stats.node << std::endl
+	     << "Fail:   "<<stats.fail << std::endl
+	     << "Depth:  "<<stats.depth << std::endl
+	     << "Memory: "<<stats.memory << std::endl;
+
+	if (e.stopped()) {
+	    cout << "Time limit exceeded."<<std::endl;
+	}
+
+
+	if (o.stop) delete o.stop;
+
     }
 
     return 0;

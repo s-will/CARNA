@@ -268,7 +268,8 @@ protected:
 	   const Matrix<infty_score_t> &Bwd,
 	   const std::vector<size_type> &traceA,
 	   const std::vector<size_type> &traceB,
-	   const Matrix<score_t> &UBM
+	   const Matrix<score_t> &UBM,
+	   const Matrix<score_t> &match_scores
 	   ) const;
     
     void
