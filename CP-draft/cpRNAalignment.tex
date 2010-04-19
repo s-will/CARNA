@@ -6,7 +6,7 @@
 
 \newcommand{\SET}[1]{\{#1\}}
 \newcommand*{\PSET}[2]{\{\,#1\mid#2\,\}}
- 
+
 \newcommand{\weight}{\operatorname{weight}}
 \newcommand{\argmax}{\operatorname*{arg max}}
 \newcommand{\var}{\texttt}
@@ -198,7 +198,7 @@ $S_a=ACUG$ and $S_b=ACACG$, which is often written as
 $\begin{array}{c}
   \texttt{A--CUG}\\
   \texttt{ACAC-G}
-\end{array},$ 
+\end{array},$
 corresponds to the valuation $\vec{MD}=(1,4,4,5)$ and $\vec{M}=(1,1,0,1)$.
 
 We introduce a constraint \textsf{StringMatching}$(\vec{MD},\vec{M})$ that
@@ -213,7 +213,7 @@ Both constraints are propagated by our propagator described in the
 next section. For finding optimal alignments we perform a
 branch-and-bound search enumerating $\var{MD}$ and $\var{M}$ according
 to a specific search strategy described after introducing the
-propagator itself. 
+propagator itself.
 
 \section{The Alignment Propagator}
 
@@ -297,14 +297,14 @@ of $\sum_{\substack{(i,j)\in P_a,(i',j')\in P_b,\\(i,i')\in
 single match $(j,j')$ can occur in an alignment in $\cA(D)$ if $j'\in
 D(\var{MD}_j)$ and $1\in D(\var{M}_j)$. However, we look for the best
 set of simultaneously valid matches $(j,j')$. The structure of this
-subproblem is analogous to sequence alignment. 
+subproblem is analogous to sequence alignment.
 % DETAILS of upper bound by dynamic programming
 For solving it efficiently, we define sorted lists
 $j_1,\dots,j_l$ and $j'_1,\dots,j'_{l'}$ such that $(j_h,i)\in P_a$
 for all $1\leq h\leq l$ and $(j'_{h'},i')\in P_b$ for all $1\leq
-h'\leq l'$. We apply dynamic programming for evaluating 
+h'\leq l'$. We apply dynamic programming for evaluating
 \begin{align*}
-  \operatorname{UL}(0,0) &= 0 \quad 
+  \operatorname{UL}(0,0) &= 0 \quad
   \operatorname{UL}(h,0) = 0 \quad \operatorname{UL}(0,h') = 0\\
   \operatorname{UL}(h,h') &= \\
   &\hspace{-24pt}\max
@@ -438,7 +438,7 @@ structures.
     Telomerase-vert  & 448 & 451 & 0.47 & 2.3  &146 & 32 &161 \\
     tmRNA            & 384 & 367 & 63   & 3.7  &433 &14347&28785\\
   \end{tabular}\\[6pt]
-  \caption{Results for the eight harder instances of the benchmark set with crossing structures. 
+  \caption{Results for the eight harder instances of the benchmark set with crossing structures.
     We omit details for 8 instances where both programs run in less than 0.1 seconds. All times are given as user times.
   }
   \label{tab:results}
@@ -549,7 +549,8 @@ structural conformations simultaneously.
 
 
 \paragraph{Acknowledgments} This work is partially supported by DFG
-grants WI 3628/1-1 and BA 2168/3-1.
+grants WI 3628/1-1 and BA 2168/3-1 and PRIN-2008 (\emph{Innovative multi-disciplinary approaches
+for constraint and preference reasoning}).
 
 \bibliographystyle{plain}
 \bibliography{all,refs}
