@@ -137,8 +137,8 @@ An \emph{alignment $A$} of two arc-annotated sequences $(S_a,P_a)$ and
 $(S_b,P_b)$ is a ordered partial matching between the positions of
 $S_a$ and $S_b$. More precisely, $A\subseteq \{1,\dots,|S_a|\} \times
 \{1,\dots,|S_b|\}$ has to satisfy for all
-$(i,j),(i',j')\in A$ that 1.) $i>i'$ implies $j>j'$ and 2.)  $i=i'$
-if and only if $j=j'$.
+$(i,i'),(j,j')\in A$ that 1.) $i>j$ implies $i'>j'$ and 2.)  $i=j$
+if and only if $i'=j'$.
 %
 We define the \emph{$(i,i')$-prefix of $A$} as
 $A\cap\PSET{(j,j')}{j\leq i,j'\leq i'}$ and the \emph{$(i,i')$-suffix
@@ -245,8 +245,8 @@ the alignment problem. In this relaxation the two ends of each arc match are dec
 \vspace{-8pt}
 over all alignments in $\cA(D)$, where $n=|S_a|$ and $m=|S_b|$ and
 \begin{displaymath}
-  \operatorname{ub}_D(i,i') :=\!\frac{1}{2} \max_{A\in\cA(D)} \sum_{\substack{(i,j)\in P_a,(i',j')\in P_b,\\(i,i')\in A,(j,j')\in A}} \!\!\!\tau(i,j,i',j')\,\,\,
-   + \!\!\!\sum_{\substack{(j,i)\in P_a,(j',i')\in P_b,\\(i,i')\in A,(j,j')\in A}} \!\!\!\tau(j,i,j',i').
+  \operatorname{ub}_D(i,i') :=\!\frac{1}{2} \max_{A\in\cA(D)}[\sum_{\substack{(i,j)\in P_a,(i',j')\in P_b,\\(i,i')\in A,(j,j')\in A}} \!\!\!\tau(i,j,i',j')\,\,\,
+   + \!\!\!\sum_{\substack{(j,i)\in P_a,(j',i')\in P_b,\\(i,i')\in A,(j,j')\in A}} \!\!\!\tau(j,i,j',i')].
 \end{displaymath}
 
 Here, $\operatorname{ub}_D$ works as an upper bound for the weight
@@ -265,9 +265,9 @@ in the dynamic programming recursion.
 
 Tracing back through the dynamic programming matrix yields an
 alignment $A^l$. If $A_l$ also satisfies all other constraints of the
-constraint problem, then $\weight(A^l)$ is a lower bound of $\var{Weight}$
-if $A_l$. For the later studied RNA alignment problem, this bound can
-always be propagated, since there are no other constraints.
+constraint problem, then $\weight(A^l)$ is a lower bound of
+$\var{Weight}$. For the later studied RNA alignment problem, this
+bound can always be propagated, since there are no other constraints.
 %
 Furthermore, we compute upper bounds for each single variable
 valuation. This requires to complement the above ``forward algorithm''
@@ -286,7 +286,11 @@ by a symmetric ``backward algorithm'' that computes the matrix entries
 
 Now the variables $\vec{MD}$ can be pruned efficiently, because
 $\operatorname{Prefix}{(i,i')}+\operatorname{Suffix}{(i,i')}$ is an
-upper bound for the assignment $\var{MD}_i=j$. Similarly, we prune
+upper bound of $\var{Weight}$ for the assignment
+$\var{MD}_i=j$. Hence, $j$ can be removed from the domain of
+$\var{MD}_i$, if
+$\operatorname{Prefix}{(i,i')}+\operatorname{Suffix}{(i,i')}$ is
+larger than the upper bound of $\var{Weight}$.  Similarly, we prune
 $\vec{M}$ using the two matrices.
 
 
@@ -371,7 +375,7 @@ The dependency due to the string order between the two subproblems for
 variables $\var{MD}_1,\dots,\var{MD}_{i-1}$, $\var{M}_1,\dots,\var{M}_{i-1}$ and  $\var{MD}_{i+1},\dots,\var{MD}_{|S_a|}$, $\var{M}_{i+1},\dots,\var{M}_{|S_a|}$ is resolved as soon as a
 matching edge $(i,j)$ is assigned (i.e. $\var{MD}_i=j$ and $\var{M}_i=1$).
 %% remaining dependencies: distinguish internal (due to the arcs) and external.
-The problem can be decomposed, if further the dependencies due
+The problem can be decomposed, if in addition the dependencies due
 to arcs are resolved and the corresponding variables do not have
 dependencies by constraints other than \textsf{StringMatching} and
 \textsf{StringMatchingWeight}.
@@ -379,8 +383,8 @@ dependencies by constraints other than \textsf{StringMatching} and
 Notably, for resolving the dependencies due to an arc $(i,j)$ it
 suffices that one of its ends is matched, i.e. $\forall A\in D(\cA):
 (i,i')\in A$ (or $\forall A\in D(\cA): (j,j')\in A$). Then one can
-move the weight of each arc match $(i,j;i',j')$ to the match weight of
-the other end $(j,j')$ (or $(i,i')$ respectively) and discard the dependency.
+move the weight of each arc match,  $\tau(i,j,i',j')$, to the match weight of
+the other end $\sigma(j,j')$ (or $\sigma(i,i')$ respectively) and discard the dependency.
 %% Gecode: no easy/efficient way to test for external dependency => implement only internal
 
 In the RNA alignment problem, all dependencies can be checked within
@@ -477,14 +481,14 @@ the alignment is optimized with respect to all these structures
 simultaneously. Since the set of base pairs is unlimited this
 application has not been possible for existing approaches, which at
 most score crossing structure. To benchmark the approach, we align 100
-random instances from each out of 10 Rfam RNA families, which are
+random instances from each out of the 10 Rfam RNA families, which are
 annotated as Riboswitch and confirmed by literature. We set a time
 limit of 1 minute for each instance. The results are given in
 Table~\ref{tab:riboswitches}. For this new problem, not all instances
 could be solved within our strict time limit. However, the results
 show that the approach handles all Riboswitch families sufficiently
-well for bioinformatics applications with the only limitations for the
-very longest sequences.
+well for bioinformatics applications with only some limitations for
+the very longest sequences.
 
 \begin{table}
   \centering
@@ -529,15 +533,16 @@ Cobalamin 	& 204 & 237 & 60 & 18.7 &  71\% \\
 \section{Discussion}
 
 We presented a propagator for the problem of weighted string matching
-with arbitrary dependencies, which is also known as the alignment
-problem for arc-annotated sequences with unlimited structure.  Whereas
-the problem itself is MAX-SNP-hard, our propagator makes it tractable
-in a constraint programming framework by efficiently solving a
-relaxation of the problem. Futhermore, we proposed a search strategy
-that improves the benefit due to the propagator. Finally, we showed
-that the weighted string matching problem can be decomposed into
-independent subproblems during search. This allows for a AND/OR-type
-optimization in the context of our global propagator.
+with arbitrary pairwise dependencies, which is also known as the
+alignment problem for arc-annotated sequences with unlimited
+structure.  Whereas the problem itself is MAX-SNP-hard, our propagator
+makes it tractable in a constraint programming framework by
+efficiently solving a relaxation of the problem. Futhermore, we
+proposed a search strategy that improves the benefit due to the
+propagator. Finally, we showed that the weighted string matching
+problem can be decomposed into independent subproblems during
+search. This allows for a AND/OR-type optimization in the context of
+our global propagator.
 
 To evaluate the applicability of our method in practice, we apply it
 to the alignment of RNA structures. While all previous approaches in
