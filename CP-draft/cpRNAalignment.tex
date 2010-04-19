@@ -42,9 +42,9 @@
   solved efficiently. The problem becomes MAX-SNP-hard as soon as
   arbitrary pairwise dependencies among the matching edges are
   introduced.  We present a global propagator for this problem which
-  is based on efficiently solving a relaxation of the problem.  In the
-  context of bioinformatics, this problem is known as alignment of arc
-  annotated sequences, which is e.g. used for comparing RNA
+  is based on efficiently solving a relaxation of it.  In the context
+  of bioinformatics, the problem is known as alignment of
+  arc-annotated sequences, which is e.g. used for comparing RNA
   molecules. For a restricted version of this alignment problem, we
   show that a constraint program based on our propagator is on par
   with state of the art methods. For the general problem with
@@ -55,7 +55,7 @@
 % WHAT TO SOLVE
 % what is a weighted ordered partial matching?
 The maximum weight string matching problem for strings $S_a$ and $S_b$
-asks for a partial matching of positions in $S_A$ and $S_B$ that
+asks for a partial matching of positions in $S_a$ and $S_b$ that
 preserves the string order and has maximum weight. This problem is
 efficiently solved by dynamic programming
 (DP)~\cite{smith81:_compar_bioseq}. An extended variant of the problem
@@ -79,12 +79,12 @@ structural dependencies among those.
 
 Due to the hardness of the problem, restricted versions with limited
 dependencies, in particular nested and crossing ones, have been
-considered. Nested and certain restricted crossing dependencies allow
-for efficient DP
-algorithms.~\cite{Jiang:Lin:Ma:Gener_Edit_Dista:JCB2002,Moehl:Will:Backofen:PKalign:JCB2010}
+considered. For nested and also certain restricted crossing
+dependencies the alignment problem can be solved efficiently with DP
+algorithms~\cite{Jiang:Lin:Ma:Gener_Edit_Dista:JCB2002,Moehl:Will:Backofen:PKalign:JCB2010}.
 % - arbitrary crossing or unlimited --> MAX-SNP --> CP-application interesting
-
-Heuristic approach based on Integer Linear Programming (ILP) are
+%
+Heuristic approaches based on Integer Linear Programming (ILP) are
 available for crossing dependencies specialized to RNA
 ~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} and for unlimited
 dependencies specialized to proteins~\cite{caprara02:_struc}.
@@ -97,7 +97,8 @@ pairwise dependencies. The propagator is based on a relaxation that
 resolves the dependencies by bounding their weight contribution. It
 propagates on the upper bound of the total weight and prunes the valid
 matchings accordingly. Furthermore, we discuss decomposition into
-independent subproblems for optimization using our propagator.
+independent subproblems for optimization approaches using our
+propagator.
 
 % HOW TO SOLVE
 % Propagator
@@ -153,9 +154,10 @@ of $(S_a,P_a)$ and $(S_b,P_b)$} as
   \,+ \sum_{\substack{(i,j)\in P_a,(i',j')\in P_b,\\(i,i')\in A,(j,j')\in A}} \!\!\tau(i,j,i',j')\!\!
   \quad + \quad\gamma (|S_a|+|S_b|-2|A|),
 \end{displaymath}
-where $\sigma(i,j)$ is the similarity of bases $S_a[i]$ and $S_b[j]$,
-$\tau(i,j,i',j')$ is the similarity of base pairs $(i,j)\in P_a$
-and $(i',j')\in P_b$ and $\gamma$ is the gap cost.
+where $\sigma(i,i')$ is the similarity of sequence positions $S_a[i]$
+and $S_b[i']$, $\tau(i,j,i',j')$ is the similarity of arcs $(i,j)\in
+P_a$ and $(i',j')\in P_b$ and $\gamma$ is the gap cost associated with
+each sequence position that is not matched.
 % For $i'<i$, define $\tau(i',i,j',j):=\tau(i,i',j,j')$.
 
 The \emph{alignment problem} is to determine
@@ -163,7 +165,7 @@ The \emph{alignment problem} is to determine
   \displaystyle\argmax_{\text{$A$ alignment of $(S_a,P_a)$ and $(S_b,P_b)$}} \weight(A).
 \end{displaymath}
 %
-On crossing arc annotation, the ILP approach
+Note that on crossing arc annotation, the ILP approach
 Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} solves
 essentially the same problem. On unlimited input, Lara scores only a
 crossing subset of the matched dependencies whereas our approach
@@ -232,8 +234,7 @@ optimization.
 
 Define the class $\cA(D)$ as union of $\cA(V)$ over all valuations $V$
 that satisfy $D$. The computation of bounds is based on a relaxation of
-the alignment problem. In this relaxation the two ends of each base
-pair match are decoupled. Thus in the \emph{relaxed optimization
+the alignment problem. In this relaxation the two ends of each arc match are decoupled. Thus in the \emph{relaxed optimization
   problem for $D$}, we maximize a relaxed weight
  \begin{displaymath}
    \weight^{n,m}_\text{relaxed}(A) :=
@@ -529,7 +530,7 @@ Cobalamin 	& 204 & 237 & 60 & 18.7 &  71\% \\
 
 We presented a propagator for the problem of weighted string matching
 with arbitrary dependencies, which is also known as the alignment
-problem for arc annotated sequences with unlimited structure.  Whereas
+problem for arc-annotated sequences with unlimited structure.  Whereas
 the problem itself is MAX-SNP-hard, our propagator makes it tractable
 in a constraint programming framework by efficiently solving a
 relaxation of the problem. Futhermore, we proposed a search strategy
