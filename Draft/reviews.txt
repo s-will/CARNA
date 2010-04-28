@@ -1,0 +1,94 @@
+---------------------------------------------
+
+Paper: 6
+Title: Alignnment of RNA with Structures of Unlimited Complexity
+
+
+---------------------------- REVIEW 1 --------------------------
+PAPER: 6
+TITLE: Alignnment of RNA with Structures of Unlimited Complexity
+ 
+OVERALL RATING: 3 (strong accept) 
+REVIEWER'S CONFIDENCE: 3 (high) 
+
+I like the paper very much. It deals with a biologically relevant and computationally challenging problem. The approach illustrates a strong point of CP technology: the ability to introduce new constraints and their propagators for specific computational structures. The work has been carried through with a full implementation and experimental evaluation.
+
+Editorial remarks:
+
+Title: "Alignnment" --> "Alignment"
+
+Abstract: "few existing" --> "a few existing"
+
+1st para: "as it is commonly assumed" --> "as is commonly assumed"
+          "were the parameters" --> "where the parameters"
+
+1.1, 3rd para: "holds" --> "it holds that" 
+
+
+
+---------------------------- REVIEW 2 --------------------------
+PAPER: 6
+TITLE: Alignnment of RNA with Structures of Unlimited Complexity
+ 
+OVERALL RATING: 2 (accept) 
+REVIEWER'S CONFIDENCE: 4 (expert) 
+
+The paper presents an interesting approach to RNA structure alignment with a CP approach, that compares well with an ILP alternative presented earlier. As such it deerves acceptance but there are a few pitfalls that could be improved.
+
+1. The problem being solved aims at aligning structures where both the sequence and the structure are know. I guess this is significantly lee interesting than the usual goal of structure alignment where only the sequences are known and the goal is to find the structures, with a significant common substructure, that allows an optimal structural alignment. In this respect, the paper addresses the second component, but completely ignores the firsta nd more relevant (and difficult problem of finding the structures with a common substructure).
+
+2. The score function taht is used should possibly be improved. Two bases i and i' are highly scored if they are the same, and penalised if they are different (according to the sigma function). However, if i and i' belong to arcs (i,j) in the first sequence and (i',j') in the second sequence, this fact shows that evolution has changed both bases i' and j' and this should not be penalised, or at least much less, both in the sigma and the tau(i,i', j, j') functions. Could you clarify this?
+
+3. Could you clarify the 1st paragraph of page 3? Does it mean that you do not assume the crossing property that when aligning two arcs (i,j) in the firts sequence and (i', j') in the second sequence it may be the case that j>i and i' > j'? If this is so, how do you justify that?
+
+4. In the discussion it is stated that this is the first approach to address unlimited structures. How important is this? Doesn't Lara do the same, or is there any limitation on the structures that Lara can address? Please clarify.
+
+5. Although I admit it is not easy to squeeze a full explanation of the algorithm in one page, the explanation of the alignmnent propagator is vey hard to follow. A brief skeleton of the algorithm would possibly help. As such I could follow the general idea, but am unable to check its correctness. 
+
+
+
+---------------------------- REVIEW 3 --------------------------
+PAPER: 6
+TITLE: Alignnment of RNA with Structures of Unlimited Complexity
+ 
+OVERALL RATING: 3 (strong accept) 
+REVIEWER'S CONFIDENCE: 2 (medium) 
+
+The paper presents a constraint programming-based exact method (Carna) to solve the problem of RNAs alignment taking into account secondary structures. A dedicated global constraint is introduced which allows to model (and propagate) a valid alignment and its corresponding score. The approach is compared to Lara, a state-of-the-art RNA alignment incomplete method, on realistic benchmarks (RFAM protein). Good results are obtained, the proposed method can be faster than Lara on some instances and most importantly, gives optimal alignments. 
+Future experiments remain to be done to see if these better solutions can be used to improve multiple RNA alignments compared to Lara.
+
+The complexity of the algorithm to solve a relaxation of the problem is O(n^2), with n=max(sequence1,sequence2), which is equivalent to the complexity of Lara's relaxation approach. It would be interesting to compare the quality of Carna and Lara upper-bounds and possibly see if combining both approaches helps reducing the size of the search tree.
+In practice, incrementality of the constraint propagators plays an important role. It seems that the proposed dynamic programming approach is not incremental at all. Some comments on this issue could be added in the text.
+
+Another issue is the impact of the search strategy (variable and value heuristics) on performances. Due to the space limit, little is known about the effect of the chosen heuristics on performances. For instance, what about CPU time/ search nodes in Table 1 if using a different percentage in the value heuristic or if using default Gecode heuristics.
+
+page 1. arbitrary crossing"." (remove full point before references)
+
+page 2. definition of crossing differs from Bauer et al [1] (i<i'<j<j')?
+
+page 2. for all (i,j),(i',j') \in A_m =>  \in A_m \times A_m
+
+page 3. The term valuation should be replaced by the term assignment.
+
+page 3. is there a valuation without a corresponding valid alignment? show an example.
+in this case, what is an optimal valuation without a corresponding alignment?
+
+page 3. the given example helps to understand the link between assignment and alignment,
+but not the score function. recall the input sequences and P structures and give the corresponding score.
+
+page 3. a branch-and-bound search => a DEPTH-FIRST branch-and-bound search
+
+page 4. the notion of \cal{A}(D) is difficult to follow. What is D for? The valid alignments in the cartesian product of domains?
+
+page 4. ub_D(i,i') wrongly typed in first equation of score_relaxed.
+
+page 4. It suffices to describe the maximisation of \sum.. => replace A by A_m in the sum.
+
+page 5. how do you combine domain size with contribution to upper-bound?
+Does the computation of contribution to upper-bound (20% highest relaxed scores) mean a summation of solution scores instead of maximisation?
+
+page 6. Tabe 1. give Pa and Pb size. For Lara, give distance to optimum (and Lara's gap upper-lower bound if available).
+
+page 6. height harder instances => height hardest instances 
+
+
