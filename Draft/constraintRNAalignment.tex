@@ -109,8 +109,9 @@ constraints on integers, the method goes beyond rephrasing the ILP
 approach~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} in CP. We
 describe the constraint model, develop a new RNA alignment propagator,
 and present a specific search strategy. It is implemented using the
-Gecode constraint programming system. Finally, we give preliminary
-results of our approach.
+Gecode constraint programming system. Finally, we apply our method to
+align both RNA molecules with given fixed structures and RNA molecules
+with associated base pair probability matrices.
 
 \section{Methods}
 
@@ -383,11 +384,14 @@ families with crossing structure. Table~\ref{tab:results} compares our
 results to Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007}. The
 table omits all 8 instances where both approaches run in less than 0.1
 seconds.  In all but one of the omitted cases, Carna solves the
-problem without backtracking. In terms of performance, both programs
-are on a par. However, we want to emphasize that, in contrast to Lara, which
-heuristically limits its run-time, Carna always solves the problem to
-optimality. This explains behavior as for tmRNA in
-Table~\ref{tab:results}.
+problem without backtracking. In terms of performance, with the single
+exception of tmRNA, both programs are on a par.
+% not true, for those examples, as we figured out:
+%
+%However, we want to emphasize that, in contrast to Lara, which
+%heuristically limits its run-time, Carna always solves the problem to
+%optimality. This explains behavior as for tmRNA in
+%Table~\ref{tab:results}.
 
 In our second scenario, we align dot-plot matrices as computed by
 RNAfold\cite{Hofacker:Fontana:Stadler:Bonhoeffer:Tacker:Schuster:MonChem1994}. We
@@ -452,7 +456,7 @@ and appears to be generalizable to related problems.
 
 %\paragraph{Acknowledgments} This work is partially supported by the German
 %Research Foundation (DFG grant WI 3628/1-1).
-\paragraph{Acknowledgments} This work is partially supported by DFG grant WI 3628/1-1 and PRIN08 \emph{Innovative multi-disciplinary approaches
+\paragraph{Acknowledgments} This work is partially supported by DFG grants WI 3628/1-1, BA 2168/3-1, and PRIN08 \emph{Innovative multi-disciplinary approaches
 for constraint and preference reasoning}.
 
 \bibliographystyle{plain}
