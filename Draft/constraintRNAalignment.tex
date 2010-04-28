@@ -17,7 +17,7 @@
 
 %\newcommand{\ale}[1]{{\bfseries [Ale:\ #1]}}
 \newcommand{\mm}[1]{{\bfseries [Mathias:\ #1]}}
-\title{Alignnment of RNA with Structures of Unlimited Complexity}
+\title{Alignment of RNA with Structures of Unlimited Complexity}
 
 \author{Alessandro Dal Pal{\`u}$^1$, Mathias M{\"o}hl$^2$, and Sebastian Will$^{2,3}$}
 
@@ -39,15 +39,15 @@
   programming yields efficient solutions. However, nested structure
   cannot model pseudoknots or even more complex structural
   dependencies.  Nevertheless those dependencies are essential and
-  conserved features of many RNAs. Only few existing approaches deal
+  conserved features of many RNAs. Only a few existing approaches deal
   with crossing structures. Here, we present a constraint approach for
   alignment of structures in the even more general class of unlimited
-  structures.
-  Our central contribution is a new RNA alignment constraint
-  propagator. It is based on an efficient $O(n^2)$ relaxation of the
-  RNA alignment problem. Our constraint-based approach Carna solves
-  the alignment problem for sequences with given input structures of
-  unlimited complexity. Carna is implemented using Gecode.
+  structures.  Our central contribution is a new RNA alignment
+  constraint propagator. It is based on an efficient $O(n^2)$
+  relaxation of the RNA alignment problem. Our constraint-based
+  approach Carna solves the alignment problem for sequences with given
+  input structures of unlimited complexity. Carna is implemented using
+  Gecode.
 \end{abstract}
 
 In the post-genomic era, biologists get more and more interested in
@@ -78,13 +78,13 @@ for this class one can find efficient dynamic programming algorithms
 for structure prediction and alignment under reasonable scoring
 schemes~\cite{Zuker:Stiegler:Optim_compu_foldi:NAR1981,Jiang:Lin:Ma:Gener_Edit_Dista:JCB2002}. The
 more general class of crossing RNA structures $P$ restricts the degree
-of base pairing to at most one, as it is commonly assumed for single
+of base pairing to at most one, as is commonly assumed for single
 RNA structure. Prediction and alignment in this class is NP-hard in
 general~\cite{blin07:_exten_hardn_rna_secon_struc_compar}. However,
 one can devise a number of algorithms that efficiently predict or
 align RNAs with structures from classes in between non-crossing and
 arbitrary
-crossing.~\cite{Rivas:Eddy:dynam_progr_algor:JMB1999,Reeder:Giegerich:Desig_imple_and:2004,Moehl:Will:Backofen:PKalign:JCB2010}. However
+crossing~\cite{Rivas:Eddy:dynam_progr_algor:JMB1999,Reeder:Giegerich:Desig_imple_and:2004,Moehl:Will:Backofen:PKalign:JCB2010}. However
 these algorithms have complexities that limit their application range.
 Other approaches for RNA alignment handle crossing structures with
 parametrized complexity, were the parameter captures the complexity
@@ -139,11 +139,11 @@ unlimited, such that these classes form a class hierarchy.
 An \emph{alignment $A$} of two \emph{arc-annotated sequences}
 $(S_a,P_a)$ and $(S_b,P_b)$ is a set $A_m\cup A_g$, where
 $A_m\subseteq [1..|S_a|] \times [1..|S_b|]$ is a set of \emph{match
-  edges} such that for all $(i,j),(i',j')\in A_m$ holds 1.) $i>i'$
-implies $j>j'$ and 2.)  $i=i'$ if and only if $j=j'$ and $A_g$ is the
-set of \emph{gap edges} $\PSET{(x,-)}{x\in [1..|S_a|]\land \nexists
-  y: (x,y)\in A_m}\cup\PSET{(-,y)}{y\in [1..|S_b|]\land \nexists x:
-  (x,y)\in A_m}$.
+  edges} such that for all $(i,j),(i',j')\in A_m$ it holds that 1.)
+$i>i'$ implies $j>j'$ and 2.)  $i=i'$ if and only if $j=j'$ and $A_g$
+is the set of \emph{gap edges} $\PSET{(x,-)}{x\in [1..|S_a|]\land
+  \nexists y: (x,y)\in A_m}\cup\PSET{(-,y)}{y\in [1..|S_b|]\land
+  \nexists x: (x,y)\in A_m}$.
 %
 We define the \emph{$(i,i')$-prefix of $A$} as
 $A\cap(\PSET{(j,j')}{j\leq i,j'\leq i'}\cup\PSET{(j,-)}{j\leq i}\cup\PSET{(-,j')}{j'\leq i'})$
@@ -165,19 +165,37 @@ where $\sigma(i,j)$ is the similarity of bases $S_a[i]$ and $S_b[j]$,
 $\tau(i,j,i',j')$ is the similarity of base pairs $(i,j)\in P_a$
 and $(i',j')\in P_b$ and $\gamma$ is the gap cost.
 % For $i'<i$, define $\tau(i',i,j',j):=\tau(i,i',j,j')$.
+Commonly, scores for sequence-structure alignment penalize the base
+match of different bases but don't penalize the same match if it
+occurs as part of a base pair match. We emphasize that our scoring
+function can express such scores, in the same way as scoring functions
+that don't add base similarity in case of a structural base match.
+For example, if bases $A_i$ and $B_i'$ differ, the negative
+contribution by $\sigma(i,i')$ can be compensated by $\tau(i,i',j,j')$
+in a structural match.
+
 
 The \emph{alignment problem} is to determine
 \begin{math}
   \displaystyle\argmax_{\text{$A$ alignment of $(S_a,P_a)$ and $(S_b,P_b)$}} \score(A).
 \end{math}\\[3pt]
 %
-Please note that unlike
-Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007}, we score all
-matched base pairs even if base pairs share bases and thus are
-mutually exclusive in a crossing structure. Whereas this design choice
-does not affect the alignment of crossing structure, its potential
-advantages for unlimited structures have still to be explored (see
-Discussion).
+Please note that we score the matches of all base pairs that are
+matched by the alignment. Given unlimited structures $P_a$ and $P_b$,
+our approach is thus able to simultaneously take into account several
+biologically relevant RNA structures per sequence. In contrast,
+Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} would select a
+single, best crossing RNA structure for each sequence and score the
+match of only those structures. This assumes that there is only one
+conserved crossing structure for each RNA. The potential advantages of
+our scoring for aligning RNAs with conserved unlimited structure have
+still to be explored (see Discussion). For the special case of
+crossing structures with positive weights there is no difference
+between the scoring by our approach and Lara, because in this case
+Lara scores the matches of all base pairs matched by the
+alignment. This justifies our direct comparison of the two approaches
+for this case.
+
 
 \newcommand{\var}{\texttt}
 \newcommand{\cA}{{\mathcal A}}
@@ -225,7 +243,7 @@ constraint relates a valuation of $\var{MD}$ and $\var{M}$ to the
 score of its corresponding alignment.
 
 Both constraints are propagated by the propagator of the next
-subsection. For finding optimal alignments we perform a
+subsection. For finding optimal alignments we perform a depth-first
 branch-and-bound search enumerating $\var{MD}$ and $\var{M}$ according
 to a specific search strategy described at the end of the next
 section. Successfully applying branch-and-bound requires good upper
@@ -245,7 +263,7 @@ lower and upper bounds for $\var{Score}$ based on $\vec{MD}$ and
 $\vec{M}$.
 
 Define the class $\cA(D)$ as union of $\cA(V)$ over all valuations $V$
-that satisfy D. The computation of bounds is based on a relaxation of
+that satisfy $D$. The computation of bounds is based on a relaxation of
 the alignment problem. In this relaxation the two ends of each base
 pair match are decoupled. Thus in the \emph{relaxed optimization
   problem for $D$}, we maximize a relaxed score
@@ -253,7 +271,7 @@ pair match are decoupled. Thus in the \emph{relaxed optimization
  \begin{displaymath}
   \score_\text{relaxed}(A_m\cup A_g) :=
   \sum_{(i,i')\in A_m} \left[
-  \sigma(i,i') + \frac{1}{2}\operatorname{ub}D(i,i') \right]
+  \sigma(i,i') + \frac{1}{2}\operatorname{ub}_D(i,i') \right]
   \quad + \quad \gamma |A_g|,
 \end{displaymath}
 \vspace{-8pt}
@@ -303,7 +321,7 @@ $\vec{M}$ using the two matrices.
 It remains to describe the efficient computation of
 $\operatorname{ub}_D(i,i')$. It suffices to describe the
 maximization of $\sum_{\substack{(i,j)\in P_a,(i',j')\in
-    P_b,\\(i,i')\in A,(j,j')\in A}} \tau(i,j,i',j')$ 
+    P_b,\\(i,i')\in A_m,(j,j')\in A_m}} \tau(i,j,i',j')$ 
 over alignments in $\cA(D)$. A single match $(j,j')$ can occur in an
 alignment in $\cA(D)$ if $j'\in D(\var{MD}_j)$ and $1\in
 D(\var{M}_j)$. However, we look for the best set of simultaneously
@@ -311,11 +329,22 @@ valid matches $(j,j')$. The structure of this subproblem is analogous
 to sequence alignment. Thus, it is solved efficiently by dynamic
 programming.
 %% maybe give recursion equation? add details later
-Thus, $\operatorname{ub}(i,i')$ is computed in $O(kk')$
+Therefore, $\operatorname{ub}(i,i')$ is computed in $O(kk')$
 time, where $k$ and $k'$ are the respective number of base pairs
 incident to $i$ and $i'$. For many applications $k$ and $k'$ can be
 constantly bounded such that the propagator runs in $O(n^2)$ time and
 space.
+
+\paragraph{Incrementality}
+The propagator profits from reduced domain sizes of the variables
+$\vec{MD}$, because $\operatorname{Prefix}{(i,i')}$ is finite only if
+$i'\in D(\var{MD}_i)$ and the Suffix-matrix is analogously
+restricted. The complexity of the propagator is therefore given more
+precisely as $O(\sum_{i=1}^{|S_a|}|D(\var{MD}_i)|)$. We postponed the
+idea of incrementally updating the matrices according to domain
+changes, because we expect large domain changes due to our
+propagator. Large domain changes would likely counteract the benefits
+of matrix updates.
 
 \paragraph{Affine gap cost}
 The method is straightforwardly extended to affine gap cost by using a
@@ -399,7 +428,7 @@ seconds closing the tree after 100 nodes.
     tmRNA            & 384 & 367 & 76   & 3.7  &478 &28 &18937&18964\\
     %Tymo\_tRNA-like  &  84 &  84 & 0.02 & 0.02 &67  & 1 & 67 & 67\\
   \end{tabular}\\[6pt]
-  \caption{Results for the eight harder instances of the benchmark set with crossing structures. 
+  \caption{Results for the eight hardest instances of the benchmark set with crossing structures. 
     We omit details for 8 instances where both programs run in less than 0.1 seconds. 
   }
   \label{tab:results}
@@ -410,13 +439,16 @@ seconds closing the tree after 100 nodes.
 We showed that a constraint-based approach to RNA alignment can be
 competitive with the ILP based method Lara for crossing
 structures. Moreover, the approach is the first such method that
-scores unlimited structure. The full potential of this method and
-potential biological applications, e.g. for aligning dot-plots of
-riboswitches and RNAs with conserved folding dynamics have still to be
-explored. A constraint-based method promises flexibility for further
-extensions and improvements. Solving relaxed problems in propagators
-for handling crossing and unlimited RNA structure was shown to be a
-viable approach and appears to be generalizable to related problems.
+scores unlimited structure. In this way, it differs from simultaneous
+alignment and folding approaches like Lara, which score only crossing
+(or even more restricted) substructures of unlimited input
+structures. The full potential of scoring unlimited structure and its
+biological applications, e.g. for aligning dot-plots of riboswitches
+and RNAs with conserved folding dynamics have still to be explored. A
+constraint-based method promises flexibility for further extensions
+and improvements. Solving relaxed problems in propagators for handling
+crossing and unlimited RNA structure was shown to be a viable approach
+and appears to be generalizable to related problems.
 
 %\paragraph{Acknowledgments} This work is partially supported by the German
 %Research Foundation (DFG grant WI 3628/1-1).

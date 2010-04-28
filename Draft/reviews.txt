@@ -33,9 +33,19 @@ TITLE: Alignnment of RNA with Structures of Unlimited Complexity
 OVERALL RATING: 2 (accept) 
 REVIEWER'S CONFIDENCE: 4 (expert) 
 
-The paper presents an interesting approach to RNA structure alignment with a CP approach, that compares well with an ILP alternative presented earlier. As such it deerves acceptance but there are a few pitfalls that could be improved.
+The paper presents an interesting approach to RNA structure alignment
+with a CP approach, that compares well with an ILP alternative
+presented earlier. As such it deerves acceptance but there are a few
+pitfalls that could be improved.
 
-1. The problem being solved aims at aligning structures where both the sequence and the structure are know. I guess this is significantly lee interesting than the usual goal of structure alignment where only the sequences are known and the goal is to find the structures, with a significant common substructure, that allows an optimal structural alignment. In this respect, the paper addresses the second component, but completely ignores the firsta nd more relevant (and difficult problem of finding the structures with a common substructure).
+1. The problem being solved aims at aligning structures where both the
+sequence and the structure are know. I guess this is significantly lee
+interesting than the usual goal of structure alignment where only the
+sequences are known and the goal is to find the structures, with a
+significant common substructure, that allows an optimal structural
+alignment. In this respect, the paper addresses the second component,
+but completely ignores the firsta nd more relevant (and difficult
+problem of finding the structures with a common substructure).
 
 2. The score function taht is used should possibly be improved. Two bases i and i' are highly scored if they are the same, and penalised if they are different (according to the sigma function). However, if i and i' belong to arcs (i,j) in the first sequence and (i',j') in the second sequence, this fact shows that evolution has changed both bases i' and j' and this should not be penalised, or at least much less, both in the sigma and the tau(i,i', j, j') functions. Could you clarify this?
 
