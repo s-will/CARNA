@@ -407,30 +407,38 @@ seconds closing the tree after 100 nodes.
 
 \begin{table}
   \centering
-  \begin{tabular}{c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}}
+  \begin{tabular}{c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}|@{\hspace{6pt}}c@{\hspace{6pt}}}
     Family
-    & \multicolumn{2}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c@{\hspace{3pt}}}{Lengths}
+    & \multicolumn{4}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c@{\hspace{3pt}}}{Instance Size}
     & \multicolumn{2}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c@{\hspace{3pt}}}{Run-time (s)}
-    & \multicolumn{4}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c}{Carna Search Tree} \\
+    & \multicolumn{3}{@{\hspace{-6pt}}|@{\hspace{-3pt}}c}{Carna Search Tree} \\
     \hline\hline
-                     &$S_a$&$S_b$& Carna& Lara & Depth & Sols & Fails & Size\\ %% user time
+    &$|S_a|$&$|S_b|$& $|P_a|$ & $|P_b|$ & Carna& Lara & Depth & Fails & Size\\ %% user time
     \hline
-    %Alpha\_RBS       & 109 & 106 & 0.06 & 0.03 & 63 & 5 & 59 & 63 \\
-    %Antizyme\_FSE    &  59 &  56 & 0.00 & 0.01 &  0 & 1 &  0 &  0 \\
-    %Corona\_FSE      &  79 &  87 & 0.01 & 0.02 & 22 & 1 & 22 & 22 \\
-    %Corona\_pk3      &  62 &  63 & 0.05 & 0.01 & 18 & 1 & 18 & 18 \\
-    Entero\_OriR     & 126 & 130 & 0.03 & 0.18 & 46 & 5 & 42 & 46 \\
-    Intron\_gpI      & 443 & 436 & 0.1  & 0.2  & 0  & 1 &  0 &  0 \\
-    IRES\_Cripavirus & 202 & 199 & 0.2  & 0.04 &204 &12 &221 &232 \\
-    %Parecho\_CRE     & 113 & 115 & 0.04 & 0.03 & 71 & 1 & 71 & 71 \\
-    %Prion\_pknot     &  41 &  41 & 0.0  & 0.03 & 7  & 1 &  7 &  7 \\
-    RNaseP\_arch     & 303 & 367 & 0.5  & 1.4  & 66 & 1 & 66 & 66 \\
-    RNaseP\_bact\_b  & 408 & 401 & 4.4  & 2.3  &416 &23 &1282&1304\\
-    RNaseP\_nuc      & 317 & 346 & 0.07 & 2.9  & 29 & 2 & 28 & 29 \\
-    %RydC             &  64 &  66 & 0.01 & 0.0  & 0  & 1 & 0  & 0  \\
-    Telomerase-vert  & 448 & 451 & 0.56 & 2.3  &181 & 7 &175 &181 \\
-    tmRNA            & 384 & 367 & 76   & 3.7  &478 &28 &18937&18964\\
-    %Tymo\_tRNA-like  &  84 &  84 & 0.02 & 0.02 &67  & 1 & 67 & 67\\
+    Entero\_OriR     & 126 & 130 & 35 & 41 & 0.03 & 0.18 & 38 & 13 & 50 \\
+    Intron\_gpI      & 443 & 436 & 60 & 60 & 0.1  & 0.2  & 0  &  0 &  1 \\
+    IRES\_Cripavirus & 202 & 199 & 59 & 57 & 0.2  & 0.04 &157 &127 &296 \\
+    RNaseP\_arch     & 303 & 367 & 88 &110 & 0.46 & 1.4  & 63 &  8 & 64 \\
+    RNaseP\_bact\_b  & 408 & 401 &125 &125 & 3.0  & 2.3  &370 &677 &1463\\
+    RNaseP\_nuc      & 317 & 346 & 65 & 66 & 0.07 & 2.9  & 14 &  4 & 16 \\
+    Telomerase-vert  & 448 & 451 &112 &116 & 0.47 & 2.3  &146 & 32 &161 \\
+    tmRNA            & 384 & 367 &110 &110 & 63   & 3.7  &433 &14347&28785\\
+    % %Alpha\_RBS       & 109 & 106 & 0.06 & 0.03 & 63 & 5 & 59 & 63 \\
+    % %Antizyme\_FSE    &  59 &  56 & 0.00 & 0.01 &  0 & 1 &  0 &  0 \\
+    % %Corona\_FSE      &  79 &  87 & 0.01 & 0.02 & 22 & 1 & 22 & 22 \\
+    % %Corona\_pk3      &  62 &  63 & 0.05 & 0.01 & 18 & 1 & 18 & 18 \\
+    % Entero\_OriR     & 126 & 130 & 0.03 & 0.18 & 46 & 5 & 42 & 46 \\
+    % Intron\_gpI      & 443 & 436 & 0.1  & 0.2  & 0  & 1 &  0 &  0 \\
+    % IRES\_Cripavirus & 202 & 199 & 0.2  & 0.04 &204 &12 &221 &232 \\
+    % %Parecho\_CRE     & 113 & 115 & 0.04 & 0.03 & 71 & 1 & 71 & 71 \\
+    % %Prion\_pknot     &  41 &  41 & 0.0  & 0.03 & 7  & 1 &  7 &  7 \\
+    % RNaseP\_arch     & 303 & 367 & 0.5  & 1.4  & 66 & 1 & 66 & 66 \\
+    % RNaseP\_bact\_b  & 408 & 401 & 4.4  & 2.3  &416 &23 &1282&1304\\
+    % RNaseP\_nuc      & 317 & 346 & 0.07 & 2.9  & 29 & 2 & 28 & 29 \\
+    % %RydC             &  64 &  66 & 0.01 & 0.0  & 0  & 1 & 0  & 0  \\
+    % Telomerase-vert  & 448 & 451 & 0.56 & 2.3  &181 & 7 &175 &181 \\
+    % tmRNA            & 384 & 367 & 76   & 3.7  &478 &28 &18937&18964\\
+    % %Tymo\_tRNA-like  &  84 &  84 & 0.02 & 0.02 &67  & 1 & 67 & 67\\
   \end{tabular}\\[6pt]
   \caption{Results for the eight hardest instances of the benchmark set with crossing structures.
     We omit details for 8 instances where both programs run in less than 0.1 seconds.
