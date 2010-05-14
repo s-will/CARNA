@@ -1,4 +1,5 @@
-\documentclass[11pt]{llncs}
+\documentclass{easychair}
+%\documentclass[11pt]{llncs}
 
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -18,18 +19,28 @@
 %\newcommand{\ale}[1]{{\bfseries [Ale:\ #1]}}
 \newcommand{\mm}[1]{{\bfseries [Mathias:\ #1]}}
 \title{Alignment of RNA with Structures of Unlimited Complexity}
-
-\author{Alessandro Dal Pal{\`u}$^1$, Mathias M{\"o}hl$^2$, and Sebastian Will$^{2,3}$}
-
-\institute{Dipartimento di Matematica, Universit\`a  degli Studi di
-  Parma, Parma, Italy, \email{alessandro.dalpalu@unipr.it} \and
-  Bioinformatics, Institute of Computer Science,
-  Albert-Ludwigs-Universit\"{a}t, Freiburg, Germany,
-  \email{\{mmohl,will\}@informatik.uni-freiburg.de} \and Computation and
-  Biology Lab, CSAIL, MIT, Cambridge MA, USA,
-  \email{swill@csail.mit.edu}}
+\titlerunning{Alignment of RNA with Structures of Unlimited Complexity}
 
 \begin{document}
+
+\author{Alessandro Dal Pal{\`u}\\
+Dipartimento di  Matematica\\
+Universit\`a Parma, Parma, Italy\\
+\url{alessandro.dalpalu@unipr.it}\\
+\and
+Mathias M{\"o}hl\\
+Bioinformatics, Institute of Computer Science\\
+Albert-Ludwigs-Universit\"{a}t, Freiburg, Germany\\
+\url{mmohl@informatik.uni-freiburg.de}\\
+\and
+Sebastian Will\\
+Biology Lab, CSAIL\\
+MIT, Cambridge MA, USA\\
+\url{swill@csail.mit.edu}\\
+}
+
+\authorrunning{Dal Pal\`u, M{\"o}hl, Will}
+
 \maketitle
 
 \begin{abstract}
@@ -223,7 +234,7 @@ each alignment $A$ of $(S_a,P_a)$ and $(S_b,P_b)$ there is a
 corresponding valuation.
 
 For example, the following alignment and valuation correspond to each
-other: $A=\{(1,1),(-,2),(-,3),(2,4),(3,-),(4,5)\}$, which is often written as
+other: $$A=\{(1,1),(-,2),(-,3),(2,4),(3,-),(4,5)\}$$, which is often written as
 $\begin{array}{c}
 \texttt{A--CUG}\\
 \texttt{ACAC-G}
@@ -308,11 +319,12 @@ that computes the matrix entries
       $A^p_{ii'}$ of }A\in\cA(D)} \score_\text{relaxed}(A^p_{ii'})\\[-6pt]
 \end{displaymath}
 by a symmetric ``backward algorithm'' that computes the entries
-\begin{math}
+\vspace{-4pt}
+\begin{displaymath}
  \operatorname{Suffix}{(i,i')} :=
   \max_{\text{$(i,i')$-suffix $A^s_{ii'}$ of }A\in\cA(D)}
   \score_\text{relaxed}(A^s_{ii'}).
-\end{math}
+\end{displaymath}
 
 Now the variables $\vec{MD}$ can be pruned efficiently, because
 $\operatorname{Prefix}{(i,i')}+\operatorname{Suffix}{(i,i')}$ is an
