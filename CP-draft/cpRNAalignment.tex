@@ -72,7 +72,8 @@ In bioinformatics, the problem has been studied as alignment of
 arc-annotated sequences, where each arc represents a
 dependency. There, the problem has applications in aligning RNA or
 protein molecules that can be abstracted as sequences of monomers and
-structural dependencies among those.
+structural dependencies among those that represent a proximity of the
+respective positions in the molecules structure.
 
 % what are arbitrary binary dependencies?
 % - restricted dependencies (nested, restricted crossing) --> efficient
@@ -389,15 +390,15 @@ the other end $\sigma(j,j')$ (or $\sigma(i,i')$ respectively) and discard the de
 
 In the RNA alignment problem, all dependencies can be checked within
 the propagator.\footnote{This is important for our implementation,
-  because general dependency checking for variables is expensive in
-  Gecode.}  To avoid overhead, we apply the decomposition only if an
-independent subproblem for $\var{MD}_{i},\dots,\var{MD}_{j}$,
-$\var{M}_{i},\dots,\var{M}_{j}$ can be solved to optimality by the
-propagator alone. This is the case, if all arc dependencies in the
-subproblem are resolved. Then, the problem reduces to maximum weighted
-string matching without dependencies and the traceback alignment
-represents an optimal solution.  Assigning the traceback of the
-subproblem to $\var{MD}_{i},\dots,\var{MD}_{j}$,
+  because checking for independent subproblems in the presence of
+  arbitrary propagators is expensive in Gecode.}  To avoid overhead,
+we apply the decomposition only if an independent subproblem for
+$\var{MD}_{i},\dots,\var{MD}_{j}$, $\var{M}_{i},\dots,\var{M}_{j}$ can
+be solved to optimality by the propagator alone. This is the case, if
+all arc dependencies in the subproblem are resolved. Then, the problem
+reduces to maximum weighted string matching without dependencies and
+the traceback alignment represents an optimal solution.  Assigning the
+traceback of the subproblem to $\var{MD}_{i},\dots,\var{MD}_{j}$,
 $\var{M}_{i},\dots,\var{M}_{j}$ is a form of symmetry breaking,
 because it discards alignments with less or equal weight that are
 systematically generated from other alignments in $\cA(D)$.
