@@ -1,0 +1,57 @@
+This is a list of all changes made for the final version of the paper.
+
+********* general *********
+changed "matching" to "alignment" (see review 3).
+Attention: This also changed in the title!
+
+
+
+
+********** Introduction **********
+
+2nd paragraph: Clarified the concepts of arcs and/or dependencies (see
+  REVIEW 3)
+
+
+
+********** Section 1 Preliminaries **********
+no changes
+
+
+
+********** Section 2 Constraint Model********** 
+
+1st paragraph: Clarified the relation between valuations and
+alignments (see review 1)
+
+3rd paragraph: Clarified that the sequences are parameters of the
+constraints (see review 3)
+
+
+********** Section 3 The Alignment Propagator**********
+no changes
+
+
+
+********** Section 4 Problem Decomposition **********
+
+1st paragraph: clarified the difference between arcs and dependencies
+(see review 3)
+
+Changed footnote (see review 3)
+
+
+
+
+********** Section 5 Results **********
+1st paragraph: fixed typo "data structures" (see review 1)
+2nd paragraph: Explained time limit (see review 1)
+
+3rd paragraph: Explained chosen RFam families more clearly (see review
+1)
+
+********** Section 6 Discussion ********** 
+
+1st paragraph: replaced the word "tractable" (see review 1)
+
+
