@@ -1,59 +1,45 @@
-This is a list of all changes made for the final version of the paper.
+Dear David Cohen,
 
-********* general *********
-changed "matching" to "alignment" (see review 3).
-Attention: This also changed in the title!
+we submitted the final version of our paper number 97
 
+Alessandro Dal Pal, Mathias Möhl, and Sebastian Will. A Propagator for
+Maximum Weight String Alignment with Arbitrary Pairwise Dependencies
 
-
-
-********** Introduction **********
-
-2nd paragraph: Clarified the concepts of arcs and/or dependencies (see
-  REVIEW 3)
-
-3thd paragraph: Add references to related work in CP that uses DP for
-propagation, including work on soft constraints, which is even similar
-in the way that DP-based propagation in an optimization setting.
-
-********** Section 1 Preliminaries **********
-no changes
+and the copyright from via easychair.
 
 
+We carefully edited the paper due to the reviewers comments as
+described below. We did a few other minor editing mainly to resolve
+typos, which is not mentioned explicitely.
 
-********** Section 2 Constraint Model********** 
 
-1st paragraph: Clarified the relation between valuations and
-alignments (see review 1)
+Notably, we changed "matching" to "alignment" according to reviewer 3
+all over the text. This includes a change of the title.
 
-3rd paragraph: Clarified that the sequences are parameters of the
+In the Introduction, we clarified the concepts of arcs and/or
+dependencies in paragraph 2 (Reviewer 3) and added references to
+related work in CP that uses DP for propagation, including work on
+soft constraints, which is even similar in the way that DP-based
+propagation in an optimization setting in paragraph 3.
+
+In Section Constraint Model, we clarified the relation between
+valuations and alignments (see review 1). In the third paragraph, we
+explicitely stated that the sequences are parameters of the
 constraints (see review 3)
 
+In Section 4 "Problem Decomposition", we explain the difference
+between arcs and dependencies (see review 3) and changed the footnote
+(see review 3).
 
-********** Section 3 The Alignment Propagator**********
-no changes
+Furthermore, in response to reviewer 1, we added details in Section
+Results to explain the time limit (see review 1) and how the data set
+of RFam families was generated (see review 1).
 
-
-
-********** Section 4 Problem Decomposition **********
-
-1st paragraph: clarified the difference between arcs and dependencies
-(see review 3)
-
-Changed footnote (see review 3)
+In the discussion, we avoid the use of the term "tractable" in a
+misleading way (see review 1).
 
 
 
+Best regards,
 
-********** Section 5 Results **********
-1st paragraph: fixed typo "data structures" (see review 1)
-2nd paragraph: Explained time limit (see review 1)
-
-3rd paragraph: Explained chosen RFam families more clearly (see review
-1)
-
-********** Section 6 Discussion ********** 
-
-1st paragraph: replaced the word "tractable" (see review 1)
-
-
+Sebastian
