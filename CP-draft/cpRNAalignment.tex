@@ -86,9 +86,12 @@ algorithms~\cite{Jiang:Lin:Ma:Gener_Edit_Dista:JCB2002,Moehl:Will:Backofen:PKali
 % - arbitrary crossing or unlimited --> MAX-SNP --> CP-application interesting
 %
 Heuristic approaches based on Integer Linear Programming (ILP) are
-available for crossing dependencies specialized to RNA
-~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} and for unlimited
-dependencies specialized to proteins~\cite{caprara02:_struc}.
+available for crossing dependencies specialized to
+RNA~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007} and for unlimited
+dependencies specialized to proteins~\cite{caprara02:_struc}.  By
+using DP-based propagation, our approach is similar to Trick
+\cite{Trick:AOR2003}. Furthermore, there is prior work applying this
+idea in an optimization setting~\cite{Hoeve:JOH2006}.
 
 \paragraph{Contribution} In this work, we consider a constraint
 programming approach to the arc-annotated sequence alignment problem
@@ -115,9 +118,9 @@ propagator.
 We apply the technique to RNA sequence-structure alignment and show
 that results are comparable to the state-of-the-art ILP approach
 Lara~\cite{Bauer:Klau:Reinert:Accur_multi_seque:2007}. Finally, we
-explore a new method for the comparison of riboswitches that could not
-be handled by previous approaches for RNA, because they score at most
-crossing dependencies.
+discuss a new method to compare riboswitches, which was not applicable
+before, because prior RNA alignment approaches score at most crossing
+dependencies.
 
 
 \section{Preliminaries}
@@ -202,13 +205,13 @@ corresponds to the valuation $\vec{MD}=(1,4,4,5)$ and $\vec{M}=(1,1,0,1)$.
 
 We introduce a constraint \textsf{StringAlignment}$(\vec{MD},\vec{M})$
 that is satisfied by any valuation with a corresponding alignment.
-Furthermore, we model the weight of the alignment. Therefore, we
-introduce a variable $\var{Weight}$ and a constraint
+For modeling the weight of the alignment, we introduce a variable
+$\var{Weight}$ and a constraint
 \textsf{StringAlignmentWeight}$(\vec{MD},\vec{M},\var{Weight})$. This
 constraint relates a valuation of $\var{MD}$ and $\var{M}$ to the
-weight of its corresponding alignment. Note that, formally, $(S_a,P_a)$
-and $(S_b,P_b)$ are parameters of the constraints but we omit them to
-simplify notation.
+weight of its corresponding alignment. Note that, formally,
+$(S_a,P_a)$ and $(S_b,P_b)$ are parameters of the constraints but we
+omit them to simplify notation.
 
 Both constraints are propagated by our propagator described in the
 next section. For finding optimal alignments we perform a
@@ -243,12 +246,12 @@ the alignment problem. In this relaxation the two ends of each arc match are dec
      \sigma(i,i') + \operatorname{ub}_D(i,i') \right]
   \quad + \quad \gamma (n+m-|A|),
 \end{displaymath}
-\vspace{-8pt}
 over all alignments in $\cA(D)$, where $n=|S_a|$ and $m=|S_b|$ and
 \begin{displaymath}
   \operatorname{ub}_D(i,i') :=\!\frac{1}{2} \max_{A\in\cA(D)}[\sum_{\substack{(i,j)\in P_a,(i',j')\in P_b,\\(i,i')\in A,(j,j')\in A}} \!\!\!\tau(i,j,i',j')\,\,\,
    + \!\!\!\sum_{\substack{(j,i)\in P_a,(j',i')\in P_b,\\(i,i')\in A,(j,j')\in A}} \!\!\!\tau(j,i,j',i')].
 \end{displaymath}
+\vspace{-8pt}
 
 Here, $\operatorname{ub}_D$ works as an upper bound for the weight
 contributions by arc matches involving $(i,i')$ and consequently
@@ -277,14 +280,16 @@ that computes the matrix entries
 \begin{displaymath}
   \operatorname{Prefix}{(i,i')} := \max_{\text{$(i,i')$-prefix
       $A^p_{ii'}$ of }A\in\cA(D)} \weight^{i,i'}_\text{relaxed}(A^p_{ii'})
+\vspace{-3pt}
 \end{displaymath}
 by a symmetric ``backward algorithm'' that computes the matrix entries
 \begin{displaymath}
  \operatorname{Suffix}{(i,i')} :=
   \max_{\text{$(i,i')$-suffix $A^s_{ii'}$ of }A\in\cA(D)}
   \weight^{|S_a|-i,|S_b|-i'}_\text{relaxed}(A^s_{ii'}).
+\vspace{-3pt}
 \end{displaymath}
-
+%
 Now the variables $\vec{MD}$ can be pruned efficiently, because
 $\operatorname{Prefix}{(i,i')}+\operatorname{Suffix}{(i,i')}$ is an
 upper bound of $\var{Weight}$ for the assignment
@@ -336,7 +341,7 @@ the propagator runs in $O(n^2)$ time and space.
 \paragraph{Affine Gap Cost}
 In bioinformatics, penalizing unmatched positions using an affine
 weighting function yields more realistic results. Our method is
-straightforwardly extended to such a weighting scheme by using a
+straightforwardly extended to such scoring by using a
 Gotoh-like forward and backward algorithm~\cite{Gotoh:82} in the
 propagator without increasing its complexity.  It appears that this
 modification comes more natural in our approach than the corresponding
@@ -363,7 +368,7 @@ first.
 %% string matching suggests a special kind of decomposition into subproblems along the string order (i.e. substrings)
 Certain constraint optimization problems can be solved faster by
 detecting independent subproblems during search and optimizing these
-subproblems independently of each other. In our setting, independent
+subproblems independently. In our setting, independent
 means that the two parts of the alignment do not depend on each other
 due to the string order, arcs connecting the two parts, or due to
 additional constraints other than \textsf{StringAlignment}
@@ -572,6 +577,6 @@ grants WI 3628/1-1 and BA 2168/3-1 and PRIN-2008 (\emph{Innovative multi-discipl
 for constraint and preference reasoning}).
 
 \bibliographystyle{plain}
-\bibliography{all,refs}
+\bibliography{references}
 
 \end{document}

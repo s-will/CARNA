@@ -12,7 +12,9 @@ Attention: This also changed in the title!
 2nd paragraph: Clarified the concepts of arcs and/or dependencies (see
   REVIEW 3)
 
-
+3thd paragraph: Add references to related work in CP that uses DP for
+propagation, including work on soft constraints, which is even similar
+in the way that DP-based propagation in an optimization setting.
 
 ********** Section 1 Preliminaries **********
 no changes
