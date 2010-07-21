@@ -1,9 +1,18 @@
-installed gecode:
-/home/mmann/Software/gecode/3.0.2
-/home/mmann/Software/src/gecode-3.0.2
+CARNA 0.1 (Constraint Alignment of RNA)
+=======================================
 
-svn import http://cmt.math.unipr.it/svn/constraintRnaAlignment
+Compile 
+=======
 
+Carna requires Gecode 3.2.2 and the CImg library. To install Carna,
+get these first.
 
-Results for crossing input/ PK Rfam families
-for i in Data/*.pk.fa ; do echo -n "$i "; echo `Utils/cRNAalign.pl $i 2>&1 | egrep '(Nodes|Fail|Depth|Memory|real|user|sys)'`; done
+If gecode library and headers are not in the default path, you need to
+set the gecode installation directory and gecode source directory
+explicitly.
+
+Compile Carna by
+
+./configure --prefix=<installation-path> GECODE_HOME=<path-to-gecode-installation-dir> GECODE_SRC_HOME=<path-to-gecode-src-dir>
+
+make
