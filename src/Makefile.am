@@ -15,6 +15,7 @@ RNAalignment_SOURCES = RNAalignment.hh RNAalignment.cpp \
 	LocARNA/basepairs.cc LocARNA/basepairs.hh \
 	LocARNA/infty_arith_int.cc LocARNA/infty_arith_int.hh \
 	LocARNA/anchor_constraints.cc LocARNA/anchor_constraints.hh \
+	LocARNA/stral_score.cc LocARNA/stral_score.hh \
 	LocARNA/params.hh \
 	LocARNA/match_probs.hh LocARNA/match_probs.cc \
 	WinHandler.hh \
