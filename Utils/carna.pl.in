@@ -1,15 +1,15 @@
 #!/usr/bin/perl -w
 
 # change path to Carna Home directory
-my $CARNA_HOME="/home/will/Research/Projects/ConstraintRnaAlignment";
+my $CARNA_HOME="@CARNAHOMEDIRECTORY@";
 
 =head1 NAME
 
-cRNAalign.pl
+carna.pl
 
 =head1 SYNOPSIS
 
-cRNAalign.pl [options] input.fa
+carna.pl [options] input.fa
 
 Options:
 
@@ -23,17 +23,17 @@ Options:
 
 =item  B<-q, --quiet>                   Quiet
 
-=item  B<-q, --norun>                   Don't run RNAalignment, but generate input
+=item  B<-q, --norun>                   Don't run carna, but generate input
 
-=item  B<--args>                        Arguments passed to RNAalignment
+=item  B<--args>                        Arguments passed to carna
 
 
 =back
 
 =head1 DESCRIPTION
 
-cRNAalign.pl is a front end for the constraint RNA alignment program RNAalignment.
-Its main use is to provide an easy to use interface to RNAalignment.
+carna.pl is a front end for the constraint RNA alignment program carna.
+Its main use is to provide an easy to use interface to carna.
 
 input.fa is a fasta file containing two sequences. The sequences can
 be annotated by dot-bracket strings describing crossing secondary
@@ -75,7 +75,7 @@ my $verbose;
 
 my $norun;
 
-my $RNAalignmentArgs="";
+my $carnaArgs="";
 
 ## Getopt::Long::Configure("no_ignore_case");
 
@@ -85,7 +85,7 @@ GetOptions(
     "help"=> \$help,
     "man" => \$man,
     "norun" => \$norun,
-    "args=s" => \$RNAalignmentArgs
+    "args=s" => \$carnaArgs
     ) || pod2usage(2);
 
 pod2usage(1) if $help;
@@ -255,7 +255,7 @@ foreach my $name (@names) {
 }
 
 
-my $cmd = "$CARNA_HOME/src/RNAalignment $RNAalignmentArgs "."1.pp.$tmpsuf 2.pp.$tmpsuf";
+my $cmd = "$CARNA_HOME/src/carna $carnaArgs "."1.pp.$tmpsuf 2.pp.$tmpsuf";
 # print "CALL: $cmd\n";
 
 if (!$norun) {

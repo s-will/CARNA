@@ -152,7 +152,7 @@ AC_CONFIG_FILES([Makefile])
 #AC_FUNC_MALLOC
 
 
-AC_OUTPUT([src/Makefile])
+AC_OUTPUT([src/Makefile Utils/Makefile])
 
 
 ## ----------------------------------------
