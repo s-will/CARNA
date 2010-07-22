@@ -5,7 +5,8 @@ Compile
 =======
 
 Carna requires Gecode 3.2.2 and the CImg library. To install Carna,
-get these first.
+get these first. Make sure to build Gecode with qt-support
+(i.e. configure --enable-qt)
 
 If gecode library and headers are not in the default path, you need to
 set the gecode installation directory and gecode source directory
@@ -16,3 +17,14 @@ Compile Carna by
 ./configure --prefix=<installation-path> GECODE_HOME=<path-to-gecode-installation-dir> GECODE_SRC_HOME=<path-to-gecode-src-dir>
 
 make
+
+
+If the configure cannot find your CImg library, you can add it to
+CXXFLAGS-variable like this example
+
+export CXXFLAGS=-I/usr/local/include/CImg/1.3.2/
+
+You might also need to set LD_LIBRARY_PATH to point to the folder,
+where the gecode library is installed, like
+
+export LD_LIBRARY_PATH=/FOO/BAR/lib
