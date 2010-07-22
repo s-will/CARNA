@@ -255,7 +255,7 @@ foreach my $name (@names) {
 }
 
 
-my $cmd = "$CARNA_HOME/src/carna $carnaArgs "."1.pp.$tmpsuf 2.pp.$tmpsuf";
+my $cmd = "$CARNA_HOME/carna $carnaArgs "."1.pp.$tmpsuf 2.pp.$tmpsuf";
 # print "CALL: $cmd\n";
 
 if (!$norun) {
