@@ -677,7 +677,7 @@ AlignmentScore::choice(RNAalignment &s,
     const size_t n=seqA.length();
     const size_t m=seqB.length();
 
-        // first check whehter to enumerate M variables
+    // first check whether to enumerate M variables
     //
     
     //strategy: whenever a MD[i] variable is assigned, but M[i] is not
