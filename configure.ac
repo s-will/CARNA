@@ -115,12 +115,12 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
      #ifndef cimg_version 
      # error cimg not defined
      #endif
-     #if cimg_version != 132
+     #if cimg_version < 132
      # error wrong version
      #endif
      ]])],
                         [],
-                        AC_MSG_ERROR([Wrong CImg version please use 132]))
+                        AC_MSG_ERROR([Wrong CImg version please use >=1.3.2]))
 
 
 

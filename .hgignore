@@ -1,0 +1,19 @@
+syntax: glob
+*~
+*.o
+Makefile.in
+Makefile
+aclocal.m4
+autom4te.cache
+configure
+config.log
+config.status
+depcomp
+missing
+install-sh
+src/.deps
+
+src/RNAalignment
+
+syntax: regexp
+(.*/)?\#[^/]*\#$
