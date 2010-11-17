@@ -12,8 +12,10 @@ depcomp
 missing
 install-sh
 src/.deps
-
 src/RNAalignment
+Utils/carna.pl
+src/LocARNA/.#scoring.cc
+src/carna
 
 syntax: regexp
 (.*/)?\#[^/]*\#$
