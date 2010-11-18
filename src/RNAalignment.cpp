@@ -117,8 +117,10 @@ bool use_ribosum;
 
 // int match_prob_method;
 
-double min_am_prob; // only matched arc-pair with a probability of at least min_am_prob are taken into account
-double min_bm_prob; // only matched base-pair with a probability of at least min_bm_prob are taken into account
+
+
+//double min_am_prob; // only matched arc-pair with a probability of at least min_am_prob are taken into account
+//double min_bm_prob; // only matched base-pair with a probability of at least min_bm_prob are taken into account
 
 // int kbest_k;
 
@@ -178,8 +180,8 @@ option_def my_options[] = {
     {"min-prob",'p',0,O_ARG_DOUBLE,&min_prob,"0.0005","prob","Minimal probability"},
     {"max-diff-am",'D',0,O_ARG_INT,&max_diff_am,"-1","diff","Maximal difference for sizes of matched arcs"},
     {"max-diff-match",'d',0,O_ARG_INT,&max_diff,"-1","diff","Maximal difference for alignment edges"},
-    {"min-am-prob",'a',0,O_ARG_DOUBLE,&min_am_prob,"0.0005","amprob","Minimal Arc-match probability"},
-    {"min-bm-prob",'b',0,O_ARG_DOUBLE,&min_bm_prob,"0.0005","bmprob","Minimal Base-match probability"},
+    //{"min-am-prob",'a',0,O_ARG_DOUBLE,&min_am_prob,"0.0005","amprob","Minimal Arc-match probability"},
+    //{"min-bm-prob",'b',0,O_ARG_DOUBLE,&min_bm_prob,"0.0005","bmprob","Minimal Base-match probability"},
     
     // {"",0,0,O_SECTION,0,O_NODEFAULT,"","Special sauce options"},
     // {"kbest",'k',0,O_ARG_INT,&kbest_k,"-1","k","Find k-best alignments"},
@@ -422,8 +424,8 @@ main(int argc, char* argv[]) {
 				 free_endgaps,
 				 max_diff, 
 				 max_diff_am,
-				 min_am_prob,
-				 min_bm_prob,
+				 0, // min_am_prob and
+				 0, // min_bm_prob are not used in Carna
 				 opt_stacking,
 				 seq_constraints
 				 );
