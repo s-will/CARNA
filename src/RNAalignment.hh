@@ -1,6 +1,8 @@
 #ifndef RNA_ALIGNMENT
 #define RNA_ALIGNMENT
 
+#include <fstream>
+#include <iostream>
 #include "WinHandler.hh"
 #include "alignment_score.hh"
 
@@ -45,6 +47,8 @@ protected:
     Gecode::IntVar Score;
 
     //size_t discrepancy; // experimental for simulating LDS
+
+
  
 public:
     RNAalignment(const Sequence &seqA_, const Sequence &seqB_, const ArcMatches &arcmatches,
@@ -64,7 +68,8 @@ public:
 	else {
 	    wind=NULL;
 	}
-	
+
+
 	//ignore MD_0 and M_0
 	rel(*this,MD[0],Gecode::IRT_EQ,0);
 	rel(*this,M[0],Gecode::IRT_EQ,0);
@@ -133,10 +138,100 @@ public:
 	return new RNAalignment(share,*this);
     }
     
+  void print_clustal_format(std::ostream& out_s){
+
+	bool all_assigned=true;
+
+	AliColumn col;
+
+	string tmp;
+
+	for (size_t i=1; i<=seqA.length(); i++) {
+	    all_assigned &= MD[i].assigned();
+	    all_assigned &= M[i].assigned();
+	}
+
+	if (all_assigned) {
+
+	  out_s << "CLUSTAL W (1.82)\n";
+
+	    // write alignment
+	    Sequence a;
+	    Sequence b;
+	    Sequence c;
+
+	    a.init_buffer(seqA);
+	    b.init_buffer(seqB);
+
+	    int current_index=0;
+	    int max_col=60;
+
+	      size_t j=1;
+	      for (size_t i=1; i<=seqA.length(); i++) {
+		for (;j<(size_t)MD[i].val();j++) {
+		  a+='-';
+		  b+=seqB[j];
+		}
+		a+=seqA[i];
+		if (M[i].val()==1) {
+		  b+=seqB[j];
+		  j++;
+		} else {
+		  b+='-';
+		}
+	      }
+	      for (; j<=m; j++) {
+		a+='-';
+		b+=seqB[j];
+	      }
+
+	      do{
+		int ow=out_s.width(18);
+		out_s << left << a.get_name(1)<<" ";
+		out_s.width(ow);
+
+		size_t tmp;
+		for (tmp=current_index;tmp<current_index+max_col && tmp<a.length();tmp++)
+		  out_s << a[tmp+1][0];
+		out_s << " " << tmp;
+		out_s << "\n";
+
+		ow=out_s.width(18);
+		out_s << left << b.get_name(1)<<" ";
+		out_s.width(ow);
+      		for (tmp=current_index;tmp<current_index+max_col && tmp<b.length();tmp++)
+		  out_s << b[tmp+1][0];
+		out_s << " " << tmp;
+		out_s << "\n";
+
+		ow=out_s.width(18);
+		out_s << left <<" "<< " ";
+		out_s.width(ow);
+		for (tmp=current_index;tmp<current_index+max_col && tmp<b.length();tmp++)
+
+		  if (a[tmp+1][0]==b[tmp+1][0])
+		    out_s << '*';
+		  else
+		    out_s << ' ';
+		
+
+		out_s << "\n";
+
+		out_s << "\n";
+
+		current_index+=max_col;
+	      }
+	      while(current_index<a.length());
+
+	} 
+	
+  }
+
     /// Print solution
     virtual void
     print(std::ostream& out) const {
-	std::cout << "VALUATION" << std::endl;
+      
+      std::cout << "VALUATION" << std::endl;
 	
 	bool all_assigned=true;
 	for (size_t i=1; i<=seqA.length(); i++) {
@@ -174,6 +269,7 @@ public:
 
 	    a.write( std::cout );
 	    b.write( std::cout );
+
 	} 
 
 	/*

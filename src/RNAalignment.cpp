@@ -71,8 +71,8 @@ int output_width;
 std::string file1;
 std::string file2;
 
-//std::string clustal_out;
-//bool opt_clustal_out;
+std::string clustal_out;
+bool opt_clustal_out;
 
 std::string pp_out;
 bool opt_pp_out;
@@ -169,7 +169,7 @@ option_def my_options[] = {
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Controlling output"},
     {"gist",0,&opt_gist,O_NO_ARG,0,O_NODEFAULT,"","Use gist for interactive/graphical search."},
     {"width",'w',0,O_ARG_INT,&output_width,"120","columns","Output width"},
-    // {"clustal",0,&opt_clustal_out,O_ARG_STRING,&clustal_out,O_NODEFAULT,"file","Clustal output"},
+    {"clustal",0,&opt_clustal_out,O_ARG_STRING,&clustal_out,O_NODEFAULT,"file","Clustal output"},
     // {"pp",0,&opt_pp_out,O_ARG_STRING,&pp_out,O_NODEFAULT,"file","PP output"},
     // {"local-output",'L',&opt_local_output,O_NO_ARG,0,O_NODEFAULT,"","Output only local sub-alignment"},
     // {"pos-output",'P',&opt_pos_output,O_NO_ARG,0,O_NODEFAULT,"","Output only local sub-alignment positions"},
@@ -463,11 +463,21 @@ main(int argc, char* argv[]) {
 	BAB<RNAalignment> e(s,o);
 	
 	RNAalignment* ex;
+	ofstream outfile;
+	if (!clustal_out.empty()){
+	  outfile.open(clustal_out.c_str(),ios::out | ios::trunc);
+	  opt_clustal_out=true;
+	}
+
 	while ((ex = e.next()) && (ex != NULL)) {
-	    ex->print(std::cout);
-	    delete ex;
+	  ex->print(std::cout);
+	  if (opt_clustal_out)
+	    ex->print_clustal_format(outfile);	  
+	  delete ex;
 	}
 	
+	if (opt_clustal_out)
+	  outfile.close();
 
 	Gecode::Search::Statistics stats = e.statistics();
 	

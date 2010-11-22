@@ -97,7 +97,9 @@ public:
     size_type length() const {return seq_.size();}
     
     size_type get_rows() const {return rows_;}
-    
+
+  std::string get_name(int i) {return names_[i-1];};
+
     static const Alphabet<char> &alphabet() 
 	{ return alphabet_; }
 
