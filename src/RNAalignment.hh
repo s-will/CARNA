@@ -74,6 +74,14 @@ public:
 	rel(*this,MD[0],Gecode::IRT_EQ,0);
 	rel(*this,M[0],Gecode::IRT_EQ,0);
 	
+	//update domains of MD according to anchor constaints
+	for(size_t i=1;i<=n; i++){
+	  AnchorConstraints::size_pair_t range = 
+	    aligner_params.constraints.get_range_seqA()[i];
+	  rel(*this,MD[i],Gecode::IRT_GQ,range.first);
+	  rel(*this,MD[i],Gecode::IRT_LQ,range.second);
+	}
+
 	AlignmentScore::post(*this,seqA,seqB,arcmatches,aligner_params,scoring,
 			     MD,M,Score);
 	
