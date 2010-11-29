@@ -63,18 +63,18 @@ The following bracket pairs are supported: (), [], {}, <>, Aa, Bb, Cc, Dd
 Additionally the script supports anchor and structural constraints that are 
 specified and have the same semantic as in mlocarna (of the LocARNA package).
 
-With anchor and structure constraints input may look like this
+Here is example input with anchor and structure constraints:
 
->Seq1
-GCCAUACGGCAUAC
-(((.[[.))).]]. #S
-....AA........ #1
-....12........ #2
->Seq2
-GGUGACCGCCAACAC
-((([[..)))..]]. #S
-...AA.......... #1
-...12.......... #2
+ >nameA
+ GCCAUACGGCAUAC
+ (((.[[.))).]]. #S
+ ....AA........ #1
+ ....12........ #2
+ >nameB
+ GGUGACCGCCAACAC
+ ((([[..)))..]]. #S
+ ...AA.......... #1
+ ...12.......... #2
 
 First, note that the tag '#S' changes the semantics of the given
 structure. A structure with '#S' tag is passed as constraint to
@@ -84,7 +84,7 @@ The lines with #<i> tag give names to sequence positions. One can
 specify lines with tags #1,...,#N for arbitrary N. The name of a
 sequence position is the concatenation of the corresponding character
 in lines with tags #1,...,#N. In the example, the position names are
-A1 and A2.  The anchor constraint tells that positions with equal
+"A1" and "A2".  The anchor constraint tells that positions with equal
 name have to be aligned to each other.
 
 =cut
