@@ -5,6 +5,8 @@
 #include <iostream>
 #include "WinHandler.hh"
 #include "alignment_score.hh"
+#include "LocARNA/alignment.hh"
+
 
 // EXPERIMENTAL: therefore only global var
 //const size_t discrepancy_limit=7;
@@ -150,9 +152,53 @@ public:
 
 	bool all_assigned=true;
 
-	AliColumn col;
+	for (size_t i=1; i<=seqA.length(); i++) {
+	    all_assigned &= MD[i].assigned();
+	    all_assigned &= M[i].assigned();
+	}
 
-	string tmp;
+	if (all_assigned) {
+      	    // Load sequences
+	    Sequence a;
+	    Sequence b;
+
+	    a.init_buffer(seqA);
+	    b.init_buffer(seqB);
+	    
+	    for (size_t i=1; i<=seqA.length(); i++) {
+	      a+=seqA[i];
+	    }
+	    
+	    for (size_t i=1; i<=seqB.length(); i++) {
+	      b+=seqB[i];
+	    }
+
+	    Alignment* alignment = new Alignment(a,b);
+	    
+	    int max_col=60;
+
+	      size_t j=1;
+	      for (size_t i=1; i<=seqA.length(); i++) {
+		for (;j<(size_t)MD[i].val();j++) {
+		}
+
+		if (M[i].val()==1) {
+		  alignment->append(i,j);
+		  j++;
+		} 
+	      }
+	      
+	      alignment->write_clustal(out_s,max_col,(infty_score_t)Score.val(),
+	      			       false,false,true,false);
+	      
+	} 
+	
+  }
+
+  void print_pp_format(std::ostream& out_s, const BasePairs& bpsA, const BasePairs& bpsB, 
+		       const Scoring& scoring, const AnchorConstraints& seq_constraints){
+
+	bool all_assigned=true;
 
 	for (size_t i=1; i<=seqA.length(); i++) {
 	    all_assigned &= MD[i].assigned();
@@ -160,80 +206,49 @@ public:
 	}
 
 	if (all_assigned) {
-
-	  out_s << "CLUSTAL W (1.82)\n";
-
-	    // write alignment
+      	    // Load sequences
 	    Sequence a;
 	    Sequence b;
-	    Sequence c;
 
 	    a.init_buffer(seqA);
 	    b.init_buffer(seqB);
+	    
+	    for (size_t i=1; i<=seqA.length(); i++) {
+	      a+=seqA[i];
+	    }
+	    
+	    for (size_t i=1; i<=seqB.length(); i++) {
+	      b+=seqB[i];
+	    }
 
-	    int current_index=0;
+	    Alignment* alignment = new Alignment(a,b);
+	    
 	    int max_col=60;
 
 	      size_t j=1;
 	      for (size_t i=1; i<=seqA.length(); i++) {
 		for (;j<(size_t)MD[i].val();j++) {
-		  a+='-';
-		  b+=seqB[j];
 		}
-		a+=seqA[i];
+
+
 		if (M[i].val()==1) {
-		  b+=seqB[j];
+		  alignment->append(i,j);
 		  j++;
-		} else {
-		  b+='-';
-		}
+		} 
 	      }
-	      for (; j<=m; j++) {
-		a+='-';
-		b+=seqB[j];
-	      }
+	      
+	      alignment->write_pp(out_s,
+				  bpsA,
+				  bpsB,
+				  scoring,
+	      			  seq_constraints,
+				  max_col);
 
-	      do{
-		int ow=out_s.width(18);
-		out_s << left << a.get_name(1)<<" ";
-		out_s.width(ow);
-
-		size_t tmp;
-		for (tmp=current_index;tmp<current_index+max_col && tmp<a.length();tmp++)
-		  out_s << a[tmp+1][0];
-		out_s << " " << tmp;
-		out_s << "\n";
-
-		ow=out_s.width(18);
-		out_s << left << b.get_name(1)<<" ";
-		out_s.width(ow);
-      		for (tmp=current_index;tmp<current_index+max_col && tmp<b.length();tmp++)
-		  out_s << b[tmp+1][0];
-		out_s << " " << tmp;
-		out_s << "\n";
-
-		ow=out_s.width(18);
-		out_s << left <<" "<< " ";
-		out_s.width(ow);
-		for (tmp=current_index;tmp<current_index+max_col && tmp<b.length();tmp++)
-
-		  if (a[tmp+1][0]==b[tmp+1][0])
-		    out_s << '*';
-		  else
-		    out_s << ' ';
-		
-
-		out_s << "\n";
-
-		out_s << "\n";
-
-		current_index+=max_col;
-	      }
-	      while(current_index<a.length());
-
+	      
 	} 
 	
   }
+
 
     /// Print solution
     virtual void

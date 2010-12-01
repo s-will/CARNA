@@ -4,6 +4,7 @@
 #include "LocARNA/ribosum85_60.icc"
 #include "LocARNA/anchor_constraints.hh"
 #include "LocARNA/arc_matches.hh"
+#include "LocARNA/alignment.hh"
 
 #include <gecode/search.hh>
 #include <gecode/gist.hh>
@@ -170,7 +171,7 @@ option_def my_options[] = {
     {"gist",0,&opt_gist,O_NO_ARG,0,O_NODEFAULT,"","Use gist for interactive/graphical search."},
     {"width",'w',0,O_ARG_INT,&output_width,"120","columns","Output width"},
     {"clustal",0,&opt_clustal_out,O_ARG_STRING,&clustal_out,O_NODEFAULT,"file","Clustal output"},
-    // {"pp",0,&opt_pp_out,O_ARG_STRING,&pp_out,O_NODEFAULT,"file","PP output"},
+    {"pp",0,&opt_pp_out,O_ARG_STRING,&pp_out,O_NODEFAULT,"file","PP output"},
     // {"local-output",'L',&opt_local_output,O_NO_ARG,0,O_NODEFAULT,"","Output only local sub-alignment"},
     // {"pos-output",'P',&opt_pos_output,O_NO_ARG,0,O_NODEFAULT,"","Output only local sub-alignment positions"},
     {"write-structure",0,&opt_write_structure,O_NO_ARG,0,O_NODEFAULT,"","Write guidance structure in output"},
@@ -463,21 +464,31 @@ main(int argc, char* argv[]) {
 	BAB<RNAalignment> e(s,o);
 	
 	RNAalignment* ex;
-	ofstream outfile;
+	ofstream outfile_c;
 	if (!clustal_out.empty()){
-	  outfile.open(clustal_out.c_str(),ios::out | ios::trunc);
+	  outfile_c.open(clustal_out.c_str(),ios::out | ios::trunc);
 	  opt_clustal_out=true;
+	}
+	ofstream outfile_pp;
+	if (!pp_out.empty()){
+	  outfile_pp.open(pp_out.c_str(),ios::out | ios::trunc);
+	  opt_pp_out=true;
 	}
 
 	while ((ex = e.next()) && (ex != NULL)) {
 	  ex->print(std::cout);
 	  if (opt_clustal_out)
-	    ex->print_clustal_format(outfile);	  
+	    ex->print_clustal_format(outfile_c);	  
+	  if (opt_pp_out)
+	    ex->print_pp_format(outfile_pp,bpsA,bpsB,scoring, seq_constraints);	  
 	  delete ex;
 	}
 	
 	if (opt_clustal_out)
-	  outfile.close();
+	  outfile_c.close();
+
+	if (opt_pp_out)
+	  outfile_pp.close();
 
 	Gecode::Search::Statistics stats = e.statistics();
 	

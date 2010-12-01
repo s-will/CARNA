@@ -18,6 +18,7 @@ carna_SOURCES = RNAalignment.hh RNAalignment.cpp \
 	LocARNA/stral_score.cc LocARNA/stral_score.hh \
 	LocARNA/params.hh \
 	LocARNA/match_probs.hh LocARNA/match_probs.cc \
+	LocARNA/alignment.hh \
 	WinHandler.hh \
 	alignment_score.hh alignment_score.cc
 
