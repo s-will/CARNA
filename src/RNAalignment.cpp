@@ -35,7 +35,7 @@ int struct_weight;
 
 int tau_factor; // contribution of sequence similarity in an arc match (in percent)
 
-bool no_lonely_pairs; // no lonely pairs option
+//bool no_lonely_pairs; // no lonely pairs option
 
 bool struct_local; // allow exclusions for maximizing alignment of connected substructures 
 bool sequ_local; // maximize alignment of subsequences
@@ -94,7 +94,8 @@ bool opt_verbose;
 
 bool opt_write_structure;
 
-bool opt_stacking;
+// stacking is not implemented in Carna
+// bool opt_stacking;
 
 bool opt_gist;
 
@@ -159,7 +160,7 @@ option_def my_options[] = {
     {"exp-prob",'e',&opt_exp_prob,O_ARG_DOUBLE,&exp_prob,O_NODEFAULT,"prob","Expected probability"},
     {"tau",'t',0,O_ARG_INT,&tau_factor,"0","factor","Tau factor in percent"},
     // {"exclusion",'E',0,O_ARG_INT,&exclusion_score,"0","score","Exclusion weight"},
-    {"stacking",0,&opt_stacking,O_NO_ARG,0,O_NODEFAULT,"","Use stacking terms (needs stack-probs by RNAfold -p2)"},   
+    //{"stacking",0,&opt_stacking,O_NO_ARG,0,O_NODEFAULT,"","Use stacking terms (needs stack-probs by RNAfold -p2)"},   
 
     // {"",0,0,O_SECTION,0,O_NODEFAULT,"","Type of locality"},
 
@@ -211,7 +212,7 @@ option_def my_options[] = {
     
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Constraints"},
     
-    {"noLP",0,&no_lonely_pairs,O_NO_ARG,0,O_NODEFAULT,"","No lonely pairs."},
+    //{"noLP",0,&no_lonely_pairs,O_NO_ARG,0,O_NODEFAULT,"","No lonely pairs."},
     {"anchorA",0,0,O_ARG_STRING,&seq_constraints_A,"","string","Anchor constraints sequence A."},
     {"anchorB",0,0,O_ARG_STRING,&seq_constraints_B,"","string","Anchor constraints sequence B."},
     {"ignore-constraints",0,&opt_ignore_constraints,O_NO_ARG,0,O_NODEFAULT,"","Ignore constraints in pp-file"},
@@ -333,7 +334,7 @@ main(int argc, char* argv[]) {
 				 exclusion_score,
 				 opt_exp_prob?exp_prob:-1,
 				 0, // temperature
-				 opt_stacking,
+				 false, // opt_stacking not implemented in Carna
 				 false,
 				 0,0,0,0
 				 );
@@ -342,8 +343,8 @@ main(int argc, char* argv[]) {
     // Get input data and generate data objects
     //
     
-    RnaData rnadataA(file1,opt_stacking);
-    RnaData rnadataB(file2,opt_stacking);
+    RnaData rnadataA(file1,false); // false->opt_stacking not implemented in Carna
+    RnaData rnadataB(file2,false); // false->opt_stacking not implemented in Carna
     
     Sequence seqA=rnadataA.get_sequence();
     Sequence seqB=rnadataB.get_sequence();
@@ -419,7 +420,7 @@ main(int argc, char* argv[]) {
     // ------------------------------------------------------------
     // parameter for the alignment
     //
-    AlignerParams aligner_params(no_lonely_pairs,
+    AlignerParams aligner_params(0, //no_lonely_pairs option not implemented in Carna
 				 struct_local,
 				 sequ_local,
 				 free_endgaps,
@@ -427,7 +428,7 @@ main(int argc, char* argv[]) {
 				 max_diff_am,
 				 0, // min_am_prob and
 				 0, // min_bm_prob are not used in Carna
-				 opt_stacking,
+				 false, // opt_stacking not implemented in Carna
 				 seq_constraints
 				 );
     
