@@ -22,6 +22,7 @@ const bool debug_out=false;
 // to the right (depending on whether doing forward or backward computation!)
 
 
+
 AlignmentScore::AlignmentScore(Gecode::Space& home,
 			       const Sequence &seqA_,
 			       const Sequence &seqB_, 
@@ -353,19 +354,31 @@ AlignmentScore::evaluate_trace(const std::vector<size_type> &traceA,
     size_type i=1;
     size_type j=1;
     
+    bool gap_openA=false; // is a gap open in sequence A?
+    bool gap_openB=false; // is a gap open in sequence B?
+
     // while not all positions i and j consumed
     while (i<=n || j<=m) {
 	// invariant: score is the score for aligning A_1..i-1 to B_1..j-1 according to the trace 
 	if (i<=n && traceA[i]==0) { // deletion of i after j-1
+	    if (!gap_openA) score+=2*scoring.indel_opening();
+	    gap_openA=true;
+	    gap_openB=false;
 	    score += 2*scoring.gapA(i,j-1);
 	    ++i;
 	} else if (j<=m && traceB[j]==0) { // insertion of j after i-1
+	    if (!gap_openB) score+=2*scoring.indel_opening();
+	    gap_openB=true;
+	    gap_openA=false;
 	    score += 2*scoring.gapB(i-1,j);
 	    ++j;
 	} else { // match between i and j
 	    assert(j==traceA[i]);
 	    assert(i==traceB[j]);
 	    
+	    gap_openA=false;
+	    gap_openB=false;
+
 	    score += evaluate_tracematch(traceA,traceB,considered_ams,match_scores,i,j);
 	    ++i;
 	    ++j;
@@ -425,10 +438,12 @@ forward_algorithm(Gecode::Space& home,
 	} else {
 	    FwdA(i,0) = infty_score_t::neg_infty;
 	}
+	FwdB(i,0)=infty_score_t::neg_infty;
 	Fwd(i,0)  = FwdA(i,0);
     }
     
-    for(size_type j=1; j<=m; j++) {
+    for(size_type j=1; j<=max_col(0); j++) {
+	FwdA(0,j)=infty_score_t::neg_infty;
 	FwdB(0,j) = FwdB(0,j-1)  + 2*scoring.gapB(0,j);
 	Fwd(0,j) = FwdB(0,j);
     }
@@ -439,9 +454,9 @@ forward_algorithm(Gecode::Space& home,
     ////////////////////
     // recurse
     for(size_type i=1; i<=n; i++) {
-	size_t minj = MD[i].min();
-	size_t maxj = MD[i].max();
-	
+	size_t minj = std::max((size_t)1,min_col(i));
+	size_t maxj = max_col(i);
+		
 	for(size_type j=minj; j<=maxj; j++) {
 	    Fwd(i,j) = infty_score_t::neg_infty;
 	    FwdA(i,j) = infty_score_t::neg_infty;
@@ -582,33 +597,36 @@ AlignmentScore::backward_algorithm(Gecode::Space& home,
 	} else {
 	    Bwd(i,m) = infty_score_t::neg_infty;
 	}
+	BwdB(i,m)=infty_score_t::neg_infty;
 	Bwd(i,m)=BwdA(i,m);
     }
-    for(size_type j=m; j>0;) { // for j=m-1 downto 0
+    for(size_type j=max_col(n); j>min_col(n);) { // for j=m-1 downto 0
 	--j;
 	if (insertion_arrow_allowed(n,j+1)) {
 	    BwdB(n,j) = BwdB(n,j+1) + 2*scoring.gapB(n,j+1);
 	} else {
 	    BwdB(n,j) = infty_score_t::neg_infty;
 	}
+	BwdA(n,j)=infty_score_t::neg_infty;
 	Bwd(n,j) = BwdB(n,j);
     }
     
     Bwd(0,0) = infty_score_t::neg_infty;
-    
+   
+
     // recurse
     for(size_type i=n; i>0;) { // for i=n-1 downto 0
 	--i;
 	
-	size_t minj = MD[i].min();
-	size_t maxj = MD[i].max();
-	
+	size_t minj = min_col(i);
+	size_t maxj = std::min(max_col(i),m-1);
+		
 	for(size_type j=maxj+1; j>minj;) { // for j=maxj downto minj
 	    --j;
 	    Bwd(i,j) = infty_score_t::neg_infty;
 	    BwdA(i,j) = infty_score_t::neg_infty;
 	    BwdB(i,j) = infty_score_t::neg_infty;
-	    
+	    	    
 	    if (match_arrow_allowed(i+1,j+1)) {   // match i+1 ~ j+1 (!)
 		Bwd(i,j) = Bwd(i+1,j+1) + UBM(i+1,j+1);
 	    }
@@ -632,10 +650,10 @@ Gecode::ModEvent
 AlignmentScore::prune(Gecode::Space& home, 
 		      const Matrix<infty_score_t> &Fwd,
 		      const Matrix<infty_score_t> &FwdA,
-		      const Matrix<infty_score_t> &FwdB,
+		      //const Matrix<infty_score_t> &FwdB,
 		      const Matrix<infty_score_t> &Bwd,
 		      const Matrix<infty_score_t> &BwdA,
-		      const Matrix<infty_score_t> &BwdB,
+		      //const Matrix<infty_score_t> &BwdB,
 		      const Matrix<score_t> &UBM
 		      ) {
     // NOTE: using the precomputed upper bounds for matching is weaker than
@@ -654,17 +672,28 @@ AlignmentScore::prune(Gecode::Space& home,
 
     ////////////////////////////////////////
     // prune MD and M
+    
     for(size_type i=1; i<=n; i++) {
-	for(size_type j=(size_t)MD[i].min(); j<=(size_t)MD[i].max(); j++) {
+	size_t minj = min_col(i);
+	size_t maxj = max_col(i);
+		
+	for(size_type j=minj; j<=maxj; j++) {
 	    // prune MD variable for match i~j or deletion of i after j
 	    if (match_or_deletion_allowed(i,j)) {
 		infty_score_t ub = Fwd(i,j)+Bwd(i,j);
-		// NOTE: there is no case FwdA+BwdA-opening, due to
-		// the semantics of MD!  However we need to consider
-		// FwdB+BwdB-opening:
-		ub = std::max(ub, FwdB(i,j)+BwdB(i,j)-2*scoring.indel_opening()); 
+		
+		//here, we are not interested in insertions!
+		//if (j>0 && insertion_arrow_allowed(i,j) && j<m && insertion_arrow_allowed(i,j+1)) {
+		//    ub = std::max(ub, FwdB(i,j)+BwdB(i,j)-2*scoring.indel_opening()); 
+		//}
+		
+		if (i>0 && deletion_arrow_allowed(i,j) && i<n && deletion_arrow_allowed(i+1,j)) {
+		    ub = std::max(ub, FwdA(i,j)+BwdA(i,j)-2*scoring.indel_opening()); 
+		}
+		
 		if ( (!ub.is_finite()) || (ub < (infty_score_t) Score.min())) {
 		    ret |= MD[i].nq(home,(int)j);
+		    //std::cerr << "MD["<<i<<"].nq(home,(int)"<<j<<") "<< ret << " " << Fwd(i,j)+Bwd(i,j) << std::endl;
 		}
 	    }
 	}
@@ -676,11 +705,16 @@ AlignmentScore::prune(Gecode::Space& home,
     // prune impossible deletions
     for(size_type i=1; i<=n; i++) {
 	bool del=false; // is deletion possible?
-	for(size_type j=(size_t)MD[i].min(); !del && j<=(size_t)MD[i].max(); j++) {
+	size_t minj = min_col(i);
+	size_t maxj = max_col(i);
+	for(size_type j=minj; !del && j<=maxj; j++) {
 	    
 	    // upper bound for deletion of i after j
 	    infty_score_t ubd = FwdA(i,j)+Bwd(i,j);
-	    ubd = std::max(ubd,FwdA(i,j)+BwdA(i,j)-2*scoring.indel_opening());
+	    
+	    if (i>0 && deletion_arrow_allowed(i,j) && i<n && deletion_arrow_allowed(i+1,j)) {
+		ubd = std::max(ubd,FwdA(i,j)+BwdA(i,j)-2*scoring.indel_opening());
+	    }
 	    
 	    if ( ubd.is_finite() && (ubd >= (infty_score_t) Score.min())) {
 		del=true;
@@ -688,24 +722,30 @@ AlignmentScore::prune(Gecode::Space& home,
 	}
 	if (!del) {
 	    ret |= M[i].nq(home,0); // deletion of i not possible
+	    //std::cerr << "M["<<i<<"].nq(home,0) "<<ret<<std::endl;
 	}
     }
     
     // prune impossible matches
     for(size_type i=1; i<=n; i++) {
 	bool match=false; // is match possible?
-	for(size_type j=std::max((size_t)1,(size_t)MD[i].min()); !match && j<=(size_t)MD[i].max(); j++) {
+	size_t minj = std::max((size_t)1,min_col(i));
+	size_t maxj = max_col(i);
+	for(size_type j=minj; !match && j<=maxj; j++) {
 	    
-	    // upper bound for match i~j (Note: we don't need the matrices
-	    // FwdA,FwdB,BwdA,BwdB here, since i~j and Bwd(i,j) is general)
-	    infty_score_t ubm = Fwd(i-1,j-1)+UBM(i,j)+Bwd(i,j);
-	    
-	    if ( ubm.is_finite() && (ubm >= (infty_score_t) Score.min())) {
-		match = true; // match is possible
+	    if (match_arrow_allowed(i,j)) {
+		// upper bound for match i~j (Note: we don't need the matrices
+		// FwdA,FwdB,BwdA,BwdB here, since i~j and Bwd(i,j) is general)
+		infty_score_t ubm = Fwd(i-1,j-1)+UBM(i,j)+Bwd(i,j);
+		
+		if ( ubm.is_finite() && (ubm >= (infty_score_t) Score.min())) {
+		    match = true; // match is possible
+		}
 	    }
 	}
 	if (!match) {
-	    M[i].nq(home,1); // match of i not possible
+	    ret |= M[i].nq(home,1); // match of i not possible
+	    //std::cerr << "M["<<i<<"].nq(home,1) "<<ret<<std::endl;
 	}
     }
     
@@ -955,10 +995,10 @@ AlignmentScore::fix_tight_runs(Gecode::Space &home,
     
     // determine tight runs
     
-    int last_assigned=-1;
+    int last_assigned=0;
     bool run_is_tight=true;
     
-    for (size_t i=0; i<=n; i++) {
+    for (size_t i=1; i<=n; i++) {
 	if (MD[i].assigned() && M[i].assigned()) {// end of a run
 	    
 	    // if the whole run is tight
@@ -974,8 +1014,8 @@ AlignmentScore::fix_tight_runs(Gecode::Space &home,
 		    }
 		}
 		std::cout << std::endl;
-		std::cout << "fix "<<(last_assigned+1)<<"-"<<(i-1)<<std::endl;
 		*/
+		//if (debug_out) std::cerr << "fix "<<(last_assigned+1)<<"-"<<(i-1)<<std::endl;
 		ret |= fix_vars_to_trace(home,last_assigned+1,i-1,traceA,traceB);
 	       
 	    }
@@ -991,11 +1031,12 @@ AlignmentScore::fix_tight_runs(Gecode::Space &home,
     }
     
     
-     // if the whole run from last_assigned to the end is tight
+    // if the whole run from last_assigned to the end is tight
     if ((size_t)(last_assigned+1)<n+1 && run_is_tight) {
 	// we can fix the whole run
-	//std::cout << "fix "<<(last_assigned+1)<<"-"<<"end"<<std::endl;
-
+	
+	if (debug_out) std::cerr << "fix "<<(last_assigned+1)<<"-"<<n<<std::endl;
+			
 	ret |= fix_vars_to_trace(home,last_assigned+1,n,traceA,traceB);
 	
     }
@@ -1017,14 +1058,14 @@ AlignmentScore::prune_decided_arc_matches(Matrix<bool> &considered_ams, Matrix<s
     
     // initialize match_score matrix
     for(size_type i=1; i<=n; i++) {
-	for(size_type j=MD[i].min(); j<=(size_t)MD[i].max(); j++) {
+	for(size_type j=std::max(1,MD[i].min()); j<=(size_t)MD[i].max(); j++) {
 	    match_scores(i,j)=2*scoring.basematch(i,j);
 	}
     }
     
     
     for(size_t i=1; i<=n; ++i) {
-	for(size_t j=MD[i].min(); j<=(size_t)MD[i].max(); ++j) {	    
+	for(size_t j=std::max(1,MD[i].min()); j<=(size_t)MD[i].max(); ++j) {	    
 	    if (match_arrow_allowed(i,j)) {
 		
 		bool forced_ij=match_forced(i,j);
@@ -1167,7 +1208,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     // ==> constrain the score variable
     if (Fwd(n,m).is_finite()) {
 	if (Gecode::me_failed(Score.lq(home,(int)Fwd(n,m).finite_value()))) {
-	    if (debug_out) std::cout << "Bounding after Fwd failed."<<std::endl;
+	    if (debug_out) std::cout << "Bounding after Fwd failed: "<<(int)Fwd(n,m).finite_value()<<std::endl;
 	    return Gecode::ES_FAILED;
 	}
     } else {
@@ -1220,15 +1261,18 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     }
     
     
-
-
     // -------------------- RUN BACKWARD ALGORITHM
     Matrix<infty_score_t> Bwd(n+1,m+1); 
     Matrix<infty_score_t> BwdA(n+1,m+1); 
     Matrix<infty_score_t> BwdB(n+1,m+1);
-    
+
     backward_algorithm(home,Bwd,BwdA,BwdB,UBM);
     //if (debug_out) {std::cout << "Bwd"<<std::endl<<Bwd <<std::endl;}
+
+    if(debug_out && Fwd(n,m).is_finite() && Bwd(0,0).is_finite() && Fwd(n,m).finite_value()!=Bwd(0,0).finite_value()) {
+	std::cerr << "Clash"<<std::endl;
+	exit(-1);
+    }
 
 
     if (false && debug_out) {
@@ -1249,20 +1293,30 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	}
     }
     
+    if (debug_out && Gecode::me_failed(ret)) {
+	std::cerr << "Fail before pruning."<<std::endl;
+	return Gecode::ES_FAILED;
+    }
     
     // -------------------- PRUNE VARIABLES
-    ret |= prune(home,Fwd,FwdA,FwdB,Bwd,BwdA,BwdB,UBM);
-        
+    ret |= prune(home,
+		 Fwd,
+		 FwdA,
+		 //FwdB,
+		 Bwd,
+		 BwdA,
+		 //BwdB,
+		 UBM);
     
     if (debug_out) {
 	std::cout << "After Pruning:"<<std::endl;
 	print_vars();
     }
-    
     if (Gecode::me_failed(ret)) {
-	if (debug_out) std::cout << "Fail after pruning."<<std::endl;
+	if (debug_out) std::cout << "Fail when pruning."<<std::endl;
 	return Gecode::ES_FAILED;
     }
+
     
     // test whether all vars fixed, then subsume (can we subsume earlier?)
     if ( all_vars_fixed() ) {

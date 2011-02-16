@@ -66,11 +66,15 @@ public:
     
     //! read only access to (i,j)
     const elem_t & operator() (size_type i,size_type j) const {
+	assert(i<xdim_);
+	assert(j<ydim_);
 	return mat_[addr(i,j)];
     }
     
     //! read/write access to (i,j)
     elem_t & operator() (size_type i,size_type j) {
+	assert(i<xdim_);
+	assert(j<ydim_);
 	return mat_[addr(i,j)];
     }
 

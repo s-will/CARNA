@@ -43,8 +43,11 @@ protected:
 
     WinHandler* wind;
     
-    Gecode::IntVarArray MD; // MD[i] is position of match or deletion in row i
-    Gecode::BoolVarArray M; // M[i] is true iff i~MD[i] is a match
+    //! MD[i] is position of match or deletion in row i. We model only
+    //! match and deletion positions explicitely. Insertion positions are
+    //! derived! Compare the handling of MD and M by the propagator AlignmentScore. 
+    Gecode::IntVarArray MD;  
+    Gecode::BoolVarArray M; //!< M[i] is true iff i~MD[i] is a match
     
     Gecode::IntVar Score;
 
@@ -74,8 +77,9 @@ public:
 
 	//ignore MD_0 and M_0
 	rel(*this,MD[0],Gecode::IRT_EQ,0);
-	rel(*this,M[0],Gecode::IRT_EQ,0);
+	rel(*this,M[0],Gecode::IRT_EQ,1);
 	
+	/*
 	//update domains of MD according to anchor constaints
 	for(size_t i=1;i<=n; i++){
 	  AnchorConstraints::size_pair_t range = 
@@ -83,6 +87,7 @@ public:
 	  rel(*this,MD[i],Gecode::IRT_GQ,range.first);
 	  rel(*this,MD[i],Gecode::IRT_LQ,range.second);
 	}
+	*/
 
 	AlignmentScore::post(*this,seqA,seqB,arcmatches,aligner_params,scoring,
 			     MD,M,Score);
@@ -98,7 +103,7 @@ public:
 	    rel(*this,MD[i],Gecode::IRT_GR,MD[i-1],greater);
 	    rel(*this,M[i],Gecode::IRT_LQ,greater); // M[i] implies greater
 	}
-		
+	
 	
 	// test the case where a good score is known
 	//rel(*this,Score,Gecode::IRT_GR, 33592);

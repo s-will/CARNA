@@ -43,7 +43,13 @@ private:
     const ArcMatches &arc_matches;
     const AlignerParams &params;
     const Scoring &scoring;
+
+    //! MD[i] is the position in seqB to that position i in seqA is
+    //! either matched or after that position i is deleted.  Note that
+    //! positions of insertions are therefore implicit. The semantics
+    //! of MD and M is encapsulated by the "allowed" methods.
     IntViewArray MD;
+    //! M[i] flags whether position i is deleted after j=MD[i] or matched i~MD[i]
     BoolViewArray M;
     Gecode::Int::IntView Score;
         
@@ -119,19 +125,50 @@ protected:
     match_or_deletion_allowed(size_type i,size_type j) const {
 	return MD[i].in((int)j);
     }
+
+    //! minimum column in matrix row.
+    //! @params i matrix row
+    //! @returns the minimal j where (i,j) is potentially on a trace
+    //! through the alignment matrices due to the local MD, M
+    //! variables.
+    size_t min_col(size_t i) const {
+	assert(i<=(size_t)MD.size());
+	return MD[i].min();
+    }
+    
+    //! maximum column in matrix row.
+    //! @params i matrix row
+    //! @returns the maximal j where (i,j) is potentially on a trace
+    //! through the alignment matrices due to the local MD, M
+    //! variables.
+    size_t max_col(size_t i) const {
+	assert(i<=(size_t)MD.size());
+	
+	if (i==(size_t)MD.size()-1) {
+	    return seqB.length();
+	}
+	
+	int max_c = MD[i+1].max();
+	
+	if (!M[i+1].in(0)) --max_c;
+	
+	return max_c;
+    }
     
     // test whether match/insertion/deletion at (i,j) is allowed due
     // to the variables M and MD. If allowed, the methods guarantee
-    // that origin and target of the trace arrow are valid due to MD.
+    // that origin and target of the trace arrow are valid, i.e. min_col(i)<=j<=max_col(i).
     
     //! test whether a match is allowed by the constraint store
     //! @param i position in sequence 1
     //! @param j position in sequence 2
     //! @returns whether the match between i and j is allowed
-    //! assume that all the consistency checking with other variables MD,M has been done 
     bool
     match_arrow_allowed(size_type i,size_type j) const {
-	return MD[i].in((int)j) && M[i].in(1);
+	assert(1<=i && i<=seqA.length());
+	assert(1<=j && j<=seqB.length());
+	
+	return MD[i-1].min()<(int)j && MD[i].in((int)j) && M[i].in(1);
     }
 
     //! test whether an insertion is allowed by the constraint store
@@ -140,8 +177,9 @@ protected:
     //! @returns whether the insertion j between i and i+1 is allowed
     bool
     insertion_arrow_allowed(size_type i,size_type j) const {
-	const size_t n=seqA.length();
-	return MD[i].in((int)j) && MD[i].in((int)j-1);
+	assert(0<=i && i<=seqA.length());
+	assert(1<=j && j<=seqB.length());
+	return min_col(i)<j && j<=max_col(i);
     }
     
     //! test whether a deletion is allowed by the constraint store
@@ -150,7 +188,10 @@ protected:
     //! @returns whether the deletion of i between j and j+1 is allowed
     bool
     deletion_arrow_allowed(size_type i,size_type j) const {
-	return (i==0 || MD[i-1].in((int)j)) && MD[i].in((int)j) && M[i].in(0);
+	assert(1<=i && i<=seqA.length());
+	assert(0<=j && j<=seqB.length());
+	
+	return min_col(i-1)<=j && MD[i].in((int)j) && M[i].in(0);
     }
     
     //! used for testing whether propagator can be deleted
@@ -221,10 +262,10 @@ protected:
     prune(Gecode::Space& home, 
 	  const Matrix<infty_score_t> &Fwd,
 	  const Matrix<infty_score_t> &FwdA,
-	  const Matrix<infty_score_t> &FwdB,
+	  //const Matrix<infty_score_t> &FwdB,
 	  const Matrix<infty_score_t> &Bwd,
 	  const Matrix<infty_score_t> &BwdA,
-	  const Matrix<infty_score_t> &BwdB,
+	  //const Matrix<infty_score_t> &BwdB,
 	  const Matrix<score_t> &UBM);
 
     //! determines the indices of arcs that are forced to occur in any

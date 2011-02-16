@@ -303,6 +303,8 @@ public:
     
     //! score an match of bases (without structure)
     score_t basematch(size_type i, size_type j) const {
+	assert(1<=i);
+	assert(1<=j);
 	return sigma_tab(i,j);
     }
     //! score an match of bases with exponential function (without structure)
