@@ -11,8 +11,23 @@
 #include "LocARNA/scoring.hh"
 
 
+/*
+  TODO
+
+  implement affine gap cost
+  
+  include gap cost bound into ubound!?
+  
+  
+ */
+
 class RNAalignment;
 
+
+/**
+   Propagator that relates a pairwise aligmnent described by variables
+   MD and M to its sequence-structure alignment score.
+ */
 class AlignmentScore : public Gecode::Propagator {
 public:
     typedef Gecode::ViewArray<Gecode::Int::IntView> IntViewArray;
@@ -56,51 +71,6 @@ protected:
     void
     print_vars() const;
     
-    /*
-    //! constrain an integer view to be less or undef
-    //! @param home Home space
-    //! @param x the integer view
-    //! @param val value such that x<val or x=undef
-    Gecode::ModEvent
-    le_or_undef(Gecode::Space &home, Gecode::Int::IntView &xv, int val) {
-	Gecode::Iter::Ranges::Singleton r(val,undef-1);
-	return xv.minus_r(home,r,false);
-    }
-
-    //! exclude from a set view all values smaller or equal \a val
-    //! @param xv set view variable
-    //! @param val integer value
-    Gecode::ModEvent
-    exclude_lq(Gecode::Space &home, Gecode::Set::SetView &xv, int val) {
-	Gecode::ModEvent ret=Gecode::ME_GEN_NONE;
-	for(int i=xv.lubMin(); i<=val; i++) {
-	    ret |= xv.exclude(home,i);
-	}
-	return ret;
-    }
-
-    //! exclude from a set view all values greater or equal \a val
-    //! @param xv set view variable
-    //! @param val integer value
-    Gecode::ModEvent
-    exclude_gq(Gecode::Space &home, Gecode::Set::SetView &xv, int val) {
-	Gecode::ModEvent ret=Gecode::ME_GEN_NONE;
-	for(int i=val; i<=xv.lubMax(); i++) {
-	    ret |= xv.exclude(home,i);
-	}
-	return ret;
-    }
-
-    //! @param xv Integer View
-    //! @returns maximal domain value of \a x that is not equal undef
-    int max_non_undef( const Gecode::Int::IntView &xv ) {
-	int m = xv.max();
-	if (m!=undef) return m;
-	return m-xv.regret_max(); 
-    }
-    */
-    
-
     //! upper bound for the contribution of matching positions i
     //! and j of respective sequences R and S
     //! if tight!=NULL && tight!=false, return in tight, whether the bound is tight
@@ -128,27 +98,7 @@ protected:
 			size_type i,size_type j) const;
 
 
-    //! test whether a match or deletion is allowed by the constraint store
-    //! @param i position in sequence 1
-    //! @param j position in sequence 2
-    //! @returns whether the match between i and j is of deletion of i between j,j+1 is allowed
-    //! assume that all the consistency checking with other variables MD,M has been done 
-    bool
-    match_or_deletion_allowed(size_type i,size_type j) const {
-	return MD[i].in((int)j);
-    }
-
-
-    //! test whether a match is allowed by the constraint store
-    //! @param i position in sequence 1
-    //! @param j position in sequence 2
-    //! @returns whether the match between i and j is allowed
-    //! assume that all the consistency checking with other variables MD,M has been done 
-    bool
-    match_allowed(size_type i,size_type j) const {
-	return MD[i].in((int)j) && M[i].in(1);
-    }
-
+    
     //! test whether a match is guaranteed (i.e. forced) by the constraint store
     //! @param i position in sequence 1
     //! @param j position in sequence 2
@@ -159,50 +109,81 @@ protected:
     match_forced(size_type i,size_type j) const {
 	return MD[i].assigned() && (size_t)MD[i].val()==j && !M[i].in(0);
     }
+
+    //! test whether a match or deletion is allowed by the constraint store
+    //! @param i position in sequence 1
+    //! @param j position in sequence 2
+    //! @returns whether the match between i and j is of deletion of i between j,j+1 is allowed
+    //! assume that all the consistency checking with other variables MD,M has been done 
+    bool
+    match_or_deletion_allowed(size_type i,size_type j) const {
+	return MD[i].in((int)j);
+    }
     
+    // test whether match/insertion/deletion at (i,j) is allowed due
+    // to the variables M and MD. If allowed, the methods guarantee
+    // that origin and target of the trace arrow are valid due to MD.
+    
+    //! test whether a match is allowed by the constraint store
+    //! @param i position in sequence 1
+    //! @param j position in sequence 2
+    //! @returns whether the match between i and j is allowed
+    //! assume that all the consistency checking with other variables MD,M has been done 
+    bool
+    match_arrow_allowed(size_type i,size_type j) const {
+	return MD[i].in((int)j) && M[i].in(1);
+    }
+
     //! test whether an insertion is allowed by the constraint store
     //! @param i position in sequence 1
     //! @param j position in sequence 2
     //! @returns whether the insertion j between i and i+1 is allowed
     bool
-    insertion_allowed(size_type i,size_type j) const {
-	// insertion has to be inferred from the MD and M vars in this and following line
-	// note that a match in line i+1 requires an extra non-insertion position in line i
+    insertion_arrow_allowed(size_type i,size_type j) const {
 	const size_t n=seqA.length();
-	
-	if (i<n) {
-	    size_t max=MD[i+1].max();
-	    if (!M[i+1].in(0)) { // guaranteed match
-		max--;
-	    }
-	    return MD[i].min()<(int)j && j<=max;
-	} else {
-	    return MD[i].min()<(int)j;
-	}
+	return MD[i].in((int)j) && MD[i].in((int)j-1);
     }
     
     //! test whether a deletion is allowed by the constraint store
     //! @param i position in sequence 1
     //! @param j position in sequence 2
-    //! @returns whether the deletion of of i between j and j+1 is allowed
+    //! @returns whether the deletion of i between j and j+1 is allowed
     bool
-    deletion_allowed(size_type i,size_type j) const {
-	return MD[i].in((int)j) && M[i].in(0);
+    deletion_arrow_allowed(size_type i,size_type j) const {
+	return (i==0 || MD[i-1].in((int)j)) && MD[i].in((int)j) && M[i].in(0);
     }
-
+    
     //! used for testing whether propagator can be deleted
     //! @returns whether all vars are fixed
     bool
     all_vars_fixed() const;
 
+
+    //! run forward algorithm for computing prefix alignment scores
+    //! in Fwd, given matrix of upper bounds for matches. Support affine gap cost model.
+    //! @param home home space
+    //! @param Fwd matrix of size n+1 x m+1, output parameter
+    //! @param FwdA matrix of size n+1 x m+1, output parameter
+    //! @param FwdB matrix of size n+1 x m+1, output parameter
+    //! @param precomputed UBM upper bounds for all matches i~j
+    //!
+    //! Result is returned in Fwd, FwdA, and FwdB. Fwd(i,j) is the
+    //! best prefix alignment score for prefixes A_1..i and
+    //! B_1..j. FwdA(i,j) same as Fwd(i,j) with restriction that
+    //! A_i is deleted. FwdB(i,j) same as Fwd(i,j)
+    //! with restriction that B_j is inserted.
     void
     forward_algorithm(Gecode::Space& home,
-		      Matrix<infty_score_t> &Fwd,
-		      const Matrix<score_t> &UBM);
+			     Matrix<infty_score_t> &Fwd,
+			     Matrix<infty_score_t> &FwdA,
+			     Matrix<infty_score_t> &FwdB,
+			     const Matrix<score_t> &UBM);
 
     void
     backtrace_forward(Gecode::Space &home, 
 		      const Matrix<infty_score_t> &Fwd,
+		      const Matrix<infty_score_t> &FwdA,
+		      const Matrix<infty_score_t> &FwdB,
 		      const Matrix<score_t> &UBM,
 		      std::vector<size_type> &traceA,
 		      std::vector<size_type> &traceB
@@ -210,8 +191,10 @@ protected:
 
     void
     backward_algorithm(Gecode::Space& home, 
-		       Matrix<infty_score_t> &Bwd,
-		       const Matrix<score_t> &UBM);
+			      Matrix<infty_score_t> &Bwd,
+			      Matrix<infty_score_t> &BwdA,
+			      Matrix<infty_score_t> &BwdB,
+			      const Matrix<score_t> &UBM);
     
     //! set the MD and M variables in the range [start..end] to
     //! the values described by the trace
@@ -233,10 +216,15 @@ protected:
 		   const std::vector<size_type> &traceB,
 		   const Matrix<bool> &tight);
 
+
     Gecode::ModEvent 
     prune(Gecode::Space& home, 
 	  const Matrix<infty_score_t> &Fwd,
+	  const Matrix<infty_score_t> &FwdA,
+	  const Matrix<infty_score_t> &FwdB,
 	  const Matrix<infty_score_t> &Bwd,
+	  const Matrix<infty_score_t> &BwdA,
+	  const Matrix<infty_score_t> &BwdB,
 	  const Matrix<score_t> &UBM);
 
     //! determines the indices of arcs that are forced to occur in any
@@ -277,7 +265,7 @@ protected:
 
  
 public:
-    //! post a binary neighbor constraint
+    //! post constraint
     static Gecode::ExecStatus post(Gecode::Space& home,
 				   const Sequence &seqA,
 				   const Sequence &seqB,
@@ -288,7 +276,7 @@ public:
 				   Gecode::BoolVarArray &M,
 				   Gecode::IntVar &Score
 				   );
-	    
+    
     /// Copy propagator during cloning
     virtual Gecode::Actor* copy(Gecode::Space& home, bool share);
     

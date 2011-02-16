@@ -1,4 +1,3 @@
-
 #include "alignment_score.hh"
 #include "LocARNA/arc_matches.hh"
 
@@ -8,8 +7,6 @@
 #include <limits>
 
 #include <assert.h>
-
-
 
 const bool debug_out=false;
 //const bool debug_out=true;
@@ -143,9 +140,8 @@ AlignmentScore::determine_forced_arcs(const AdjList &adjlA,
 	    
 	    bool forced = match_forced(k,l);
 
-	    if ( (!forced) && match_allowed(k,l) ) { // if the match
-						     // is allowed,
-						     // but not forced
+	    if ( (!forced) && match_arrow_allowed(k,l) ) { // if the match
+		// is allowed, but not forced
 		*tight = false; // the bound will not be tight
 	    }
 	    
@@ -210,7 +206,7 @@ AlignmentScore::bound_arcmatches(const AdjList &adjlA,
 	    
 	    
 	    infty_score_t entry=infty_score_t::neg_infty;
-	    if ( match_allowed(k,l) && considered_ams.get(arcA->idx(), arcB->idx()) ) {
+	    if ( match_arrow_allowed(k,l) && considered_ams.get(arcA->idx(), arcB->idx()) ) {
 		entry = MAT_match + scoring.arcmatch(*arcA,*arcB);
 	    }
 	   
@@ -394,73 +390,76 @@ AlignmentScore::print_vars() const {
 
 
 void
-AlignmentScore::forward_algorithm(Gecode::Space& home,
-				  Matrix<infty_score_t> &Fwd,
-				  const Matrix<score_t> &UBM
-				  ) {
+AlignmentScore::
+forward_algorithm(Gecode::Space& home,
+			 Matrix<infty_score_t> &Fwd,
+			 Matrix<infty_score_t> &FwdA,
+			 Matrix<infty_score_t> &FwdB,
+			 const Matrix<score_t> &UBM
+			 ) {
+
     const size_t n=seqA.length();
     const size_t m=seqB.length();
 
-     // ----------------------------------------
+    // ----------------------------------------
     // Forward algorithm
     //
     
-    //Fwd.fill(infty_score_t::neg_infty);
-    
     // Definition( Fwd-matrix )
-    // Fwd(i,j) := max score of a alignment R[1..i], S[1..j]
+    // for j \in MD[i]:
+    // Fwd(i,j)  := max score of an alignment R[1..i], S[1..j]
+    // for j \in MD[i]
+    // FwdA(i,j) := max score of an alignment R[1..i], S[1..j] where R[i] is deleted
+    // for j \in MD[i]
+    // FwdB(i,j) := max score of an alignment R[1..i], S[1..j] where S[j] is inserted
+    
     
     ////////////////////
     // initialize
     Fwd(0,0)=(infty_score_t)0;
+    FwdA(0,0) = (infty_score_t) (2*scoring.indel_opening()); // infty_score_t::neg_infty;
+    FwdB(0,0) = (infty_score_t) (2*scoring.indel_opening()); // infty_score_t::neg_infty;
     for(size_type i=1; i<=n; i++) {
-	if (deletion_allowed(i,0)) {
-	    Fwd(i,0) = Fwd(i-1,0) + 2*scoring.gapA(i,0);
+	if (deletion_arrow_allowed(i,0)) {
+	    FwdA(i,0) = FwdA(i-1,0) + 2*scoring.gapA(i,0);
 	} else {
-	    Fwd(i,0) = infty_score_t::neg_infty;
+	    FwdA(i,0) = infty_score_t::neg_infty;
 	}
+	Fwd(i,0)  = FwdA(i,0);
     }
     
     for(size_type j=1; j<=m; j++) {
-	if (insertion_allowed(0,j)) {
-	    Fwd(0,j) = Fwd(0,j-1)  + 2*scoring.gapB(0,j);
-	} else {
-	    Fwd(0,j) = infty_score_t::neg_infty;
-	}
+	FwdB(0,j) = FwdB(0,j-1)  + 2*scoring.gapB(0,j);
+	Fwd(0,j) = FwdB(0,j);
     }
     
-    // special initialization:
-    // in each matrix row i the entry Fwd(i,MD[i].min()-1) is invalid,
-    // but could be accessed in the recursion
-    for(size_type i=1; i<=n; i++) {
-	if (MD[i].min()>1) {
-	    Fwd(i,MD[i].min()-1) = infty_score_t::neg_infty;
-	}
-    }
     
     Fwd(n,m) = infty_score_t::neg_infty;
     // end init
     ////////////////////
     // recurse
     for(size_type i=1; i<=n; i++) {
-	size_t maxj=m;
-	if (i<n) {
-	    maxj = MD[i+1].max();
-	    if (!M[i+1].in(0)) {
-		maxj--;
-	    }
-	}
+	size_t minj = MD[i].min();
+	size_t maxj = MD[i].max();
 	
-	for(size_type j=max(1,MD[i].min()); j<=maxj; j++) {
+	for(size_type j=minj; j<=maxj; j++) {
 	    Fwd(i,j) = infty_score_t::neg_infty;
-	    if (match_allowed(i,j)) {
+	    FwdA(i,j) = infty_score_t::neg_infty;
+	    FwdB(i,j) = infty_score_t::neg_infty;
+	    if (match_arrow_allowed(i,j)) {
 		Fwd(i,j) = Fwd(i-1,j-1) + UBM(i,j);
 	    }
-	    if (deletion_allowed(i,j)) {
-		Fwd(i,j) = std::max(Fwd(i,j),Fwd(i-1,j)+2*scoring.gapA(i,j));
+	    if (deletion_arrow_allowed(i,j)) {
+		FwdA(i,j) = std::max(FwdA(i,j),FwdA(i-1,j)+2*scoring.gapA(i,j));
+		FwdA(i,j) = std::max(FwdA(i,j),Fwd(i-1,j) +2*scoring.gapA(i,j)+2*scoring.indel_opening());
+		
+		Fwd(i,j)  = std::max(Fwd(i,j),FwdA(i,j));
 	    }
-	    if (insertion_allowed(i,j)) {
-		Fwd(i,j) = std::max(Fwd(i,j),Fwd(i,j-1)+2*scoring.gapB(i,j));
+	    if (insertion_arrow_allowed(i,j)) {
+		FwdB(i,j) = std::max(FwdB(i,j),FwdB(i,j-1)+2*scoring.gapB(i,j));
+		FwdB(i,j) = std::max(FwdB(i,j),Fwd(i,j-1) +2*scoring.gapB(i,j)+2*scoring.indel_opening());
+		
+		Fwd(i,j) = std::max(Fwd(i,j),FwdB(i,j));
 	    }
 	}
     }
@@ -468,7 +467,10 @@ AlignmentScore::forward_algorithm(Gecode::Space& home,
 
 void
 AlignmentScore::
-backtrace_forward(Gecode::Space &home, const Matrix<infty_score_t> &Fwd,
+backtrace_forward(Gecode::Space &home, 
+		  const Matrix<infty_score_t> &Fwd,
+		  const Matrix<infty_score_t> &FwdA,
+		  const Matrix<infty_score_t> &FwdB,
 		  const Matrix<score_t> &UBM,
 		  vector<size_type> &traceA,
 		  vector<size_type> &traceB
@@ -484,21 +486,55 @@ backtrace_forward(Gecode::Space &home, const Matrix<infty_score_t> &Fwd,
     traceB.resize(m+1);
     
     {
+	enum { FWD, FWD_A, FWD_B } state;
+	state = FWD;
 	int i=n;
 	int j=m;
 	
 	while (i>0 && j>0) {
-	    if ( match_allowed(i,j) && Fwd(i,j) == Fwd(i-1,j-1) + UBM(i,j) ) {
-		traceA[i]=j;
-		traceB[j]=i;
-		--i;
-		--j;
-	    } else if ( deletion_allowed(i,j) && Fwd(i,j) == Fwd(i-1,j) + 2*scoring.gapA(i,j) ) {
-		traceA[i]=0;
-		--i;
-	    } else if ( insertion_allowed(i,j) && Fwd(i,j) == Fwd(i,j-1) + 2*scoring.gapB(i,j) ) {
-		traceB[j]=0;
-		--j;
+	    // std::cerr << i << " " << j << " " << state << std::endl;
+	    switch(state) {
+	    case FWD:
+		if (match_arrow_allowed(i,j) && Fwd(i,j) == Fwd(i-1,j-1) + UBM(i,j) ) {
+		    traceA[i]=j;
+		    traceB[j]=i;
+		    --i;
+		    --j;
+		} else if ( deletion_arrow_allowed(i,j) && Fwd(i,j)==FwdA(i,j) ) {
+		    state = FWD_A;
+		} else if ( insertion_arrow_allowed(i,j) && Fwd(i,j)==FwdB(i,j) ) {
+		    state = FWD_B;
+		} else {
+		    std::cerr << "Traceback error FWD\n"<<std::endl;
+		    exit(-1);
+		}
+		break;
+	    case FWD_A:
+		if ( FwdA(i,j) == FwdA(i-1,j) + 2*scoring.gapA(i,j) ) {
+		    traceA[i]=0;
+		    --i;
+		} else if ( FwdA(i,j) == Fwd(i-1,j) + 2*scoring.gapA(i,j) + 2*scoring.indel_opening() ) {
+		    traceA[i]=0;
+		    --i;
+		    state=FWD;
+		} else {
+		    std::cerr << "Traceback error FWD_A\n"<<std::endl;
+		    exit(-1);
+		}
+		break;
+	    case FWD_B:
+		if ( FwdB(i,j) == FwdB(i,j-1) + 2*scoring.gapA(i,j) ) {
+		    traceB[j]=0;
+		    --j;
+		} else if ( FwdB(i,j) == Fwd(i,j-1) + 2*scoring.gapA(i,j) + 2*scoring.indel_opening() ) {
+		    traceB[j]=0;
+		    --j;
+		    state=FWD;
+		} else {
+		    std::cerr << "Traceback error FWD_B\n"<<std::endl;
+		    exit(-1);
+		}
+		break;
 	    }
 	}
 	
@@ -514,7 +550,10 @@ backtrace_forward(Gecode::Space &home, const Matrix<infty_score_t> &Fwd,
 }
 
 void
-AlignmentScore::backward_algorithm(Gecode::Space& home, Matrix<infty_score_t> &Bwd,
+AlignmentScore::backward_algorithm(Gecode::Space& home, 
+				   Matrix<infty_score_t> &Bwd,
+				   Matrix<infty_score_t> &BwdA,
+				   Matrix<infty_score_t> &BwdB,
 				   const Matrix<score_t> &UBM) {
     const size_t n=seqA.length();
     const size_t m=seqB.length();
@@ -523,71 +562,67 @@ AlignmentScore::backward_algorithm(Gecode::Space& home, Matrix<infty_score_t> &B
     // Backward algorithm
     //
     
-    // Bwd(i,j) := max score of a alignment R[i+1..n], S[j+1..m]
-    
-    // init with "invalid" value negative infinity
-    // Bwd.fill(infty_score_t::neg_infty);
+    // Definition( Fwd-matrix )
+    // for j \in MD[i]:
+    // Bwd(i,j)  := max score of an alignment R[i+1..n], S[j+1..m]
+    // for j \in MD[i]
+    // BwdA(i,j) := max score of an alignment R[i+1..n], S[j+1..m] where R[i+1] is deleted
+    // for j \in MD[i]
+    // BwdB(i,j) := max score of an alignment R[i+1..n], S[j+1..m] where S[j+1] is inserted
     
     // initialize
     Bwd(n,m)=(infty_score_t)0;
+    BwdA(n,m) = (infty_score_t)(2*scoring.indel_opening()); // infty_score_t::neg_infty;
+    BwdB(n,m) = (infty_score_t)(2*scoring.indel_opening()); // infty_score_t::neg_infty;
+  
     for(size_type i=n; i>0;) { // for i=n-1 downto 0
 	--i;
-	if (deletion_allowed(i+1,m)) {
-	    Bwd(i,m) = Bwd(i+1,m) + 2*scoring.gapA(i+1,m);
+	if (deletion_arrow_allowed(i+1,m)) {
+	    BwdA(i,m) = BwdA(i+1,m) + 2*scoring.gapA(i+1,m);
 	} else {
 	    Bwd(i,m) = infty_score_t::neg_infty;
 	}
+	Bwd(i,m)=BwdA(i,m);
     }
     for(size_type j=m; j>0;) { // for j=m-1 downto 0
 	--j;
-	if (insertion_allowed(n,j+1)) {
-	    Bwd(n,j) = Bwd(n,j+1) + 2*scoring.gapB(n,j+1);
+	if (insertion_arrow_allowed(n,j+1)) {
+	    BwdB(n,j) = BwdB(n,j+1) + 2*scoring.gapB(n,j+1);
 	} else {
-	    Bwd(n,j) = infty_score_t::neg_infty;
+	    BwdB(n,j) = infty_score_t::neg_infty;
 	}
+	Bwd(n,j) = BwdB(n,j);
     }
     
     Bwd(0,0) = infty_score_t::neg_infty;
-    
-    // special initialization
-    for(size_type i=n; i>0;) { // for i=n-1 downto 0
-	--i;
-
-	size_t maxj = MD[i+1].max();
-	if (!M[i+1].in(0)) {
-	    maxj--;
-	}
-	
-	if (maxj+1<m) {
-	    Bwd(i,maxj+1) = infty_score_t::neg_infty;
-	}
-    }
     
     // recurse
     for(size_type i=n; i>0;) { // for i=n-1 downto 0
 	--i;
 	
-	// we need to cover allowed matches/deletions/insertions in the row i+1!
 	size_t minj = MD[i].min();
+	size_t maxj = MD[i].max();
 	
-	size_t maxj = MD[i+1].max();
-	if (!M[i+1].in(0)) {
-	    maxj--;
-	}
-	maxj = min(maxj,m-1);
-
-	
-	for(size_type j=maxj+1; j>minj;) { // for j=m-1 downto 0
+	for(size_type j=maxj+1; j>minj;) { // for j=maxj downto minj
 	    --j;
 	    Bwd(i,j) = infty_score_t::neg_infty;
-	    if (match_allowed(i+1,j+1)) {   // match i+1 ~ j+1 (!)
+	    BwdA(i,j) = infty_score_t::neg_infty;
+	    BwdB(i,j) = infty_score_t::neg_infty;
+	    
+	    if (match_arrow_allowed(i+1,j+1)) {   // match i+1 ~ j+1 (!)
 		Bwd(i,j) = Bwd(i+1,j+1) + UBM(i+1,j+1);
 	    }
-	    if (deletion_allowed(i+1,j)) { // delete i+1 after j
-		Bwd(i,j) = std::max(Bwd(i,j), Bwd(i+1,j)+2*scoring.gapA(i+1,j));
+	    if (deletion_arrow_allowed(i+1,j)) { // delete i+1 after j
+		BwdA(i,j) = std::max(BwdA(i,j),BwdA(i+1,j)+2*scoring.gapA(i+1,j));
+		BwdA(i,j) = std::max(BwdA(i,j),Bwd(i+1,j) +2*scoring.gapA(i+1,j)+2*scoring.indel_opening());
+
+		Bwd(i,j)=std::max(Bwd(i,j),BwdA(i,j));
 	    }
-	    if (insertion_allowed(i,j+1)) { // insert j+1 after i
-		Bwd(i,j) = std::max(Bwd(i,j), Bwd(i,j+1)+2*scoring.gapB(i,j+1));
+	    if (insertion_arrow_allowed(i,j+1)) { // insert j+1 after i
+		BwdB(i,j) = std::max(BwdB(i,j),BwdB(i,j+1)+2*scoring.gapB(i,j+1));
+		BwdB(i,j) = std::max(BwdB(i,j),Bwd(i,j+1) +2*scoring.gapB(i,j+1)+2*scoring.indel_opening());
+
+		Bwd(i,j)=std::max(Bwd(i,j),BwdB(i,j));
 	    }
 	}
     }
@@ -596,7 +631,11 @@ AlignmentScore::backward_algorithm(Gecode::Space& home, Matrix<infty_score_t> &B
 Gecode::ModEvent
 AlignmentScore::prune(Gecode::Space& home, 
 		      const Matrix<infty_score_t> &Fwd,
+		      const Matrix<infty_score_t> &FwdA,
+		      const Matrix<infty_score_t> &FwdB,
 		      const Matrix<infty_score_t> &Bwd,
+		      const Matrix<infty_score_t> &BwdA,
+		      const Matrix<infty_score_t> &BwdB,
 		      const Matrix<score_t> &UBM
 		      ) {
     // NOTE: using the precomputed upper bounds for matching is weaker than
@@ -617,9 +656,13 @@ AlignmentScore::prune(Gecode::Space& home,
     // prune MD and M
     for(size_type i=1; i<=n; i++) {
 	for(size_type j=(size_t)MD[i].min(); j<=(size_t)MD[i].max(); j++) {
-	    // prune MD variable for match i~j
+	    // prune MD variable for match i~j or deletion of i after j
 	    if (match_or_deletion_allowed(i,j)) {
 		infty_score_t ub = Fwd(i,j)+Bwd(i,j);
+		// NOTE: there is no case FwdA+BwdA-opening, due to
+		// the semantics of MD!  However we need to consider
+		// FwdB+BwdB-opening:
+		ub = std::max(ub, FwdB(i,j)+BwdB(i,j)-2*scoring.indel_opening()); 
 		if ( (!ub.is_finite()) || (ub < (infty_score_t) Score.min())) {
 		    ret |= MD[i].nq(home,(int)j);
 		}
@@ -634,7 +677,11 @@ AlignmentScore::prune(Gecode::Space& home,
     for(size_type i=1; i<=n; i++) {
 	bool del=false; // is deletion possible?
 	for(size_type j=(size_t)MD[i].min(); !del && j<=(size_t)MD[i].max(); j++) {
-	    infty_score_t ubd = Fwd(i-1,j)+2*scoring.gapA(i,j)+Bwd(i,j);
+	    
+	    // upper bound for deletion of i after j
+	    infty_score_t ubd = FwdA(i,j)+Bwd(i,j);
+	    ubd = std::max(ubd,FwdA(i,j)+BwdA(i,j)-2*scoring.indel_opening());
+	    
 	    if ( ubd.is_finite() && (ubd >= (infty_score_t) Score.min())) {
 		del=true;
 	    }
@@ -648,7 +695,11 @@ AlignmentScore::prune(Gecode::Space& home,
     for(size_type i=1; i<=n; i++) {
 	bool match=false; // is match possible?
 	for(size_type j=std::max((size_t)1,(size_t)MD[i].min()); !match && j<=(size_t)MD[i].max(); j++) {
+	    
+	    // upper bound for match i~j (Note: we don't need the matrices
+	    // FwdA,FwdB,BwdA,BwdB here, since i~j and Bwd(i,j) is general)
 	    infty_score_t ubm = Fwd(i-1,j-1)+UBM(i,j)+Bwd(i,j);
+	    
 	    if ( ubm.is_finite() && (ubm >= (infty_score_t) Score.min())) {
 		match = true; // match is possible
 	    }
@@ -974,7 +1025,7 @@ AlignmentScore::prune_decided_arc_matches(Matrix<bool> &considered_ams, Matrix<s
     
     for(size_t i=1; i<=n; ++i) {
 	for(size_t j=MD[i].min(); j<=(size_t)MD[i].max(); ++j) {	    
-	    if (match_allowed(i,j)) {
+	    if (match_arrow_allowed(i,j)) {
 		
 		bool forced_ij=match_forced(i,j);
 		
@@ -993,7 +1044,7 @@ AlignmentScore::prune_decided_arc_matches(Matrix<bool> &considered_ams, Matrix<s
 		    size_t k=arcA.right();
 		    size_t l=arcB.right();
 		    
-		    if (!match_allowed(k,l)) continue;
+		    if (!match_arrow_allowed(k,l)) continue;
 		    
 		    bool forced_kl=match_forced(k,l);
 		    
@@ -1067,7 +1118,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     //     matched can be removed. Their score is added to the 
     //     unassigned end or, if both ends are matched, 
     //     arbitrarily to the left end
-
+    
     // boolean Matrix giving for every arc match with allowed left and right match if we still consider
     // the arc match.
     // NOTE: entries where one match in the arc match is not allowed are undefined!!!
@@ -1105,7 +1156,10 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     // -------------------- RUN FORWARD ALGORITHM
     Matrix<infty_score_t> Fwd(n+1,m+1); // ForWarD matrix
     
-    forward_algorithm(home,Fwd,UBM);
+    Matrix<infty_score_t> FwdA(n+1,m+1); // ForWarD matrix, A_i gapped
+    Matrix<infty_score_t> FwdB(n+1,m+1); // ForWarD matrix, B_j gapped
+    
+    forward_algorithm(home,Fwd,FwdA,FwdB,UBM);
     
     //if (debug_out) {std::cout << "Fwd"<<std::endl<<Fwd <<std::endl;}
     
@@ -1128,7 +1182,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     std::vector< size_type > traceB;
 
     // -------------------- BACKTRACE FWD
-    backtrace_forward(home,Fwd,UBM,traceA,traceB);
+    backtrace_forward(home,Fwd,FwdA,FwdB,UBM,traceA,traceB);
     
     // test whether for all vars in a run the bound is tight
     // the variables in a "tight run" can be fixed to trace
@@ -1170,8 +1224,10 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 
     // -------------------- RUN BACKWARD ALGORITHM
     Matrix<infty_score_t> Bwd(n+1,m+1); 
-
-    backward_algorithm(home,Bwd,UBM);
+    Matrix<infty_score_t> BwdA(n+1,m+1); 
+    Matrix<infty_score_t> BwdB(n+1,m+1);
+    
+    backward_algorithm(home,Bwd,BwdA,BwdB,UBM);
     //if (debug_out) {std::cout << "Bwd"<<std::endl<<Bwd <<std::endl;}
 
 
@@ -1185,7 +1241,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 		score_t matchscore=evaluate_tracematch(traceA,traceB,considered_ams,match_scores,i,j);
 		
 		cout
-		    << match_allowed(i,j)<<" "
+		    << match_arrow_allowed(i,j)<<" "
 		    <<Fwd(i-1,j-1)<<"+"<< matchscore<<"["<<ub_match(i,j,considered_ams,match_scores)<<"]"<<"+"<<Bwd(i,j)<<" = "
 		    <<Fwd(i-1,j-1)+matchscore+Bwd(i,j);
 	    }
@@ -1195,7 +1251,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
     
     // -------------------- PRUNE VARIABLES
-    ret |= prune(home,Fwd,Bwd,UBM);
+    ret |= prune(home,Fwd,FwdA,FwdB,Bwd,BwdA,BwdB,UBM);
         
     
     if (debug_out) {

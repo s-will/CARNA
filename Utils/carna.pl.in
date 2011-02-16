@@ -25,7 +25,7 @@ Options:
 
 =item  B<-q, --quiet>                   Quiet
 
-=item  B<-q, --norun>                   Don't run carna, but generate input
+=item  B<--norun>                   Don't run carna, but generate input
 
 =item  B<--args>                        Arguments passed to carna
 

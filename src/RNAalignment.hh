@@ -97,7 +97,6 @@ public:
 	    Gecode::BoolVar greater(*this,0,1);
 	    rel(*this,MD[i],Gecode::IRT_GR,MD[i-1],greater);
 	    rel(*this,M[i],Gecode::IRT_LQ,greater); // M[i] implies greater
-	    
 	}
 		
 	
