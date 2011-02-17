@@ -11,10 +11,6 @@
 #include "LocARNA/scoring.hh"
 
 
-/*
-  TODO
-  include gap cost bound into ubound!?  
- */
 
 class RNAalignment;
 
@@ -200,8 +196,8 @@ protected:
     //! @returns whether all vars are fixed
     bool
     all_vars_fixed() const;
-
-
+    
+    
     //! run forward algorithm for computing prefix alignment scores
     //! in Fwd, given matrix of upper bounds for matches. Support affine gap cost model.
     //! @param home home space

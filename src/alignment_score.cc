@@ -13,7 +13,6 @@ using namespace LocARNA;
 const bool debug_out=false;
 //const bool debug_out=true;
 
-//#include <iostream>
 
 // DETAIL: for the upper bound in ub_match, arc match scores to the
 // left and to the right are added. In total, thus each arcmatch score is added twice.
@@ -1221,7 +1220,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     // gap).
     SizeVec traceA;
     SizeVec traceB;
-
+    
     // -------------------- BACKTRACE FWD
     backtrace_forward(home,Fwd,FwdA,FwdB,UBM,traceA,traceB);
     
@@ -1329,63 +1328,9 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	choice(static_cast<RNAalignment&>(home),Fwd,Bwd,traceA,traceB,UBM,match_scores);
     }
 
+    // -------------------- pass some debugging information to space
+    
+
+    // -------------------- return
     return Gecode::me_modified(ret)?Gecode::ES_NOFIX:Gecode::ES_FIX;
 }
-
-
-
-////////////////////////////////////////////////////////////
-// OBSOLETE CODE
-
-/*
-score_t
-AlignmentScore::ub_match_simple(size_type i, size_type j) const {
-    //std::cout << "AlignmentScore::ub_match"<<std::endl;
-  
-    // compute upper bound for the contribution of matching positions i
-    // and j of respective sequences A and B
-    // by summing over all possible base pair matchs
-    //
-    
-    score_t bound=2*scoring.basematch(i,j);
-    
-    // NOTE: there are different possibilities to enumerate the possible arc-matches.
-    // traversing the arc-matches is good for theoretical complexity,
-    // since we assume this is limited by a constant
-    	    
-    // for all pairs of arcs in A and B that have right ends i and j, respectively
-    //
-    for(ArcMatchIdxVec::const_iterator it=arc_matches.common_right_end_list(i,j).begin();
-	arc_matches.common_right_end_list(i,j).end() != it; ++it ) {
-	
-	const ArcMatch &am = arc_matches.arcmatch(*it);
-	
-	if ( match_allowed(am.arcA().left(),am.arcB().left()) ) { 
-	    // if the left ends of arcs arcA and arcB can match 
-	    score_t amscore = scoring.arcmatch(am);
-	    if (amscore>=0 || match_forced(am.arcA().left(),am.arcB().left()) ) {
-		bound+=amscore;
-	    }
-	}
-    }
-    
-    // same for common left ends
-    for(ArcMatchIdxVec::const_iterator it=arc_matches.common_left_end_list(i,j).begin();
-	arc_matches.common_left_end_list(i,j).end() != it; ++it ) {	
-	const ArcMatch &am = arc_matches.arcmatch(*it);
-	
-	if ( match_allowed(am.arcA().right(),am.arcB().right()) ) { 
-	    // if the right ends of arcs arcA and arcB can match 
-	    score_t amscore = scoring.arcmatch(am);
-	    if (amscore>=0 || match_forced(am.arcA().right(),am.arcB().right()) ) {
-		bound+=amscore;
-	    }
-	}
-    }
-    
-    return (bound);
-}
-
-// simple ub_match: 46 16 68598 68613 
-*/
-

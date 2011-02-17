@@ -16,7 +16,7 @@ using namespace Gecode;
 using namespace LocARNA;
 
 
-const std::string 
+const std::string
 VERSION_STRING = (std::string)PACKAGE_STRING; 
 
 // ------------------------------------------------------------
@@ -239,51 +239,51 @@ option_def my_options[] = {
 // end option declaration
 // ------------------------------------------------------------
 
-void RNAalignment::print_clustal_format(std::ostream& out_s) const{
 
+bool RNAalignment::all_assigned() const {
     bool all_assigned=true;
-
+    
     for (size_t i=1; i<=seqA.length(); i++) {
 	all_assigned &= MD[i].assigned();
 	all_assigned &= M[i].assigned();
     }
+    
+    return all_assigned;
+}
 
-    if (all_assigned) {
-	// Load sequences
-	LocARNA::Sequence a;
-	LocARNA::Sequence b;
+Alignment
+RNAalignment::to_alignment() const {
 
-	a.init_buffer(seqA);
-	b.init_buffer(seqB);
-	    
-	for (size_t i=1; i<=seqA.length(); i++) {
-	    a+=seqA[i];
-	}
-	    
-	for (size_t i=1; i<=seqB.length(); i++) {
-	    b+=seqB[i];
-	}
-
-	LocARNA::Alignment* alignment = new LocARNA::Alignment(a,b);
-	    
-	int max_col=60;
-
-	size_t j=1;
-	for (size_t i=1; i<=seqA.length(); i++) {
-	    for (;j<(size_t)MD[i].val();j++) {
-	    }
-
-	    if (M[i].val()==1) {
-		alignment->append(i,j);
-		j++;
-	    } 
-	}
-	      
-	alignment->write_clustal(out_s,max_col,(LocARNA::infty_score_t)Score.val(),
-				 false,false,true,false);
-	      
-    } 
+    Alignment alignment(seqA,seqB);
+    
+    size_t j=1;
+    for (size_t i=1; i<=seqA.length(); i++) {
 	
+	for (;j<(size_t)MD[i].val();j++) {
+	    alignment.append(-1,j);
+	}
+	
+	if (M[i].val()==1) {
+	    alignment.append(i,j);
+	    j++;
+	} else {
+	    alignment.append(i,-1);
+	}
+    }
+    
+    return alignment;    
+}
+
+void RNAalignment::print_clustal_format(std::ostream& out_s) const{
+
+    size_t width=60;
+
+    if (all_assigned()) {
+	to_alignment().write_clustal(out_s,
+				     width,
+				     (LocARNA::infty_score_t)Score.val(),
+				     false,false,true,false);
+    }	
 }
 
 void
@@ -292,111 +292,74 @@ RNAalignment::print_pp_format(std::ostream& out_s,
 			      const LocARNA::Scoring& scoring, 
 			      const LocARNA::AnchorConstraints& seq_constraints) const { 
     
-    bool all_assigned=true;
-    
-    for (size_t i=1; i<=seqA.length(); i++) {
-	all_assigned &= MD[i].assigned();
-	all_assigned &= M[i].assigned();
+    size_t width=60;
+
+    if (all_assigned()) {
+	
+	to_alignment().write_pp(out_s,
+				bpsA, bpsB,
+				scoring,
+				seq_constraints,
+				width);
     }
     
-    if (all_assigned) {
-	// Load sequences
-	LocARNA::Sequence a;
-	LocARNA::Sequence b;
-	
-	a.init_buffer(seqA);
-	b.init_buffer(seqB);
-	
-	for (size_t i=1; i<=seqA.length(); i++) {
-	    a+=seqA[i];
-	}
-	
-	for (size_t i=1; i<=seqB.length(); i++) {
-	    b+=seqB[i];
-	}
-
-	LocARNA::Alignment* alignment = new LocARNA::Alignment(a,b);
-	    
-	int max_col=60;
-
-	size_t j=1;
-	for (size_t i=1; i<=seqA.length(); i++) {
-	    for (;j<(size_t)MD[i].val();j++) {
-	    }
-
-
-	    if (M[i].val()==1) {
-		alignment->append(i,j);
-		j++;
-	    } 
-	}
-	      
-	alignment->write_pp(out_s,
-			    bpsA,
-			    bpsB,
-			    scoring,
-			    seq_constraints,
-			    max_col);
-
-	      
-    } 
-	
 }
 
 
 void
 RNAalignment::print(std::ostream& out) const {
+    
+    size_t width=60;
+    
+    if (all_assigned()) {
 	
-    std::cout << "VALUATION" << std::endl;
+	to_alignment().write(out,
+			     width,
+			     (LocARNA::infty_score_t)Score.val()
+			     );
 	
-    bool all_assigned=true;
-    for (size_t i=1; i<=seqA.length(); i++) {
-	all_assigned &= MD[i].assigned();
-	all_assigned &= M[i].assigned();
+    } else {
+	
+	out << "Matches/Deletions:    ";
+	for (size_t i=0; i<=seqA.length(); i++) {
+	    if (!(M[i].assigned() && MD[i].assigned())) {
+		out <<i<<(M[i].assigned()?(M[i].val()==0?"g":"~"):"?")<<MD[i]<<", "; 
+	    }
+	}
+	out << std::endl;
     }
-
-    if (all_assigned) {
-	// write alignment
-	LocARNA::Sequence a;
-	LocARNA::Sequence b;
-
-	a.init_buffer(seqA);
-	b.init_buffer(seqB);
+    
+    out << "Score:      " << Score << std::endl;
+    
+    
+    // ////////////////////////////////////////
+    // list undecided base pairs
+    
+    for (ArcMatches::const_iterator it=arcmatches.begin(); arcmatches.end()!=it; ++it) {
+	const Arc &arcA=it->arcA();
+	const Arc &arcB=it->arcB();
+	
+	if ( 
+	    // arc match possible
+	    M[arcA.left()].in(1) && MD[arcA.left()].in(arcB.left())
+	    &&
+	    M[arcA.right()].in(1) && MD[arcA.right()].in(arcB.right())
 	    
-	size_t j=1;
-	for (size_t i=1; i<=seqA.length(); i++) {
-	    for (;j<(size_t)MD[i].val();j++) {
-		a+='-';
-		b+=seqB[j];
-	    }
-	    a+=seqA[i];
-	    if (M[i].val()==1) {
-		b+=seqB[j];
-		j++;
-	    } else {
-		b+='-';
-	    }
+	    && // not both ends are fixed
+	    !((M[arcA.left()].assigned() && MD[arcA.left()].assigned())
+	      || (M[arcA.right()].assigned() && MD[arcA.right()].assigned()))
+	     ) {
+	    
+	    out << arcA << "?" << arcB <<" ";
 	}
-	for (; j<=m; j++) {
-	    a+='-';
-	    b+=seqB[j];
-	}
-
-
-	a.write( std::cout );
-	b.write( std::cout );
-
-    } 
-
-    /*
-      std::cout << "Matches/Deletions:    ";
-      for (size_t i=0; i<=seqA.length(); i++) {
-      std::cout <<i<<(M[i].assigned()?(M[i].val()==0?"g":"~"):"?")<<MD[i]<<", "; 
-      }
-      std::cout << std::endl;
-      std::cout << "Score:      " << Score << std::endl;
-    */
+    }
+    out << std::endl;
+    
+    
+    // ////////////////////////////////////////
+    // update display
     if (wind!=NULL) wind->update(MD,M);
+
 }
 
 
@@ -558,7 +521,6 @@ main(int argc, char* argv[]) {
 				 trace_controller,
 				 seq_constraints
 				 );
-    
 
     BasePairs bpsA = arc_matches->get_base_pairsA();
     BasePairs bpsB = arc_matches->get_base_pairsB();

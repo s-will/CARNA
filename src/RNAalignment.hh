@@ -29,9 +29,11 @@ class RNAalignment : public Gecode::Space {
       
 protected:
     
-    const LocARNA::Sequence &seqA; // only used for output
+    // only used for output
+    const LocARNA::Sequence &seqA; 
     const LocARNA::Sequence &seqB;
-
+    const LocARNA::ArcMatches &arcmatches;
+    
     const size_t n;
     const size_t m;
     
@@ -56,11 +58,15 @@ protected:
 
  
 public:
-    RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequence &seqB_, const LocARNA::ArcMatches &arcmatches,
-		 const LocARNA::AlignerParams &aligner_params, const LocARNA::Scoring &scoring, bool opt_graphical_output)
+    RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequence &seqB_,
+		 const LocARNA::ArcMatches &arcmatches_,
+		 const LocARNA::AlignerParams &aligner_params, 
+		 const LocARNA::Scoring &scoring,
+		 bool opt_graphical_output)
 	:
 	seqA(seqA_),
 	seqB(seqB_),
+	arcmatches(arcmatches_),
 	n(seqA.length()),
 	m(seqB.length()),
 	MD(*this,n+1,0,m), //we only need MD_1,...,MD_n ==> ignore MD_0
@@ -131,6 +137,7 @@ public:
 	Gecode::Space(share,s),
 	seqA(s.seqA),
 	seqB(s.seqB),
+	arcmatches(s.arcmatches),
 	n(s.n),
 	m(s.m),
 	enum_M(s.enum_M),
@@ -151,6 +158,14 @@ public:
     copy(bool share) {
 	return new RNAalignment(share,*this);
     }
+
+    //! test whether all variables M and MD are assigned
+    bool all_assigned() const;
+    
+    //! convert variable valuation to Alignment object
+    //! pre: all variables MD and M are assigned
+    LocARNA::Alignment
+    to_alignment() const;
     
     //! print solution in clustal format 
     void
