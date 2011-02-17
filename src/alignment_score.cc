@@ -8,6 +8,8 @@
 
 #include <assert.h>
 
+using namespace LocARNA;
+
 const bool debug_out=false;
 //const bool debug_out=true;
 
@@ -121,8 +123,8 @@ template<class AdjList>
 void
 AlignmentScore::determine_forced_arcs(const AdjList &adjlA,
 				      const AdjList &adjlB,
-				      std::vector<bool> &forcedA, 
-				      std::vector<bool> &forcedB,
+				      BoolVec &forcedA, 
+				      BoolVec &forcedB,
 				      bool right,
 				      bool *tight) const {
     // for all pairs of arcs in A and B that have right ends i and j,
@@ -156,7 +158,7 @@ template<class AdjList>
 score_t
 AlignmentScore::bound_arcmatches(const AdjList &adjlA,
 				 const AdjList &adjlB,
-				 const Matrix<bool> &considered_ams,
+				 const ScoreMatrix &considered_ams,
 				 bool right,
 				 bool *tight_ptr) const {
     
@@ -207,10 +209,10 @@ AlignmentScore::bound_arcmatches(const AdjList &adjlA,
 	    
 	    
 	    infty_score_t entry=infty_score_t::neg_infty;
-	    if ( match_arrow_allowed(k,l) && considered_ams.get(arcA->idx(), arcB->idx()) ) {
-		entry = MAT_match + scoring.arcmatch(*arcA,*arcB);
+	    if ( match_arrow_allowed(k,l) && considered_ams.get(arcA->idx(), arcB->idx())!=0 ) {
+		entry = MAT_match + considered_ams.get(arcA->idx(), arcB->idx());
 	    }
-	   
+	    
 	    entry = std::max(entry,MAT[j]); // do not match arcA
 	    entry = std::max(entry,MAT[j-1]); // do not match arcB
 	    	    
@@ -243,8 +245,8 @@ AlignmentScore::bound_arcmatches(const AdjList &adjlA,
 
 score_t
 AlignmentScore::ub_match(size_type i, size_type j,
-			 const Matrix<bool> &considered_ams,
-			 const Matrix<score_t> &match_scores,
+			 const ScoreMatrix &considered_ams,
+			 const ScoreMatrix &match_scores,
 			 bool *tight) const {
     //std::cout << "AlignmentScore::ub_match "<<i<< " "<<j<<std::endl;
   
@@ -257,7 +259,7 @@ AlignmentScore::ub_match(size_type i, size_type j,
     score_t bound=match_scores(i,j);
     
     //std::cout << bound<<std::endl;
-
+    
     bound += 
 	bound_arcmatches(arc_matches.get_base_pairsA().right_adjlist(i),
 			 arc_matches.get_base_pairsB().right_adjlist(j),
@@ -296,10 +298,10 @@ AlignmentScore::all_vars_fixed() const {
 
 
 score_t 
-AlignmentScore::evaluate_tracematch(const std::vector<size_type> &traceA,
-				    const std::vector<size_type> &traceB,
-				    const Matrix<bool> &considered_ams,
-				    const Matrix<score_t> &match_scores,
+AlignmentScore::evaluate_tracematch(const SizeVec &traceA,
+				    const SizeVec &traceB,
+				    const ScoreMatrix &considered_ams,
+				    const ScoreMatrix &match_scores,
 				    size_type i,
 				    size_type j) const{
     
@@ -315,9 +317,8 @@ AlignmentScore::evaluate_tracematch(const std::vector<size_type> &traceA,
 	if ( traceA[am.arcA().left()] == am.arcB().left() ) { 
 	    // if the left ends of arcs arcA and arcB match 
 	    
-	    if (!considered_ams.get(am.arcA().idx(),am.arcB().idx())) continue;
-	    
-	    matchscore += scoring.arcmatch(am);
+	    score_t amscore=considered_ams.get(am.arcA().idx(),am.arcB().idx());
+	    matchscore += amscore;
 	}
     }
 
@@ -329,10 +330,9 @@ AlignmentScore::evaluate_tracematch(const std::vector<size_type> &traceA,
 	
 	if ( traceA[am.arcA().right()] == am.arcB().right() ) { 
 	    // if the right ends of arcs arcA and arcB  match 
-	    
-	    if (!considered_ams.get(am.arcA().idx(),am.arcB().idx())) continue;
-	    
-	    matchscore += scoring.arcmatch(am);
+
+	    score_t amscore=considered_ams.get(am.arcA().idx(),am.arcB().idx());
+	    matchscore += amscore;
 	}
     }
 
@@ -340,10 +340,10 @@ AlignmentScore::evaluate_tracematch(const std::vector<size_type> &traceA,
 }
 
 score_t
-AlignmentScore::evaluate_trace(const std::vector<size_type> &traceA,
-			       const std::vector<size_type> &traceB,
-			       const Matrix<bool> &considered_ams,
-			       const Matrix<score_t> &match_scores
+AlignmentScore::evaluate_trace(const SizeVec &traceA,
+			       const SizeVec &traceB,
+			       const ScoreMatrix &considered_ams,
+			       const ScoreMatrix &match_scores
 			       ) const {
     
     const size_t n=seqA.length();
@@ -405,10 +405,10 @@ AlignmentScore::print_vars() const {
 void
 AlignmentScore::
 forward_algorithm(Gecode::Space& home,
-			 Matrix<infty_score_t> &Fwd,
-			 Matrix<infty_score_t> &FwdA,
-			 Matrix<infty_score_t> &FwdB,
-			 const Matrix<score_t> &UBM
+			 InftyScoreMatrix &Fwd,
+			 InftyScoreMatrix &FwdA,
+			 InftyScoreMatrix &FwdB,
+			 const ScoreMatrix &UBM
 			 ) {
 
     const size_t n=seqA.length();
@@ -483,12 +483,12 @@ forward_algorithm(Gecode::Space& home,
 void
 AlignmentScore::
 backtrace_forward(Gecode::Space &home, 
-		  const Matrix<infty_score_t> &Fwd,
-		  const Matrix<infty_score_t> &FwdA,
-		  const Matrix<infty_score_t> &FwdB,
-		  const Matrix<score_t> &UBM,
-		  vector<size_type> &traceA,
-		  vector<size_type> &traceB
+		  const InftyScoreMatrix &Fwd,
+		  const InftyScoreMatrix &FwdA,
+		  const InftyScoreMatrix &FwdB,
+		  const ScoreMatrix &UBM,
+		  SizeVec &traceA,
+		  SizeVec &traceB
 		  ) {
     const int n=seqA.length();
     const int m=seqB.length();
@@ -566,10 +566,10 @@ backtrace_forward(Gecode::Space &home,
 
 void
 AlignmentScore::backward_algorithm(Gecode::Space& home, 
-				   Matrix<infty_score_t> &Bwd,
-				   Matrix<infty_score_t> &BwdA,
-				   Matrix<infty_score_t> &BwdB,
-				   const Matrix<score_t> &UBM) {
+				   InftyScoreMatrix &Bwd,
+				   InftyScoreMatrix &BwdA,
+				   InftyScoreMatrix &BwdB,
+				   const ScoreMatrix &UBM) {
     const size_t n=seqA.length();
     const size_t m=seqB.length();
 
@@ -648,13 +648,13 @@ AlignmentScore::backward_algorithm(Gecode::Space& home,
 
 Gecode::ModEvent
 AlignmentScore::prune(Gecode::Space& home, 
-		      const Matrix<infty_score_t> &Fwd,
-		      const Matrix<infty_score_t> &FwdA,
-		      //const Matrix<infty_score_t> &FwdB,
-		      const Matrix<infty_score_t> &Bwd,
-		      const Matrix<infty_score_t> &BwdA,
-		      //const Matrix<infty_score_t> &BwdB,
-		      const Matrix<score_t> &UBM
+		      const InftyScoreMatrix &Fwd,
+		      const InftyScoreMatrix &FwdA,
+		      //const InftyScoreMatrix &FwdB,
+		      const InftyScoreMatrix &Bwd,
+		      const InftyScoreMatrix &BwdA,
+		      //const InftyScoreMatrix &BwdB,
+		      const ScoreMatrix &UBM
 		      ) {
     // NOTE: using the precomputed upper bounds for matching is weaker than
     // new computation via ub_match (which may give stronger bounds due to prior pruning)
@@ -716,7 +716,7 @@ AlignmentScore::prune(Gecode::Space& home,
 		ubd = std::max(ubd,FwdA(i,j)+BwdA(i,j)-2*scoring.indel_opening());
 	    }
 	    
-	    if ( ubd.is_finite() && (ubd >= (infty_score_t) Score.min())) {
+	    if ( ubd.is_finite() && (ubd.finite_value() >= Score.min())) {
 		del=true;
 	    }
 	}
@@ -738,7 +738,7 @@ AlignmentScore::prune(Gecode::Space& home,
 		// FwdA,FwdB,BwdA,BwdB here, since i~j and Bwd(i,j) is general)
 		infty_score_t ubm = Fwd(i-1,j-1)+UBM(i,j)+Bwd(i,j);
 		
-		if ( ubm.is_finite() && (ubm >= (infty_score_t) Score.min())) {
+		if ( ubm.is_finite() && (ubm.finite_value() >= Score.min())) {
 		    match = true; // match is possible
 		}
 	    }
@@ -755,12 +755,12 @@ AlignmentScore::prune(Gecode::Space& home,
 
 void
 AlignmentScore::choice(RNAalignment &s,
-		       const Matrix<infty_score_t> &Fwd,
-		       const Matrix<infty_score_t> &Bwd,
-		       const std::vector<size_type> &traceA,
-		       const std::vector<size_type> &traceB,
-		       const Matrix<score_t> &UBM,
-		       const Matrix<score_t> &match_scores) const {
+		       const InftyScoreMatrix &Fwd,
+		       const InftyScoreMatrix &Bwd,
+		       const SizeVec &traceA,
+		       const SizeVec &traceB,
+		       const ScoreMatrix &UBM,
+		       const ScoreMatrix &match_scores) const {
     
     // NOTE: even more severe than in prune, UBM does not contain the best upper bounds anymore
     // to save time, we use UBM nevertheless instead of re-computing the bounds 
@@ -947,8 +947,8 @@ Gecode::ModEvent
 AlignmentScore::fix_vars_to_trace(Gecode::Space &home,
 				  size_t start,
 				  size_t end,
-				  const std::vector<size_type> &traceA,
-				  const std::vector<size_type> &traceB
+				  const SizeVec &traceA,
+				  const SizeVec &traceB
 				  ) {
     ////////////////////
     // some assertions
@@ -986,9 +986,9 @@ AlignmentScore::fix_vars_to_trace(Gecode::Space &home,
 
 Gecode::ModEvent
 AlignmentScore::fix_tight_runs(Gecode::Space &home,
-			       const std::vector<size_type> &traceA,
-			       const std::vector<size_type> &traceB,
-			       const Matrix<bool> &tight) {
+			       const SizeVec &traceA,
+			       const SizeVec &traceB,
+			       const BoolMatrix &tight) {
     Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
     
     size_t n=seqA.length();
@@ -1045,7 +1045,7 @@ AlignmentScore::fix_tight_runs(Gecode::Space &home,
 }
 
 void
-AlignmentScore::prune_decided_arc_matches(Matrix<bool> &considered_ams, Matrix<score_t> &match_scores) {
+AlignmentScore::prune_decided_arc_matches(ScoreMatrix &considered_ams, ScoreMatrix &match_scores) {
     const size_t n=seqA.length();
     const size_t m=seqB.length();
 
@@ -1090,19 +1090,19 @@ AlignmentScore::prune_decided_arc_matches(Matrix<bool> &considered_ams, Matrix<s
 		    bool forced_kl=match_forced(k,l);
 		    
 		    if ( forced_ij && forced_kl ) {
-			match_scores(i,j) += scoring.arcmatch(arcA,arcB);
-			match_scores(k,l) += scoring.arcmatch(arcA,arcB);
-			considered_ams.set(arcA.idx(),arcB.idx(),false); // don't consider arc match anymore
+			match_scores(i,j) += scoring.arcmatch(am);
+			match_scores(k,l) += scoring.arcmatch(am);
+			considered_ams.set(arcA.idx(),arcB.idx(),0); // don't consider arc match anymore
 		    }
 		    else if ( forced_ij && !forced_kl ) {
-			match_scores(k,l) += 2 * scoring.arcmatch(arcA,arcB);
-			considered_ams.set(arcA.idx(),arcB.idx(),false); // don't consider arc match anymore
+			match_scores(k,l) += 2 * scoring.arcmatch(am);
+			considered_ams.set(arcA.idx(),arcB.idx(),0); // don't consider arc match anymore
 		    }
 		    else if ( !forced_ij && forced_kl ) {
-			match_scores(i,j) += 2 * scoring.arcmatch(arcA,arcB);
-			considered_ams.set(arcA.idx(),arcB.idx(),false); // don't consider arc match anymore
+			match_scores(i,j) += 2 * scoring.arcmatch(am);
+			considered_ams.set(arcA.idx(),arcB.idx(),0); // don't consider arc match anymore
 		    } else {
-			considered_ams.set(arcA.idx(),arcB.idx(),true); // consider arc match anymore
+			considered_ams.set(arcA.idx(),arcB.idx(),scoring.arcmatch(am)); // consider arc match
 		    }
 		}
 	    }
@@ -1160,13 +1160,13 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     //     unassigned end or, if both ends are matched, 
     //     arbitrarily to the left end
     
-    // boolean Matrix giving for every arc match with allowed left and right match if we still consider
-    // the arc match.
+    // Matrix. contains arcmatch score of every arc match with allowed left and right match if we still consider
+    // the arc match. Contains neg_infty otherwise.
     // NOTE: entries where one match in the arc match is not allowed are undefined!!!
-    Matrix<bool> considered_ams;
+    ScoreMatrix considered_ams;
 
     // matrix for base match scores
-    Matrix<score_t> match_scores;
+    ScoreMatrix match_scores;
     
     prune_decided_arc_matches(considered_ams,match_scores);
     
@@ -1179,7 +1179,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
     // precompute upper bounds for single matches i~j
     // for use in forward and backward algorithm
-    Matrix<score_t> UBM(n+1,m+1);
+    ScoreMatrix UBM(n+1,m+1);
     for (size_t i=1; i<=n; i++) {
 	for (size_t j=MD[i].min(); j<=(size_t)MD[i].max(); j++) {
 	    
@@ -1195,10 +1195,10 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 
 
     // -------------------- RUN FORWARD ALGORITHM
-    Matrix<infty_score_t> Fwd(n+1,m+1); // ForWarD matrix
+    InftyScoreMatrix Fwd(n+1,m+1); // ForWarD matrix
     
-    Matrix<infty_score_t> FwdA(n+1,m+1); // ForWarD matrix, A_i gapped
-    Matrix<infty_score_t> FwdB(n+1,m+1); // ForWarD matrix, B_j gapped
+    InftyScoreMatrix FwdA(n+1,m+1); // ForWarD matrix, A_i gapped
+    InftyScoreMatrix FwdB(n+1,m+1); // ForWarD matrix, B_j gapped
     
     forward_algorithm(home,Fwd,FwdA,FwdB,UBM);
     
@@ -1219,8 +1219,8 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     // trace vectors. idea one entry per position gives position in
     // the other sequence to that the pos is matched or 0 (in case of
     // gap).
-    std::vector< size_type > traceA;
-    std::vector< size_type > traceB;
+    SizeVec traceA;
+    SizeVec traceB;
 
     // -------------------- BACKTRACE FWD
     backtrace_forward(home,Fwd,FwdA,FwdB,UBM,traceA,traceB);
@@ -1262,9 +1262,9 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
     
     // -------------------- RUN BACKWARD ALGORITHM
-    Matrix<infty_score_t> Bwd(n+1,m+1); 
-    Matrix<infty_score_t> BwdA(n+1,m+1); 
-    Matrix<infty_score_t> BwdB(n+1,m+1);
+    InftyScoreMatrix Bwd(n+1,m+1); 
+    InftyScoreMatrix BwdA(n+1,m+1); 
+    InftyScoreMatrix BwdB(n+1,m+1);
 
     backward_algorithm(home,Bwd,BwdA,BwdB,UBM);
     //if (debug_out) {std::cout << "Bwd"<<std::endl<<Bwd <<std::endl;}

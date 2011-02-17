@@ -70,30 +70,36 @@ AC_ARG_ENABLE([debug],
 )
 AC_MSG_RESULT($debuger)
 if test x"$debuger" = x"yes"; then
-    AC_DEFINE([DEBUG])
+    AC_DEFINE([DEBUG], [], [Define to 1 for turning on debugging])
     CPPFLAGS="$CPPFLAGS -g -Wall"
 else
-    AC_DEFINE([NDEBUG])
+    AC_DEFINE([NDEBUG], [], [Define to 1 for turning off debugging])
 fi
 
+
+# turn off deprecated warnings 
 CPPFLAGS="$CPPFLAGS -Wno-deprecated"
+
+# configure for use of LocARNA library
+PKG_CHECK_MODULES([DEPS], [LocARNA-1.0 >= 1.6.1])
 
 ## where are GECODE libs and includes
 ##
 
-AC_MSG_CHECKING([Where are GECODE libs])
+AC_MSG_CHECKING([Where are GECODE libs and headers])
 if test "$GECODE_HOME" != "" ; then
    LDFLAGS="$LDFLAGS -L$GECODE_HOME/lib"
+   CPPFLAGS="$CPPFLAGS -I$GECODE_HOME/include"
 fi
-AC_ARG_VAR(GECODE_HOME,[Home of GECODE installation (includes libs)])
+AC_ARG_VAR(GECODE_HOME,[Home of GECODE installation (libs and headers)])
 AC_MSG_RESULT([$GECODE_HOME])
 
-AC_MSG_CHECKING([Where are GECODE headers])
-if test "$GECODE_SRC_HOME" != "" ; then
-  CPPFLAGS="$CPPFLAGS -I$GECODE_SRC_HOME"
-fi
-AC_ARG_VAR(GECODE_SRC_HOME,[Home of GECODE source (contains headers)])
-AC_MSG_RESULT([$GECODE_SRC_HOME])
+#AC_MSG_CHECKING([Where are GECODE headers])
+#if test "$GECODE_SRC_HOME" != "" ; then
+#  CPPFLAGS="$CPPFLAGS -I$GECODE_SRC_HOME"
+#fi
+#AC_ARG_VAR(GECODE_SRC_HOME,[Home of GECODE source (contains headers)])
+#AC_MSG_RESULT([$GECODE_SRC_HOME])
 
 
 GECODE_LIBFLAGS="-lgecodekernel -lgecodesearch -lgecodeint -lgecodeset -lgecodeminimodel  -lgecodesupport  -lgecodegist"
@@ -147,6 +153,8 @@ AC_HEADER_STDBOOL
 AC_C_CONST
 AC_TYPE_SIZE_T
 
+
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 
 #AC_FUNC_MALLOC

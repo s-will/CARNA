@@ -1,10 +1,8 @@
+// include config.h
+#include "../config.h"
 
-#include "LocARNA/rna_data.hh"
-#include "LocARNA/ribosum.hh"
-#include "LocARNA/ribosum85_60.icc"
-#include "LocARNA/anchor_constraints.hh"
-#include "LocARNA/arc_matches.hh"
-#include "LocARNA/alignment.hh"
+// get all locarna headers
+#include <locarna.hh>
 
 #include <gecode/search.hh>
 #include <gecode/gist.hh>
@@ -15,6 +13,7 @@
 
 using namespace std;
 using namespace Gecode;
+using namespace LocARNA;
 
 
 const std::string 
@@ -82,7 +81,7 @@ bool opt_pp_out;
 //
 // Options
 //
-#include "LocARNA/options.hh"
+#include <LocARNA/options.hh>
 
 
 bool opt_help;
@@ -240,6 +239,167 @@ option_def my_options[] = {
 // end option declaration
 // ------------------------------------------------------------
 
+void RNAalignment::print_clustal_format(std::ostream& out_s) const{
+
+    bool all_assigned=true;
+
+    for (size_t i=1; i<=seqA.length(); i++) {
+	all_assigned &= MD[i].assigned();
+	all_assigned &= M[i].assigned();
+    }
+
+    if (all_assigned) {
+	// Load sequences
+	LocARNA::Sequence a;
+	LocARNA::Sequence b;
+
+	a.init_buffer(seqA);
+	b.init_buffer(seqB);
+	    
+	for (size_t i=1; i<=seqA.length(); i++) {
+	    a+=seqA[i];
+	}
+	    
+	for (size_t i=1; i<=seqB.length(); i++) {
+	    b+=seqB[i];
+	}
+
+	LocARNA::Alignment* alignment = new LocARNA::Alignment(a,b);
+	    
+	int max_col=60;
+
+	size_t j=1;
+	for (size_t i=1; i<=seqA.length(); i++) {
+	    for (;j<(size_t)MD[i].val();j++) {
+	    }
+
+	    if (M[i].val()==1) {
+		alignment->append(i,j);
+		j++;
+	    } 
+	}
+	      
+	alignment->write_clustal(out_s,max_col,(LocARNA::infty_score_t)Score.val(),
+				 false,false,true,false);
+	      
+    } 
+	
+}
+
+void
+RNAalignment::print_pp_format(std::ostream& out_s,
+			      const LocARNA::BasePairs& bpsA, const LocARNA::BasePairs& bpsB, 
+			      const LocARNA::Scoring& scoring, 
+			      const LocARNA::AnchorConstraints& seq_constraints) const { 
+    
+    bool all_assigned=true;
+    
+    for (size_t i=1; i<=seqA.length(); i++) {
+	all_assigned &= MD[i].assigned();
+	all_assigned &= M[i].assigned();
+    }
+    
+    if (all_assigned) {
+	// Load sequences
+	LocARNA::Sequence a;
+	LocARNA::Sequence b;
+	
+	a.init_buffer(seqA);
+	b.init_buffer(seqB);
+	
+	for (size_t i=1; i<=seqA.length(); i++) {
+	    a+=seqA[i];
+	}
+	
+	for (size_t i=1; i<=seqB.length(); i++) {
+	    b+=seqB[i];
+	}
+
+	LocARNA::Alignment* alignment = new LocARNA::Alignment(a,b);
+	    
+	int max_col=60;
+
+	size_t j=1;
+	for (size_t i=1; i<=seqA.length(); i++) {
+	    for (;j<(size_t)MD[i].val();j++) {
+	    }
+
+
+	    if (M[i].val()==1) {
+		alignment->append(i,j);
+		j++;
+	    } 
+	}
+	      
+	alignment->write_pp(out_s,
+			    bpsA,
+			    bpsB,
+			    scoring,
+			    seq_constraints,
+			    max_col);
+
+	      
+    } 
+	
+}
+
+
+void
+RNAalignment::print(std::ostream& out) const {
+	
+    std::cout << "VALUATION" << std::endl;
+	
+    bool all_assigned=true;
+    for (size_t i=1; i<=seqA.length(); i++) {
+	all_assigned &= MD[i].assigned();
+	all_assigned &= M[i].assigned();
+    }
+
+    if (all_assigned) {
+	// write alignment
+	LocARNA::Sequence a;
+	LocARNA::Sequence b;
+
+	a.init_buffer(seqA);
+	b.init_buffer(seqB);
+	    
+	size_t j=1;
+	for (size_t i=1; i<=seqA.length(); i++) {
+	    for (;j<(size_t)MD[i].val();j++) {
+		a+='-';
+		b+=seqB[j];
+	    }
+	    a+=seqA[i];
+	    if (M[i].val()==1) {
+		b+=seqB[j];
+		j++;
+	    } else {
+		b+='-';
+	    }
+	}
+	for (; j<=m; j++) {
+	    a+='-';
+	    b+=seqB[j];
+	}
+
+
+	a.write( std::cout );
+	b.write( std::cout );
+
+    } 
+
+    /*
+      std::cout << "Matches/Deletions:    ";
+      for (size_t i=0; i<=seqA.length(); i++) {
+      std::cout <<i<<(M[i].assigned()?(M[i].val()==0?"g":"~"):"?")<<MD[i]<<", "; 
+      }
+      std::cout << std::endl;
+      std::cout << "Score:      " << Score << std::endl;
+    */
+    if (wind!=NULL) wind->update(MD,M);
+}
+
+
 
 
 
@@ -277,16 +437,16 @@ main(int argc, char* argv[]) {
     }
 
     if (!process_success) {
-      std::cerr << "ERROR --- "
-		<<O_error_msg<<std::endl;
-      printf("USAGE: ");
-      print_usage(argv[0],my_options);
-      printf("\n");
-      exit(-1);
+	std::cerr << "ERROR --- "
+		  <<O_error_msg<<std::endl;
+	printf("USAGE: ");
+	print_usage(argv[0],my_options);
+	printf("\n");
+	exit(-1);
     }
     
     if (opt_verbose) {
-      print_options(my_options);
+	print_options(my_options);
     }
         
     //
@@ -359,6 +519,8 @@ main(int argc, char* argv[]) {
 	max_diff = std::max(max_diff, (int)(len_diff*1.1));
     }
 
+    TraceController trace_controller(seqA,seqB,NULL,max_diff,false);
+    
     // ------------------------------------------------------------
     // Handle constraints (optionally)
 
@@ -393,7 +555,7 @@ main(int argc, char* argv[]) {
 				 rnadataB,
 				 min_prob,
 				 (max_diff_am!=-1)?(size_type)max_diff_am:std::max(lenA,lenB),
-				 (max_diff!=-1)?(size_type)max_diff:std::max(lenA,lenB),
+				 trace_controller,
 				 seq_constraints
 				 );
     
@@ -429,7 +591,7 @@ main(int argc, char* argv[]) {
 				 struct_local,
 				 sequ_local,
 				 free_endgaps,
-				 max_diff, 
+				 trace_controller, 
 				 max_diff_am,
 				 0, // min_am_prob and
 				 0, // min_bm_prob are not used in Carna
@@ -472,29 +634,29 @@ main(int argc, char* argv[]) {
 	RNAalignment* ex;
 	ofstream outfile_c;
 	if (!clustal_out.empty()){
-	  outfile_c.open(clustal_out.c_str(),ios::out | ios::trunc);
-	  opt_clustal_out=true;
+	    outfile_c.open(clustal_out.c_str(),ios::out | ios::trunc);
+	    opt_clustal_out=true;
 	}
 	ofstream outfile_pp;
 	if (!pp_out.empty()){
-	  outfile_pp.open(pp_out.c_str(),ios::out | ios::trunc);
-	  opt_pp_out=true;
+	    outfile_pp.open(pp_out.c_str(),ios::out | ios::trunc);
+	    opt_pp_out=true;
 	}
 
 	while ((ex = e.next()) && (ex != NULL)) {
-	  ex->print(std::cout);
-	  if (opt_clustal_out)
-	    ex->print_clustal_format(outfile_c);	  
-	  if (opt_pp_out)
-	    ex->print_pp_format(outfile_pp,bpsA,bpsB,scoring, seq_constraints);	  
-	  delete ex;
+	    ex->print(std::cout);
+	    if (opt_clustal_out)
+		ex->print_clustal_format(outfile_c);	  
+	    if (opt_pp_out)
+		ex->print_pp_format(outfile_pp,bpsA,bpsB,scoring, seq_constraints);	  
+	    delete ex;
 	}
 	
 	if (opt_clustal_out)
-	  outfile_c.close();
+	    outfile_c.close();
 
 	if (opt_pp_out)
-	  outfile_pp.close();
+	    outfile_pp.close();
 
 	Gecode::Search::Statistics stats = e.statistics();
 	

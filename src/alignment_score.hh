@@ -13,12 +13,7 @@
 
 /*
   TODO
-
-  implement affine gap cost
-  
-  include gap cost bound into ubound!?
-  
-  
+  include gap cost bound into ubound!?  
  */
 
 class RNAalignment;
@@ -36,13 +31,20 @@ public:
     
     typedef size_t size_type;
 
+    typedef std::vector<bool> BoolVec;
+    typedef std::vector<size_type> SizeVec;
+
+    typedef LocARNA::Matrix<LocARNA::score_t> ScoreMatrix;
+    typedef LocARNA::Matrix<LocARNA::infty_score_t> InftyScoreMatrix;
+    typedef LocARNA::Matrix<bool> BoolMatrix;
+    
 private:
     
-    const Sequence &seqA;
-    const Sequence &seqB;
-    const ArcMatches &arc_matches;
-    const AlignerParams &params;
-    const Scoring &scoring;
+    const LocARNA::Sequence &seqA;
+    const LocARNA::Sequence &seqB;
+    const LocARNA::ArcMatches &arc_matches;
+    const LocARNA::AlignerParams &params;
+    const LocARNA::Scoring &scoring;
 
     //! MD[i] is the position in seqB to that position i in seqA is
     //! either matched or after that position i is deleted.  Note that
@@ -60,11 +62,11 @@ protected:
 
     /// Constructor for posting \a p
     AlignmentScore(Gecode::Space& home,
-		   const Sequence &seqA,
-		   const Sequence &seqB, 
-		   const ArcMatches &arcmatches,
-		   const AlignerParams &params,
-		   const Scoring &scoring,
+		   const LocARNA::Sequence &seqA,
+		   const LocARNA::Sequence &seqB, 
+		   const LocARNA::ArcMatches &arcmatches,
+		   const LocARNA::AlignerParams &params,
+		   const LocARNA::Scoring &scoring,
 		   IntViewArray &MD,
 		   BoolViewArray &M,
 		   Gecode::Int::IntView &Score
@@ -80,27 +82,27 @@ protected:
     //! upper bound for the contribution of matching positions i
     //! and j of respective sequences R and S
     //! if tight!=NULL && tight!=false, return in tight, whether the bound is tight
-    score_t
+    LocARNA::score_t
     ub_match(size_type i, size_type j,
-	     const Matrix<bool> &considered_ams,
-	     const Matrix<score_t> &match_scores,
+	     const ScoreMatrix &considered_ams,
+	     const ScoreMatrix &match_scores,
 	     bool *tight=NULL) const;
 
     //! calculate the score for an alingment given by trace vectors
     //! @param traceA trace vector for positions in sequence A
     //! @param traceB trace vector for positions in sequence B
-    score_t
-    evaluate_trace(const std::vector<size_type> &traceA,
-		   const std::vector<size_type> &traceB,
-		   const Matrix<bool> &considered_ams,
-		   const Matrix<score_t> &match_scores		   
+    LocARNA::score_t
+    evaluate_trace(const SizeVec &traceA,
+		   const SizeVec &traceB,
+		   const ScoreMatrix &considered_ams,
+		   const ScoreMatrix &match_scores		   
 		   ) const;
 
-    score_t
-    evaluate_tracematch(const std::vector<size_type> &traceA,
-			const std::vector<size_type> &traceB,
-			const Matrix<bool> &considered_ams,
-			const Matrix<score_t> &match_scores,
+    LocARNA::score_t
+    evaluate_tracematch(const SizeVec &traceA,
+			const SizeVec &traceB,
+			const ScoreMatrix &considered_ams,
+			const ScoreMatrix &match_scores,
 			size_type i,size_type j) const;
 
 
@@ -215,27 +217,27 @@ protected:
     //! with restriction that B_j is inserted.
     void
     forward_algorithm(Gecode::Space& home,
-			     Matrix<infty_score_t> &Fwd,
-			     Matrix<infty_score_t> &FwdA,
-			     Matrix<infty_score_t> &FwdB,
-			     const Matrix<score_t> &UBM);
+			     InftyScoreMatrix &Fwd,
+			     InftyScoreMatrix &FwdA,
+			     InftyScoreMatrix &FwdB,
+			     const ScoreMatrix &UBM);
 
     void
     backtrace_forward(Gecode::Space &home, 
-		      const Matrix<infty_score_t> &Fwd,
-		      const Matrix<infty_score_t> &FwdA,
-		      const Matrix<infty_score_t> &FwdB,
-		      const Matrix<score_t> &UBM,
-		      std::vector<size_type> &traceA,
-		      std::vector<size_type> &traceB
+		      const InftyScoreMatrix &Fwd,
+		      const InftyScoreMatrix &FwdA,
+		      const InftyScoreMatrix &FwdB,
+		      const ScoreMatrix &UBM,
+		      SizeVec &traceA,
+		      SizeVec &traceB
 		      );
 
     void
     backward_algorithm(Gecode::Space& home, 
-			      Matrix<infty_score_t> &Bwd,
-			      Matrix<infty_score_t> &BwdA,
-			      Matrix<infty_score_t> &BwdB,
-			      const Matrix<score_t> &UBM);
+			      InftyScoreMatrix &Bwd,
+			      InftyScoreMatrix &BwdA,
+			      InftyScoreMatrix &BwdB,
+			      const ScoreMatrix &UBM);
     
     //! set the MD and M variables in the range [start..end] to
     //! the values described by the trace
@@ -248,25 +250,25 @@ protected:
     fix_vars_to_trace(Gecode::Space &home,
 		      size_t start,
 		      size_t end,
-		      const std::vector<size_type> &traceA,
-		      const std::vector<size_type> &traceB);
+		      const SizeVec &traceA,
+		      const SizeVec &traceB);
 
     Gecode::ModEvent
     fix_tight_runs(Gecode::Space &home,
-		   const std::vector<size_type> &traceA,
-		   const std::vector<size_type> &traceB,
-		   const Matrix<bool> &tight);
+		   const SizeVec &traceA,
+		   const SizeVec &traceB,
+		   const BoolMatrix &tight);
 
 
     Gecode::ModEvent 
     prune(Gecode::Space& home, 
-	  const Matrix<infty_score_t> &Fwd,
-	  const Matrix<infty_score_t> &FwdA,
-	  //const Matrix<infty_score_t> &FwdB,
-	  const Matrix<infty_score_t> &Bwd,
-	  const Matrix<infty_score_t> &BwdA,
-	  //const Matrix<infty_score_t> &BwdB,
-	  const Matrix<score_t> &UBM);
+	  const InftyScoreMatrix &Fwd,
+	  const InftyScoreMatrix &FwdA,
+	  //const InftyScoreMatrix &FwdB,
+	  const InftyScoreMatrix &Bwd,
+	  const InftyScoreMatrix &BwdA,
+	  //const InftyScoreMatrix &BwdB,
+	  const ScoreMatrix &UBM);
 
     //! determines the indices of arcs that are forced to occur in any
     //! arc match.  return result in the output parameters forcedA and
@@ -275,44 +277,44 @@ protected:
     void
     determine_forced_arcs(const AdjList &adjlA,
 			  const AdjList &adjlB,
-			  std::vector<bool> &forcedA, 
-			  std::vector<bool> &forcedB,
+			  BoolVec &forcedA, 
+			  BoolVec &forcedB,
 			  bool right,
 			  bool *tight) const;
 	
     //! bound on all arcmatches to the right (left) from i,j
     //! if tight!=null and tight!=false return in tight, whether the bound is tight
     template<class AdjList>
-    score_t
+    LocARNA::score_t
     bound_arcmatches(const AdjList &adjlA, 
 		     const AdjList &adjlB,
-		     const Matrix<bool> &considered_ams,
+		     const ScoreMatrix &considered_ams,
 		     bool right,
 		     bool *tight) const;
     
     // computes choice for the current space
     void
     choice(RNAalignment &s,
-	   const Matrix<infty_score_t> &Fwd,
-	   const Matrix<infty_score_t> &Bwd,
-	   const std::vector<size_type> &traceA,
-	   const std::vector<size_type> &traceB,
-	   const Matrix<score_t> &UBM,
-	   const Matrix<score_t> &match_scores
+	   const InftyScoreMatrix &Fwd,
+	   const InftyScoreMatrix &Bwd,
+	   const SizeVec &traceA,
+	   const SizeVec &traceB,
+	   const ScoreMatrix &UBM,
+	   const ScoreMatrix &match_scores
 	   ) const;
     
     void
-    prune_decided_arc_matches(Matrix<bool> &considered_ams, Matrix<score_t> &match_scores);
+    prune_decided_arc_matches(ScoreMatrix &considered_ams, ScoreMatrix &match_scores);
 
  
 public:
     //! post constraint
     static Gecode::ExecStatus post(Gecode::Space& home,
-				   const Sequence &seqA,
-				   const Sequence &seqB,
-				   const ArcMatches &arc_matches,
-				   const AlignerParams &params,
-				   const Scoring &scoring,
+				   const LocARNA::Sequence &seqA,
+				   const LocARNA::Sequence &seqB,
+				   const LocARNA::ArcMatches &arc_matches,
+				   const LocARNA::AlignerParams &params,
+				   const LocARNA::Scoring &scoring,
 				   Gecode::IntVarArray &MD,
 				   Gecode::BoolVarArray &M,
 				   Gecode::IntVar &Score

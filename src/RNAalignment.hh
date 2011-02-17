@@ -29,8 +29,8 @@ class RNAalignment : public Gecode::Space {
       
 protected:
     
-    const Sequence &seqA; // only used for output
-    const Sequence &seqB;
+    const LocARNA::Sequence &seqA; // only used for output
+    const LocARNA::Sequence &seqB;
 
     const size_t n;
     const size_t m;
@@ -56,8 +56,8 @@ protected:
 
  
 public:
-    RNAalignment(const Sequence &seqA_, const Sequence &seqB_, const ArcMatches &arcmatches,
-		 const AlignerParams &aligner_params, const Scoring &scoring, bool opt_graphical_output)
+    RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequence &seqB_, const LocARNA::ArcMatches &arcmatches,
+		 const LocARNA::AlignerParams &aligner_params, const LocARNA::Scoring &scoring, bool opt_graphical_output)
 	:
 	seqA(seqA_),
 	seqB(seqB_),
@@ -82,10 +82,10 @@ public:
 	/*
 	//update domains of MD according to anchor constaints
 	for(size_t i=1;i<=n; i++){
-	  AnchorConstraints::size_pair_t range = 
-	    aligner_params.constraints.get_range_seqA()[i];
-	  rel(*this,MD[i],Gecode::IRT_GQ,range.first);
-	  rel(*this,MD[i],Gecode::IRT_LQ,range.second);
+	AnchorConstraints::size_pair_t range = 
+	aligner_params.constraints.get_range_seqA()[i];
+	rel(*this,MD[i],Gecode::IRT_GQ,range.first);
+	rel(*this,MD[i],Gecode::IRT_LQ,range.second);
 	}
 	*/
 
@@ -152,291 +152,149 @@ public:
 	return new RNAalignment(share,*this);
     }
     
-  void print_clustal_format(std::ostream& out_s){
+    //! print solution in clustal format 
+    void
+    print_clustal_format(std::ostream& out_s) const;
 
-	bool all_assigned=true;
-
-	for (size_t i=1; i<=seqA.length(); i++) {
-	    all_assigned &= MD[i].assigned();
-	    all_assigned &= M[i].assigned();
-	}
-
-	if (all_assigned) {
-      	    // Load sequences
-	    Sequence a;
-	    Sequence b;
-
-	    a.init_buffer(seqA);
-	    b.init_buffer(seqB);
-	    
-	    for (size_t i=1; i<=seqA.length(); i++) {
-	      a+=seqA[i];
-	    }
-	    
-	    for (size_t i=1; i<=seqB.length(); i++) {
-	      b+=seqB[i];
-	    }
-
-	    Alignment* alignment = new Alignment(a,b);
-	    
-	    int max_col=60;
-
-	      size_t j=1;
-	      for (size_t i=1; i<=seqA.length(); i++) {
-		for (;j<(size_t)MD[i].val();j++) {
-		}
-
-		if (M[i].val()==1) {
-		  alignment->append(i,j);
-		  j++;
-		} 
-	      }
-	      
-	      alignment->write_clustal(out_s,max_col,(infty_score_t)Score.val(),
-	      			       false,false,true,false);
-	      
-	} 
-	
-  }
-
-  void print_pp_format(std::ostream& out_s, const BasePairs& bpsA, const BasePairs& bpsB, 
-		       const Scoring& scoring, const AnchorConstraints& seq_constraints){
-
-	bool all_assigned=true;
-
-	for (size_t i=1; i<=seqA.length(); i++) {
-	    all_assigned &= MD[i].assigned();
-	    all_assigned &= M[i].assigned();
-	}
-
-	if (all_assigned) {
-      	    // Load sequences
-	    Sequence a;
-	    Sequence b;
-
-	    a.init_buffer(seqA);
-	    b.init_buffer(seqB);
-	    
-	    for (size_t i=1; i<=seqA.length(); i++) {
-	      a+=seqA[i];
-	    }
-	    
-	    for (size_t i=1; i<=seqB.length(); i++) {
-	      b+=seqB[i];
-	    }
-
-	    Alignment* alignment = new Alignment(a,b);
-	    
-	    int max_col=60;
-
-	      size_t j=1;
-	      for (size_t i=1; i<=seqA.length(); i++) {
-		for (;j<(size_t)MD[i].val();j++) {
-		}
-
-
-		if (M[i].val()==1) {
-		  alignment->append(i,j);
-		  j++;
-		} 
-	      }
-	      
-	      alignment->write_pp(out_s,
-				  bpsA,
-				  bpsB,
-				  scoring,
-	      			  seq_constraints,
-				  max_col);
-
-	      
-	} 
-	
-  }
-
+    //! print solution in pp format
+    void 
+    print_pp_format(std::ostream& out_s,
+		    const LocARNA::BasePairs& bpsA, const LocARNA::BasePairs& bpsB, 
+		    const LocARNA::Scoring& scoring, 
+		    const LocARNA::AnchorConstraints& seq_constraints) const;
 
     /// Print solution
-    virtual void
-    print(std::ostream& out) const {
-      
-      std::cout << "VALUATION" << std::endl;
-	
-	bool all_assigned=true;
-	for (size_t i=1; i<=seqA.length(); i++) {
-	    all_assigned &= MD[i].assigned();
-	    all_assigned &= M[i].assigned();
-	}
-
-	if (all_assigned) {
-	    // write alignment
-	    Sequence a;
-	    Sequence b;
-
-	    a.init_buffer(seqA);
-	    b.init_buffer(seqB);
-	    
-	    size_t j=1;
-	    for (size_t i=1; i<=seqA.length(); i++) {
-		for (;j<(size_t)MD[i].val();j++) {
-		    a+='-';
-		    b+=seqB[j];
-		}
-		a+=seqA[i];
-		if (M[i].val()==1) {
-		    b+=seqB[j];
-		    j++;
-		} else {
-		    b+='-';
-		}
-	    }
-	    for (; j<=m; j++) {
-		a+='-';
-		b+=seqB[j];
-	    }
-
-
-	    a.write( std::cout );
-	    b.write( std::cout );
-
-	} 
-
-	/*
-	std::cout << "Matches/Deletions:    ";
-	for (size_t i=0; i<=seqA.length(); i++) {
-	    std::cout <<i<<(M[i].assigned()?(M[i].val()==0?"g":"~"):"?")<<MD[i]<<", "; 
-	}
-	std::cout << std::endl;
-	std::cout << "Score:      " << Score << std::endl;
-	*/
-	if (wind!=NULL) wind->update(MD,M);
-    }
-
+    virtual 
+    void
+    print(std::ostream& out) const;
+    
     virtual void constrain(const Space& _best) {
 	const RNAalignment& best = static_cast<const RNAalignment&>(_best);
 	rel(*this,Score,Gecode::IRT_GR,best.Score);
     }
 
-/**
- * \brief %Custom Brancher for RNA Alignment
- *
- *
- *
- */
-class RNAalignBrancher : public Gecode::Brancher {
-private:
-    mutable size_t start;
-
-    class Choice : public Gecode::Choice {
-	// Must be refined by inheritance such that the information
-	// stored inside a choice is sufficient to redo a commit
-	// performed by a particular brancher.
+    /**
+     * \brief %Custom Brancher for RNA Alignment
+     *
+     *
+     *
+     */
+    class RNAalignBrancher : public Gecode::Brancher {
     private:
+	mutable size_t start;
+
+	class Choice : public Gecode::Choice {
+	    // Must be refined by inheritance such that the information
+	    // stored inside a choice is sufficient to redo a commit
+	    // performed by a particular brancher.
+	private:
+	public:
+	    bool enum_M;
+	    size_t pos;
+	    size_t val;
+	    size_t minval;
+	    size_t maxval;
+	
+
+	    Choice(const Brancher& b,bool enum_M_,size_t pos_, size_t val_,size_t minval_,size_t maxval_)
+		: Gecode::Choice(b,2),
+		  enum_M(enum_M_),
+		  pos(pos_),val(val_),
+		  minval(minval_),
+		  maxval(maxval_)
+	    {}
+	    virtual size_t size(void) const {
+		return sizeof(Choice);
+	    }
+	};
+
+	RNAalignBrancher(Gecode::Space &home) : Gecode::Brancher(home),start(1) {}
+	RNAalignBrancher(Gecode::Space &home,bool share,RNAalignBrancher &b) 
+	    : Gecode::Brancher(home,share,b),start(b.start) {}
+    
     public:
-	bool enum_M;
-	size_t pos;
-	size_t val;
-	size_t minval;
-	size_t maxval;
-	
 
-	Choice(const Brancher& b,bool enum_M_,size_t pos_, size_t val_,size_t minval_,size_t maxval_)
-	    : Gecode::Choice(b,2),
-	      enum_M(enum_M_),
-	      pos(pos_),val(val_),
-	      minval(minval_),
-	      maxval(maxval_)
-	{}
-	virtual size_t size(void) const {
-	    return sizeof(Choice);
+	// return true, if there are unassigned vars left for this brancher
+	//        false, otherwise
+	virtual bool status(const Gecode::Space& home) const {
+	    const RNAalignment& s = static_cast<const RNAalignment&>(home);
+	
+	    for (size_t i=start; i<(size_type)s.MD.size(); i++) {
+		if (! s.MD[i].assigned()) {start=i;return true;}
+	    }
+	    return false;
 	}
-    };
-
-    RNAalignBrancher(Gecode::Space &home) : Gecode::Brancher(home),start(1) {}
-    RNAalignBrancher(Gecode::Space &home,bool share,RNAalignBrancher &b) 
-	: Gecode::Brancher(home,share,b),start(b.start) {}
     
-public:
-
-    // return true, if there are unassigned vars left for this brancher
-    //        false, otherwise
-    virtual bool status(const Gecode::Space& home) const {
-	const RNAalignment& s = static_cast<const RNAalignment&>(home);
+	// returns choice
+	virtual Gecode::Choice* choice(Gecode::Space& home) {
+	    const RNAalignment& s = static_cast<const RNAalignment&>(home);
 	
-	for (size_t i=start; i<(size_type)s.MD.size(); i++) {
-	    if (! s.MD[i].assigned()) {start=i;return true;}
+	    // move decision about choice to the propagator
+	
+	    //std::cout << "CHOICE "<<s.pos<<" "<<s.val<<" "<<s.minval<<" "<<s.maxval<<" "<<s.MD[s.pos]<<std::endl;
+	    return new Choice(*this,s.enum_M,s.pos,s.val,s.minval,s.maxval);
 	}
-	return false;
-    }
     
-    // returns choice
-    virtual Gecode::Choice* choice(Gecode::Space& home) {
-	const RNAalignment& s = static_cast<const RNAalignment&>(home);
+	// commits the choice c and alternative a 
+	virtual Gecode::ExecStatus commit(Gecode::Space& home, 
+					  const Gecode::Choice& _c,
+					  unsigned int a) {
+	    RNAalignment& s = static_cast<RNAalignment&>(home);
+	    const Choice& c = static_cast<const Choice&>(_c);
 	
-	// move decision about choice to the propagator
-	
-	//std::cout << "CHOICE "<<s.pos<<" "<<s.val<<" "<<s.minval<<" "<<s.maxval<<" "<<s.MD[s.pos]<<std::endl;
-	return new Choice(*this,s.enum_M,s.pos,s.val,s.minval,s.maxval);
-    }
-    
-    // commits the choice c and alternative a 
-    virtual Gecode::ExecStatus commit(Gecode::Space& home, 
-				      const Gecode::Choice& _c,
-				      unsigned int a) {
-	RNAalignment& s = static_cast<RNAalignment&>(home);
-	const Choice& c = static_cast<const Choice&>(_c);
-	
-	/*
-	// split in eq and nq
-	if (a==0) {
+	    /*
+	    // split in eq and nq
+	    if (a==0) {
 	    return Gecode::me_failed(Gecode::Int::IntView(s.MD[c.pos]).eq(home, (int)c.val))
-		? Gecode::ES_FAILED
-		: Gecode::ES_OK;
-	} else {
-	    return Gecode::me_failed(Gecode::Int::IntView(s.MD[c.pos]).nq(home, (int)c.val))
-		? Gecode::ES_FAILED
-		: Gecode::ES_OK;
-	}
-	*/
-	    
-	Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
-
-	if (c.enum_M) {
-	    if (a==0) {
-		ret = Gecode::Int::BoolView(s.M[c.pos]).eq(home, 1);
-	    } else {
-		ret = Gecode::Int::BoolView(s.M[c.pos]).eq(home, 0);
-	    }
-	} else {
-	    
-	    
-	    Gecode::Iter::Ranges::Singleton r((int)c.minval,(int)c.maxval);
-
-	    if (a==0) {
-		ret = Gecode::Int::IntView(s.MD[c.pos]).inter_r(home, r,false);
-	    } else {
-		ret = Gecode::Int::IntView(s.MD[c.pos]).minus_r(home, r,false);
-		
-		// EXPERIMENTAL limiting of discrepancy
-		// s.discrepancy++;
-		// if (s.discrepancy>discrepancy_limit) { return Gecode::ES_FAILED; } 
-	    }
-	}
-	
-	return Gecode::me_failed(ret)
 	    ? Gecode::ES_FAILED
 	    : Gecode::ES_OK;
-    }
+	    } else {
+	    return Gecode::me_failed(Gecode::Int::IntView(s.MD[c.pos]).nq(home, (int)c.val))
+	    ? Gecode::ES_FAILED
+	    : Gecode::ES_OK;
+	    }
+	    */
+	    
+	    Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
+
+	    if (c.enum_M) {
+		if (a==0) {
+		    ret = Gecode::Int::BoolView(s.M[c.pos]).eq(home, 1);
+		} else {
+		    ret = Gecode::Int::BoolView(s.M[c.pos]).eq(home, 0);
+		}
+	    } else {
+	    
+	    
+		Gecode::Iter::Ranges::Singleton r((int)c.minval,(int)c.maxval);
+
+		if (a==0) {
+		    ret = Gecode::Int::IntView(s.MD[c.pos]).inter_r(home, r,false);
+		} else {
+		    ret = Gecode::Int::IntView(s.MD[c.pos]).minus_r(home, r,false);
+		
+		    // EXPERIMENTAL limiting of discrepancy
+		    // s.discrepancy++;
+		    // if (s.discrepancy>discrepancy_limit) { return Gecode::ES_FAILED; } 
+		}
+	    }
+	
+	    return Gecode::me_failed(ret)
+		? Gecode::ES_FAILED
+		: Gecode::ES_OK;
+	}
     
-    virtual Gecode::Actor* copy(Gecode::Space& home, bool share) {
-	return new (home) RNAalignBrancher(home, share, *this);
-    }
+	virtual Gecode::Actor* copy(Gecode::Space& home, bool share) {
+	    return new (home) RNAalignBrancher(home, share, *this);
+	}
     
-    static void post(RNAalignment& home) {
-	(void) new (home) RNAalignBrancher(home);
-    }
+	static void post(RNAalignment& home) {
+	    (void) new (home) RNAalignBrancher(home);
+	}
     
-    virtual size_t dispose(Gecode::Space&) {
-       return sizeof(*this);
-    }
-};
+	virtual size_t dispose(Gecode::Space&) {
+	    return sizeof(*this);
+	}
+    };
 };
 #endif // RNA_ALIGNMENT
