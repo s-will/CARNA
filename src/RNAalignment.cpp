@@ -17,7 +17,7 @@ using namespace LocARNA;
 
 
 const std::string
-VERSION_STRING = (std::string)PACKAGE_STRING; 
+VERSION_STRING = (std::string)PACKAGE_STRING;
 
 // ------------------------------------------------------------
 // BEGIN declaration of command line options
@@ -36,7 +36,7 @@ int tau_factor; // contribution of sequence similarity in an arc match (in perce
 
 //bool no_lonely_pairs; // no lonely pairs option
 
-bool struct_local; // allow exclusions for maximizing alignment of connected substructures 
+bool struct_local; // allow exclusions for maximizing alignment of connected substructures
 bool sequ_local; // maximize alignment of subsequences
 
 std::string free_endgaps; //!< specification of free end gaps,
@@ -159,7 +159,7 @@ option_def my_options[] = {
     {"exp-prob",'e',&opt_exp_prob,O_ARG_DOUBLE,&exp_prob,O_NODEFAULT,"prob","Expected probability"},
     {"tau",'t',0,O_ARG_INT,&tau_factor,"0","factor","Tau factor in percent"},
     // {"exclusion",'E',0,O_ARG_INT,&exclusion_score,"0","score","Exclusion weight"},
-    //{"stacking",0,&opt_stacking,O_NO_ARG,0,O_NODEFAULT,"","Use stacking terms (needs stack-probs by RNAfold -p2)"},   
+    //{"stacking",0,&opt_stacking,O_NO_ARG,0,O_NODEFAULT,"","Use stacking terms (needs stack-probs by RNAfold -p2)"},
 
     // {"",0,0,O_SECTION,0,O_NODEFAULT,"","Type of locality"},
 
@@ -177,18 +177,18 @@ option_def my_options[] = {
     {"write-structure",0,&opt_write_structure,O_NO_ARG,0,O_NODEFAULT,"","Write guidance structure in output"},
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Heuristics for speed accuracy trade off"},
-    
+
     {"min-prob",'p',0,O_ARG_DOUBLE,&min_prob,"0.0005","prob","Minimal probability"},
     {"max-diff-am",'D',0,O_ARG_INT,&max_diff_am,"-1","diff","Maximal difference for sizes of matched arcs"},
     {"max-diff-match",'d',0,O_ARG_INT,&max_diff,"-1","diff","Maximal difference for alignment edges"},
     //{"min-am-prob",'a',0,O_ARG_DOUBLE,&min_am_prob,"0.0005","amprob","Minimal Arc-match probability"},
     //{"min-bm-prob",'b',0,O_ARG_DOUBLE,&min_bm_prob,"0.0005","bmprob","Minimal Base-match probability"},
-    
+
     // {"",0,0,O_SECTION,0,O_NODEFAULT,"","Special sauce options"},
     // {"kbest",'k',0,O_ARG_INT,&kbest_k,"-1","k","Find k-best alignments"},
 
     // {"",0,0,O_SECTION,0,O_NODEFAULT,"","Options for controlling MEA score (experimental, under construction)."},
-    
+
     // {"mea-alignment",0,&opt_mea_alignment,O_NO_ARG,0,O_NODEFAULT,"","Do MEA alignment."},
     // {"probcons-file",0,&opt_probcons_file,O_ARG_STRING,&probcons_file,O_NODEFAULT,"file","Probcons parameter file."},
 
@@ -196,7 +196,7 @@ option_def my_options[] = {
     // {"temperature",0,0,O_ARG_INT,&temperature,"150","int","Temperature for PF-computation."},
     // {"pf-struct-weight",0,0,O_ARG_INT,&pf_struct_weight,"200","weight","Structure weight in PF-computation."},
 
-    // {"mea-gapcost",0,&opt_mea_gapcost,O_NO_ARG,0,O_NODEFAULT,"","Use gap cost in mea alignment."},   
+    // {"mea-gapcost",0,&opt_mea_gapcost,O_NO_ARG,0,O_NODEFAULT,"","Use gap cost in mea alignment."},
     // {"mea-alpha",0,0,O_ARG_INT,&mea_alpha,"0","weight","Weight alpha for MEA."},
     // {"mea-beta",0,0,O_ARG_INT,&mea_beta,"200","weight","Weight beta for MEA."},
     // {"mea-gamma",0,0,O_ARG_INT,&mea_gamma,"100","weight","Weight gamma for MEA."},
@@ -208,21 +208,21 @@ option_def my_options[] = {
     // {"write-arcmatch-scores",0,&opt_write_arcmatch_scores,O_ARG_STRING,&arcmatch_scores_file,O_NODEFAULT,"file","Write arcmatch scores (don't align!)."},
     // {"read-arcmatch-scores",0,&opt_read_arcmatch_scores,O_ARG_STRING,&arcmatch_scores_file,O_NODEFAULT,"file","Read arcmatch scores."},
     // {"read-arcmatch-probs",0,&opt_read_arcmatch_probs,O_ARG_STRING,&arcmatch_scores_file,O_NODEFAULT,"file","Read arcmatch probabilities (weight by mea_beta/100)."},
-    
+
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Constraints"},
-    
+
     //{"noLP",0,&no_lonely_pairs,O_NO_ARG,0,O_NODEFAULT,"","No lonely pairs."},
     {"anchorA",0,0,O_ARG_STRING,&seq_constraints_A,"","string","Anchor constraints sequence A."},
     {"anchorB",0,0,O_ARG_STRING,&seq_constraints_B,"","string","Anchor constraints sequence B."},
     {"ignore-constraints",0,&opt_ignore_constraints,O_NO_ARG,0,O_NODEFAULT,"","Ignore constraints in pp-file"},
-    
+
     //{"",0,0,O_SECTION_HIDE,0,O_NODEFAULT,"","Mode of operation"},
     //{"eval",0,&opt_eval,O_NO_ARG,0,O_NODEFAULT,"","Turn on evaluation mode."},
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Controlling Gecode"},
     {"c_d",0,&opt_c_d,O_ARG_INT,&c_d,O_NODEFAULT,"distance","Recomputation distance"},
     {"time-limit",0,&opt_time_limit,O_ARG_INT,&time_limit,O_NODEFAULT,"time","Search time limit"},
-    
+
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Standard options"},
 
     {"help",'h',&opt_help,O_NO_ARG,0,O_NODEFAULT,"","This help"},
@@ -242,12 +242,12 @@ option_def my_options[] = {
 
 bool RNAalignment::all_assigned() const {
     bool all_assigned=true;
-    
+
     for (size_t i=1; i<=seqA.length(); i++) {
 	all_assigned &= MD[i].assigned();
 	all_assigned &= M[i].assigned();
     }
-    
+
     return all_assigned;
 }
 
@@ -255,14 +255,14 @@ Alignment
 RNAalignment::to_alignment() const {
 
     Alignment alignment(seqA,seqB);
-    
+
     size_t j=1;
     for (size_t i=1; i<=seqA.length(); i++) {
-	
+
 	for (;j<(size_t)MD[i].val();j++) {
 	    alignment.append(-1,j);
 	}
-	
+
 	if (M[i].val()==1) {
 	    alignment.append(i,j);
 	    j++;
@@ -270,8 +270,12 @@ RNAalignment::to_alignment() const {
 	    alignment.append(i,-1);
 	}
     }
-    
-    return alignment;    
+
+    for (;j<=seqB.length();j++) {
+	alignment.append(-1,j);
+    }
+
+    return alignment;
 }
 
 void RNAalignment::print_clustal_format(std::ostream& out_s) const{
@@ -283,79 +287,79 @@ void RNAalignment::print_clustal_format(std::ostream& out_s) const{
 				     width,
 				     (LocARNA::infty_score_t)Score.val(),
 				     false,false,true,false);
-    }	
+    }
 }
 
 void
 RNAalignment::print_pp_format(std::ostream& out_s,
-			      const LocARNA::BasePairs& bpsA, const LocARNA::BasePairs& bpsB, 
-			      const LocARNA::Scoring& scoring, 
-			      const LocARNA::AnchorConstraints& seq_constraints) const { 
-    
+			      const LocARNA::BasePairs& bpsA, const LocARNA::BasePairs& bpsB,
+			      const LocARNA::Scoring& scoring,
+			      const LocARNA::AnchorConstraints& seq_constraints) const {
+
     size_t width=60;
 
     if (all_assigned()) {
-	
+
 	to_alignment().write_pp(out_s,
 				bpsA, bpsB,
 				scoring,
 				seq_constraints,
 				width);
     }
-    
+
 }
 
 
 void
 RNAalignment::print(std::ostream& out) const {
-    
+
     size_t width=60;
-    
+
     if (all_assigned()) {
-	
+
 	to_alignment().write(out,
 			     width,
 			     (LocARNA::infty_score_t)Score.val()
 			     );
-	
+
     } else {
-	
+
 	out << "Matches/Deletions:    ";
 	for (size_t i=0; i<=seqA.length(); i++) {
 	    if (!(M[i].assigned() && MD[i].assigned())) {
-		out <<i<<(M[i].assigned()?(M[i].val()==0?"g":"~"):"?")<<MD[i]<<", "; 
+		out <<i<<(M[i].assigned()?(M[i].val()==0?"g":"~"):"?")<<MD[i]<<", ";
 	    }
 	}
 	out << std::endl;
     }
-    
+
     out << "Score:      " << Score << std::endl;
-    
-    
+
+
     // ////////////////////////////////////////
     // list undecided base pairs
-    
+
     for (ArcMatches::const_iterator it=arcmatches.begin(); arcmatches.end()!=it; ++it) {
 	const Arc &arcA=it->arcA();
 	const Arc &arcB=it->arcB();
-	
-	if ( 
+
+	if (
 	    // arc match possible
 	    M[arcA.left()].in(1) && MD[arcA.left()].in(arcB.left())
 	    &&
 	    M[arcA.right()].in(1) && MD[arcA.right()].in(arcB.right())
-	    
+
 	    && // not both ends are fixed
 	    !((M[arcA.left()].assigned() && MD[arcA.left()].assigned())
 	      || (M[arcA.right()].assigned() && MD[arcA.right()].assigned()))
 	     ) {
-	    
+
 	    out << arcA << "?" << arcB <<" ";
 	}
     }
     out << std::endl;
-    
-    
+
+
     // ////////////////////////////////////////
     // update display
     if (wind!=NULL) wind->update(MD,M);
@@ -370,8 +374,8 @@ RNAalignment::print(std::ostream& out) const {
  *  \relates RNAalignment
  */
 int
-main(int argc, char* argv[]) {    
-    
+main(int argc, char* argv[]) {
+
     // ----------------------------------------
     // BEGIN process options
     //
@@ -407,32 +411,32 @@ main(int argc, char* argv[]) {
 	printf("\n");
 	exit(-1);
     }
-    
+
     if (opt_verbose) {
 	print_options(my_options);
     }
-        
+
     //
     // END process options
     // ----------------------------------------
 
-    
+
     // options consistency
     if (struct_weight<0) {
 	std::cerr << "Structure weight must be greater equal 0."<<std::endl;
 	exit(-1);
     }
 
-    
+
     // ----------------------------------------
     // BEGIN construct parameter classes from command line options
     //
-    
-    // ----------------------------------------  
+
+    // ----------------------------------------
     // Ribosum matrix
     //
     RibosumFreq *ribosum=NULL;
-    
+
     if (use_ribosum) {
 	if (ribosum_file == "RIBOSUM85_60") {
 	    if (opt_verbose) {
@@ -441,9 +445,9 @@ main(int argc, char* argv[]) {
 	    ribosum = new Ribosum85_60();
 	} else {
 	    ribosum = new RibosumFreq(ribosum_file);
-	}	
+	}
     }
-    
+
     // ----------------------------------------
     // Scoring Parameter
     //
@@ -461,17 +465,17 @@ main(int argc, char* argv[]) {
 				 false,
 				 0,0,0,0
 				 );
-    
+
     // ------------------------------------------------------------
     // Get input data and generate data objects
     //
-    
+
     RnaData rnadataA(file1,false); // false->opt_stacking not implemented in Carna
     RnaData rnadataB(file2,false); // false->opt_stacking not implemented in Carna
-    
+
     Sequence seqA=rnadataA.get_sequence();
     Sequence seqB=rnadataB.get_sequence();
-    
+
     size_type lenA=seqA.length();
     size_type lenB=seqB.length();
 
@@ -483,7 +487,7 @@ main(int argc, char* argv[]) {
     }
 
     TraceController trace_controller(seqA,seqB,NULL,max_diff,false);
-    
+
     // ------------------------------------------------------------
     // Handle constraints (optionally)
 
@@ -497,7 +501,7 @@ main(int argc, char* argv[]) {
 
     AnchorConstraints seq_constraints(seqA.length(),seqCA,
 				      seqB.length(),seqCB);
-    
+
     if (! seq_constraints.empty()) {
 	std::cerr << "WARNING: anchor constraints are currently not working and therefore are disabled."<<std::endl;
 	exit(-1);
@@ -508,7 +512,7 @@ main(int argc, char* argv[]) {
 	    std::cout << "Found sequence constraints."<<std::endl;
 	}
     }
-    
+
     // ----------------------------------------
     // construct set of relevant arc matches
     //
@@ -524,7 +528,7 @@ main(int argc, char* argv[]) {
 
     BasePairs bpsA = arc_matches->get_base_pairsA();
     BasePairs bpsB = arc_matches->get_base_pairsB();
-    
+
     // ----------------------------------------
     // report on input in verbose mode
     if (opt_verbose) {
@@ -536,16 +540,16 @@ main(int argc, char* argv[]) {
 	seqB.write(cout);
 	std::cout<<" (Length:"<< seqB.length()<<", Basepairs:"<<bpsB.num_bps() << ")" <<std::endl;
 
-	cout <<std::endl 
+	cout <<std::endl
 	     <<"Base Pair Matches: "<<arc_matches->num_arc_matches() << "." <<std::endl;
-	// cout << "Base Identity: "<<(seq_identity(seqA,seqB)*100)<<endl; 
+	// cout << "Base Identity: "<<(seq_identity(seqA,seqB)*100)<<endl;
     }
 
     // ----------------------------------------
     // construct scoring
-    
-    Scoring scoring(seqA,seqB,arc_matches,0L,&scoring_params);    
-    
+
+    Scoring scoring(seqA,seqB,arc_matches,0L,&scoring_params);
+
     // ------------------------------------------------------------
     // parameter for the alignment
     //
@@ -553,75 +557,91 @@ main(int argc, char* argv[]) {
 				 struct_local,
 				 sequ_local,
 				 free_endgaps,
-				 trace_controller, 
+				 trace_controller,
 				 max_diff_am,
 				 0, // min_am_prob and
 				 0, // min_bm_prob are not used in Carna
 				 false, // opt_stacking not implemented in Carna
 				 seq_constraints
 				 );
-    
+
+    // ------------------------------------------------------------
+    // construct the constraint model / root space
+    //
     RNAalignment* s = new RNAalignment(seqA,seqB,
 				       *arc_matches,
 				       aligner_params,scoring,
-				       opt_gist
+				       opt_gist	
 				       );
 
+    // ------------------------------------------------------------
+    // run the search engine
+    //
     if (opt_gist) {
 	Gist::Print<RNAalignment> p("Node explorer");
 	Gist::Options o;
 	o.inspect.click(&p);
-	
+
 	if (opt_c_d) {
 	    o.c_d =  c_d;
 	}
-	
+
 	//Gist::dfs(s,o);
 	Gist::bab(s,o);
     } else {
 	Search::Options o;
-	
+
 	if (opt_c_d) {
 	    o.c_d =  c_d;
 	}
-	
+
 	if (opt_time_limit) {
 	    Gecode::Search::Stop *timestop=0L;
 	    timestop = new Gecode::Search::TimeStop(time_limit);
 	    o.stop=timestop;
 	}
 
+	// construct engine
 	BAB<RNAalignment> e(s,o);
-	
-	RNAalignment* ex;
-	ofstream outfile_c;
-	if (!clustal_out.empty()){
-	    outfile_c.open(clustal_out.c_str(),ios::out | ios::trunc);
-	    opt_clustal_out=true;
-	}
-	ofstream outfile_pp;
-	if (!pp_out.empty()){
-	    outfile_pp.open(pp_out.c_str(),ios::out | ios::trunc);
-	    opt_pp_out=true;
-	}
 
+
+	// ----------------------------------------
+	// enumerate solutions
+	RNAalignment* ex;
 	while ((ex = e.next()) && (ex != NULL)) {
+	    // write each solution to stdout and optionally to files
+	    // in clustal and pp format
+
 	    ex->print(std::cout);
-	    if (opt_clustal_out)
-		ex->print_clustal_format(outfile_c);	  
-	    if (opt_pp_out)
-		ex->print_pp_format(outfile_pp,bpsA,bpsB,scoring, seq_constraints);	  
+
+	    if (!clustal_out.empty()){
+		ofstream outfile;
+		outfile.open(clustal_out.c_str(),ios::out | ios::trunc);
+		if (outfile.good()) {
+		    ex->print_clustal_format(outfile);
+		    outfile.close();
+		} else {
+		    std::cerr << "Cannot write solution to file "<<clustal_out<<std::endl;
+		}
+	    }
+
+	    if (!pp_out.empty()){
+		ofstream outfile;
+		outfile.open(pp_out.c_str(),ios::out | ios::trunc);
+		if (outfile.good()) {
+		    ex->print_pp_format(outfile,bpsA,bpsB,scoring, seq_constraints);
+		    outfile.close();
+		} else {
+		   std::cerr << "Cannot write solution to file "<<pp_out<<std::endl;
+		}
+	    }
+
 	    delete ex;
 	}
-	
-	if (opt_clustal_out)
-	    outfile_c.close();
 
-	if (opt_pp_out)
-	    outfile_pp.close();
 
 	Gecode::Search::Statistics stats = e.statistics();
-	
+
 	cout << "Nodes:  "<<stats.node << std::endl
 	     << "Fail:   "<<stats.fail << std::endl
 	     << "Depth:  "<<stats.depth << std::endl
@@ -630,7 +650,6 @@ main(int argc, char* argv[]) {
 	if (e.stopped()) {
 	    cout << "Time limit exceeded."<<std::endl;
 	}
-
 
 	if (o.stop) delete o.stop;
 

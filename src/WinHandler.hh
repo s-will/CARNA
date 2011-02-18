@@ -41,7 +41,7 @@ public:
 
     
     imageOut = CImg<>(img_x,img_y,1,3,0);
-    cout << "allocating image: " << img_x << " " << img_y << "\n";
+    //cout << "allocating image: " << img_x << " " << img_y << "\n";
     
     for (int i=0;i<img_x;i++)
       for(int j=0;j<img_y;j++)
