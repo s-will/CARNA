@@ -761,26 +761,36 @@ AlignmentScore::choice(RNAalignment &s,
 		       const ScoreMatrix &UBM,
 		       const ScoreMatrix &match_scores) const {
     
+    // We choose a variable and domain change in three steps
+    // STEP 1: decide whether to enumerate M or MD variable. In case, select M var
+    // STEP 2: select MD variable MD[pos]
+    // STEP 3: select domain change of MD[pos]
+    
     // NOTE: even more severe than in prune, UBM does not contain the best upper bounds anymore
     // to save time, we use UBM nevertheless instead of re-computing the bounds 
     
     const size_t n=seqA.length();
     const size_t m=seqB.length();
 
-    // first check whether to enumerate M variables
+    // ------------------------------------------------------------
+    // STEP 1: check whether to enumerate M variables
     //
     
     //strategy: whenever a MD[i] variable is assigned, but M[i] is not
     // enumerate M[i]
     for (size_t i=0; i<=n; i++) {
 	if (MD[i].assigned() && !M[i].assigned()) {
-	    s.pos=i;
-	    s.enum_M=true;
+	    s.choice_data.pos=i;
+	    s.choice_data.enum_M=true;
 	    return; // choice done
 	}
     }
-    s.enum_M=false;
     
+    s.choice_data.enum_M=false;
+ 
+    // ------------------------------------------------------------
+    // STEP 2: select MD[pos] 
+    //
     
     // determine position with largest weight
     
@@ -860,8 +870,17 @@ AlignmentScore::choice(RNAalignment &s,
     //	std::cout<<std::endl;
     //}
     
-    size_t val = (pos==0)?0:traceA[pos];
+    // ------------------------------------------------------------
+    // STEP 3: select domain change of MD[pos] 
+    //
     
+    // step 3a) determine value val for MD[pos] that is compatible with
+    // trace. If pos is matched val is traceA[pos]. If pos is deleted by
+    // trace, we need to determine val, such that pos is deleted between
+    // val and val+1
+    //
+    size_t val = (pos==0)?0:traceA[pos];
+    //
     if (val==0) { // trace suggests to delete pos
 	// look in traceA, where i is deleted
 	for (size_t i=pos; i>0;) {
@@ -877,55 +896,75 @@ AlignmentScore::choice(RNAalignment &s,
 	if (debug_out) print_vars();
     }
     
-
-    // copy choice to the space
-    s.pos=pos;
-    s.val=val;
     
     if (debug_out) std::cout << "Choose pos:"<<pos<<" val:"<<val<<std::endl;
-
-    // determine values for splitting choice
     
+    // step 3b) determine values for splitting choice
+    
+    // determine minimal and maximal bound for each j in MD[pos]
+    //
     score_t minb=numeric_limits<score_t>::max();
     score_t maxb=numeric_limits<score_t>::min();
 
     if (debug_out) std::cout << "CHOICE AT "<<pos <<std::endl;
-    for (size_t j=1; j<=m; j++) {
+    for (size_t j=s.MD[pos].min(); j<=(size_t)s.MD[pos].max(); j++) {
 	infty_score_t b;
 	if (s.MD[pos].in(j) && (b=Fwd(pos,j)+Bwd(pos,j)).is_finite()) {
-		minb=min(minb,b.finite_value());
-		maxb=max(maxb,b.finite_value());
+	    minb=min(minb,b.finite_value());
+	    maxb=max(maxb,b.finite_value());
 	}
     }
-
+    
+    // reserve space in bitvector values
+    //s.choice_data.values.resize(s.region,m);
+    
+    // just to be sure, clear the bit set
+    // for (size_t j=0; j<=m; j++) { s.choice_data.values.clear(j); }
+    
+    
+    float percentage=0.8;
+    // determine the j in MD[pos], where the bound is greater or equal
+    // than minb+percentage*(maxb-minb)
+    // Only determine continous range that contains all sufficiently large bounds.
+    //
     size_t minval=m+1;
     size_t maxval=0;
     
-    for (size_t j=1; j<=m; j++) {
+    
+    for (size_t j=s.MD[pos].min(); j<=(size_t)s.MD[pos].max(); j++) {
 	infty_score_t b;
 	if (s.MD[pos].in(j) && (b=Fwd(pos,j)+Bwd(pos,j)).is_finite() ) {
-	    if (debug_out) std::cout << j << ":" << b<<" ";
-	    if (b.finite_value()>=minb+0.80*(maxb-minb)) { 
+	    if (debug_out) 
+		std::cout << j << ":" << b<<" ";
+	    if (b.finite_value()>=minb+percentage*(maxb-minb)) { 
 		minval=min(minval,j);
 		maxval=max(maxval,j);
+		//s.choice_data.values.set(j);
 	    }
 	}
-    }	    
+    }
     
-    
+    // make sure that the domain gets smaller due to the above choice. If it does not
+    // split the domain in the middle.
+    //
     if (minval==(size_t)s.MD[pos].min() && maxval==(size_t)s.MD[pos].max()) {
 	
 	size_t medval = (maxval-minval)/2+minval;
 	
-	// choose according to trace
-	
+	// choose according to trace.  make sure that we always
+	// include the j in the trace for the left branch. Recall: val
+	// is the value of MD[pos] that is compatible to trace.
 	if (val<=medval) { 
+	    // clear all values larger than medval
+	    //for (size_t k=medval+1; k<=maxval; k++) { s.choice_data.values.clear(k); }
 	    maxval=medval;
 	} else {
+	    // clear all values smaller or equal medval
+	    //for (size_t k=minval; k<=medval; k++) { s.choice_data.values.clear(k); }
 	    minval=medval+1;
 	}
     }
-        
+    
     if (debug_out) { 
 	if (minval==maxval) {
 	    std::cout << " IN: " << minval;
@@ -936,9 +975,11 @@ AlignmentScore::choice(RNAalignment &s,
     }
     
     // copy choice to the space
-    s.minval=minval;
-    s.maxval=maxval;
-    
+    s.choice_data.pos=pos;
+    s.choice_data.val=val;
+    s.choice_data.minval=minval;
+    s.choice_data.maxval=maxval;
+        
 }
 
 
@@ -1120,7 +1161,7 @@ Gecode::ExecStatus
 AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
     if (debug_out) {
-	std::cout << "AlignmentScore::propagate " <<std::endl;
+	std::cerr << "AlignmentScore::propagate " <<std::endl;
     }
 
     if (debug_out) {
@@ -1319,7 +1360,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
     // test whether all vars fixed, then subsume (can we subsume earlier?)
     if ( all_vars_fixed() ) {
-	return ES_SUBSUMED(*this,dispose(home));
+	return home.ES_SUBSUMED(*this);
     }
 
     // -------------------- select CHOICE for the space

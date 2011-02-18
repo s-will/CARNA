@@ -94,13 +94,6 @@ fi
 AC_ARG_VAR(GECODE_HOME,[Home of GECODE installation (libs and headers)])
 AC_MSG_RESULT([$GECODE_HOME])
 
-#AC_MSG_CHECKING([Where are GECODE headers])
-#if test "$GECODE_SRC_HOME" != "" ; then
-#  CPPFLAGS="$CPPFLAGS -I$GECODE_SRC_HOME"
-#fi
-#AC_ARG_VAR(GECODE_SRC_HOME,[Home of GECODE source (contains headers)])
-#AC_MSG_RESULT([$GECODE_SRC_HOME])
-
 
 GECODE_LIBFLAGS="-lgecodekernel -lgecodesearch -lgecodeint -lgecodeset -lgecodeminimodel  -lgecodesupport  -lgecodegist"
 

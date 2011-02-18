@@ -37,12 +37,33 @@ protected:
     const size_t n;
     const size_t m;
     
-    bool enum_M;
-    size_t pos;
-    size_t val;
-    size_t minval;
-    size_t maxval;
-
+public:
+    //! choice class for the brancher RNAalignBranch.
+    
+    class ChoiceData {
+    public:
+	bool enum_M;
+	size_t pos;
+	size_t val;
+	size_t minval;
+	size_t maxval;
+	// Gecode::Support::BitSet<Gecode::Region> values;
+	
+	//ChoiceData(Gecode::Region &r)
+	ChoiceData()
+	    : enum_M(false), pos(0),val(0), minval(0), maxval(0)//, values(r,0)
+	{}
+	
+	//	ChoiceData(Gecode::Region &r,const ChoiceData &cd) 
+	ChoiceData(const ChoiceData &cd) 
+	    : enum_M(cd.enum_M), pos(cd.pos),val(cd.val), 
+	      minval(cd.minval), maxval(cd.maxval)//, values(r,cd.values)
+	{}
+	
+    };
+    
+protected:
+   
     WinHandler* wind;
     
     //! MD[i] is position of match or deletion in row i. We model only
@@ -55,6 +76,11 @@ protected:
 
     //size_t discrepancy; // experimental for simulating LDS
 
+    //Gecode::Region region;  //!< region of the space for allocation
+    
+    //! the propagator AlignmentScore selects the choice for the brancher RNAalignBranch 
+    //! and communcates its choice in this field of the space
+    ChoiceData choice_data;
 
  
 public:
@@ -71,7 +97,10 @@ public:
 	m(seqB.length()),
 	MD(*this,n+1,0,m), //we only need MD_1,...,MD_n ==> ignore MD_0
 	M(*this,n+1,0,1),
-	Score(*this,Gecode::Int::Limits::min,Gecode::Int::Limits::max)
+	Score(*this,Gecode::Int::Limits::min,Gecode::Int::Limits::max),
+	//region(*this),
+	//choice_data(region)
+	choice_data()
 	//, discrepancy(0)
     {
 	if (opt_graphical_output) 
@@ -140,25 +169,23 @@ public:
 	arcmatches(s.arcmatches),
 	n(s.n),
 	m(s.m),
-	enum_M(s.enum_M),
-	pos(s.pos),
-	val(s.val),
-	minval(s.minval),
-	maxval(s.maxval)
+	wind(s.wind),
+	//region(*this), // generate the region of the new space instead of copying
+	//choice_data(region,s.choice_data)
+	choice_data(s.choice_data)
 	//, discrepancy(s.discrepancy)
     {
 	MD.update(*this, share, s.MD);
 	M.update(*this, share, s.M);
 	Score.update(*this,share,s.Score);
-	wind=s.wind;
     }
     
-    /// Perform copying during cloning
+    /// Generate a new copy of the space
     virtual Gecode::Space*
     copy(bool share) {
 	return new RNAalignment(share,*this);
     }
-
+    
     //! test whether all variables M and MD are assigned
     bool all_assigned() const;
     
@@ -202,27 +229,21 @@ public:
 	    // Must be refined by inheritance such that the information
 	    // stored inside a choice is sufficient to redo a commit
 	    // performed by a particular brancher.
-	private:
+	    
 	public:
-	    bool enum_M;
-	    size_t pos;
-	    size_t val;
-	    size_t minval;
-	    size_t maxval;
-	
-
-	    Choice(const Brancher& b,bool enum_M_,size_t pos_, size_t val_,size_t minval_,size_t maxval_)
+	    const RNAalignment::ChoiceData cd;
+	    
+	    Choice(const Brancher& b, const RNAalignment::ChoiceData &cd_)
 		: Gecode::Choice(b,2),
-		  enum_M(enum_M_),
-		  pos(pos_),val(val_),
-		  minval(minval_),
-		  maxval(maxval_)
+		  cd(cd_)
 	    {}
+	    
 	    virtual size_t size(void) const {
 		return sizeof(Choice);
 	    }
 	};
-
+	
+	
 	RNAalignBrancher(Gecode::Space &home) : Gecode::Brancher(home),start(1) {}
 	RNAalignBrancher(Gecode::Space &home,bool share,RNAalignBrancher &b) 
 	    : Gecode::Brancher(home,share,b),start(b.start) {}
@@ -233,30 +254,31 @@ public:
 	//        false, otherwise
 	virtual bool status(const Gecode::Space& home) const {
 	    const RNAalignment& s = static_cast<const RNAalignment&>(home);
-	
+	    
 	    for (size_t i=start; i<(size_type)s.MD.size(); i++) {
 		if (! s.MD[i].assigned()) {start=i;return true;}
 	    }
 	    return false;
 	}
-    
+	
 	// returns choice
 	virtual Gecode::Choice* choice(Gecode::Space& home) {
 	    const RNAalignment& s = static_cast<const RNAalignment&>(home);
 	
-	    // move decision about choice to the propagator
-	
+	    // the decision about choice is moved to the propagator, which
+	    // returned it's choice in the field choice of the space s
+	    
 	    //std::cout << "CHOICE "<<s.pos<<" "<<s.val<<" "<<s.minval<<" "<<s.maxval<<" "<<s.MD[s.pos]<<std::endl;
-	    return new Choice(*this,s.enum_M,s.pos,s.val,s.minval,s.maxval);
+	    return new Choice(*this,s.choice_data);
 	}
-    
+	
 	// commits the choice c and alternative a 
 	virtual Gecode::ExecStatus commit(Gecode::Space& home, 
 					  const Gecode::Choice& _c,
 					  unsigned int a) {
 	    RNAalignment& s = static_cast<RNAalignment&>(home);
 	    const Choice& c = static_cast<const Choice&>(_c);
-	
+	    
 	    /*
 	    // split in eq and nq
 	    if (a==0) {
@@ -271,23 +293,31 @@ public:
 	    */
 	    
 	    Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
-
-	    if (c.enum_M) {
+	    
+	    const RNAalignment::ChoiceData &cd=c.cd;
+	    
+	    if (cd.enum_M) {
 		if (a==0) {
-		    ret = Gecode::Int::BoolView(s.M[c.pos]).eq(home, 1);
+		    ret = Gecode::Int::BoolView(s.M[cd.pos]).eq(home, 1);
 		} else {
-		    ret = Gecode::Int::BoolView(s.M[c.pos]).eq(home, 0);
+		    ret = Gecode::Int::BoolView(s.M[cd.pos]).eq(home, 0);
 		}
 	    } else {
 	    
-	    
-		Gecode::Iter::Ranges::Singleton r((int)c.minval,(int)c.maxval);
-
-		if (a==0) {
-		    ret = Gecode::Int::IntView(s.MD[c.pos]).inter_r(home, r,false);
-		} else {
-		    ret = Gecode::Int::IntView(s.MD[c.pos]).minus_r(home, r,false);
+		// TODO: try to replace with general set, use BitSet and
+		// value iterator
 		
+		Gecode::Iter::Ranges::Singleton r((int)cd.minval,(int)cd.maxval);
+		
+		//Gecode::Iter::Values::BitSet<Gecode::Support::BitSet<Gecode::Region> > values_iter(cd.values);
+		
+		if (a==0) {
+		    ret = Gecode::Int::IntView(s.MD[cd.pos]).inter_r(home, r,false);
+		    //ret = Gecode::Int::IntView(s.MD[cd.pos]).inter_v(home, values_iter, false);
+		} else {
+		    ret = Gecode::Int::IntView(s.MD[cd.pos]).minus_r(home, r, false);
+		    // ret = Gecode::Int::IntView(s.MD[cd.pos]).minus_v(home, values_iter, false);
+		    
 		    // EXPERIMENTAL limiting of discrepancy
 		    // s.discrepancy++;
 		    // if (s.discrepancy>discrepancy_limit) { return Gecode::ES_FAILED; } 

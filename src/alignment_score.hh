@@ -1,6 +1,10 @@
 #ifndef ALIGNMENT_SCORE_HH
 #define ALIGNMENT_SCORE_HH
 
+
+// include config.h
+#include "../config.h"
+
 #include <gecode/kernel.hh>
 #include <gecode/int.hh>
 #include <gecode/iter.hh>

@@ -11,31 +11,43 @@ carna.pl
 
 carna.pl [options] input.fa
 
-Options:
-
-=over 1
-
-=item  B<-h, --help>                    Brief help message
-
-=item  B<-m, ---man>                    Full documentation
-
-=item  B<-v, --verbose>                 Verbose
-
-=item  B<-vv, --moreverbose>            More Verbose
-
-=item  B<-q, --quiet>                   Quiet
-
-=item  B<--norun>                   Don't run carna, but generate input
-
-=item  B<--args>                        Arguments passed to carna
-
-
-=back
-
 =head1 DESCRIPTION
 
 carna.pl is a front end for the constraint RNA alignment program carna.
 Its main use is to provide an easy to use interface to carna.
+
+=head1 OPTIONS
+
+=over 8
+
+=item  B<-h, --help>
+    
+Brief help message
+
+=item  B<-m, ---man>
+
+Full documentation
+
+=item  B<-v, --verbose>
+
+Verbose
+
+=item  B<-vv, --moreverbose>
+
+More Verbose
+
+=item  B<--norun>
+
+Don't run carna, but generate input for carna. Show call with -v option.
+
+=item  B<--args>
+
+Arguments passed to carna. Call carna --help or --args '--help' for
+the available options of carna.
+
+=back
+
+=head1 INPUT FORMAT
 
 input.fa is a fasta file containing two sequences. The sequences can
 be annotated by dot-bracket strings describing crossing secondary
@@ -87,6 +99,14 @@ in lines with tags #1,...,#N. In the example, the position names are
 "A1" and "A2".  The anchor constraint tells that positions with equal
 name have to be aligned to each other.
 
+=head1 AUTHORS
+
+Alessandro Dal Palu, Mathias Moehl, Sebastian Will
+
+=head1 BUGS
+
+Once you tell us, we will hunt them.
+
 =cut
 
 
@@ -99,7 +119,7 @@ use Pod::Usage;
 
 my $help;
 my $man;
-my $quiet;
+#my $quiet;
 my $verbose;
 my $moreverbose;
 
@@ -112,7 +132,7 @@ my $carnaArgs="";
 GetOptions(
     "v|verbose" => \$verbose,
     "vv|moreverbose" => \$moreverbose,
-    "quiet" => \$quiet,   
+    #"quiet" => \$quiet,   
     "help"=> \$help,
     "man" => \$man,
     "norun" => \$norun,
