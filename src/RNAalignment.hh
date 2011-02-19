@@ -18,6 +18,7 @@ typedef std::vector<int>::size_type size_type;
 
 class RNAalignBrancher;
 
+
 /**
  * \brief %RNA Alignment
  *
@@ -38,26 +39,35 @@ protected:
     const size_t m;
     
 public:
-    //! choice class for the brancher RNAalignBranch.
     
+    //! choice class for the brancher RNAalignBranch. Confer commit
+    //! method of the brancher for how this data is actually used.
     class ChoiceData {
     public:
-	bool enum_M;
-	size_t pos;
-	size_t val;
-	size_t minval;
-	size_t maxval;
-	// Gecode::Support::BitSet<Gecode::Region> values;
 	
-	//ChoiceData(Gecode::Region &r)
+	bool enum_M;   //!< whether to enumerate an M or MD variable
+	size_t pos;    //!< position of variable in M or MD
+	size_t val;    //!< selected value of variable (unused by current strategy)
+	size_t minval; //!< minimal selected domain value
+	size_t maxval; //!< maximal selected domain value
+	std::vector<int> values; //!< selected domain values
+	
+	// An int vector is used for constructing the choice of domain values
+	// by the AlignmentScore propagator and communicating this to the
+	// space.  This is definitely not optimized for speed!!! One should
+	// better use ranges instead of single values and use specific Gecode
+	// mechanisms for doing this. Using the vector is a workaround, since
+	// I (SW) could not make Gecode's BitSet working (or what else is more
+	// appropriate?).
+	
+	
 	ChoiceData()
-	    : enum_M(false), pos(0),val(0), minval(0), maxval(0)//, values(r,0)
+	    : enum_M(false), pos(0),val(0), minval(0), maxval(0), values()
 	{}
 	
-	//	ChoiceData(Gecode::Region &r,const ChoiceData &cd) 
-	ChoiceData(const ChoiceData &cd) 
+	ChoiceData(const ChoiceData &cd)
 	    : enum_M(cd.enum_M), pos(cd.pos),val(cd.val), 
-	      minval(cd.minval), maxval(cd.maxval)//, values(r,cd.values)
+	      minval(cd.minval), maxval(cd.maxval), values(cd.values)
 	{}
 	
     };
@@ -75,8 +85,6 @@ protected:
     Gecode::IntVar Score;
 
     //size_t discrepancy; // experimental for simulating LDS
-
-    //Gecode::Region region;  //!< region of the space for allocation
     
     //! the propagator AlignmentScore selects the choice for the brancher RNAalignBranch 
     //! and communcates its choice in this field of the space
@@ -98,8 +106,6 @@ public:
 	MD(*this,n+1,0,m), //we only need MD_1,...,MD_n ==> ignore MD_0
 	M(*this,n+1,0,1),
 	Score(*this,Gecode::Int::Limits::min,Gecode::Int::Limits::max),
-	//region(*this),
-	//choice_data(region)
 	choice_data()
 	//, discrepancy(0)
     {
@@ -170,8 +176,6 @@ public:
 	n(s.n),
 	m(s.m),
 	wind(s.wind),
-	//region(*this), // generate the region of the new space instead of copying
-	//choice_data(region,s.choice_data)
 	choice_data(s.choice_data)
 	//, discrepancy(s.discrepancy)
     {
@@ -303,20 +307,21 @@ public:
 		    ret = Gecode::Int::BoolView(s.M[cd.pos]).eq(home, 0);
 		}
 	    } else {
-	    
-		// TODO: try to replace with general set, use BitSet and
-		// value iterator
 		
 		Gecode::Iter::Ranges::Singleton r((int)cd.minval,(int)cd.maxval);
 		
-		//Gecode::Iter::Values::BitSet<Gecode::Support::BitSet<Gecode::Region> > values_iter(cd.values);
+		// note the const cast is necessary due to an ill specified Gecode interface.  
+		// &cd.values[0] points to the array encapsulated by the vector,
+		// this is a HACK, since it depends on the stl implementation.
+		// However, I would rather blame Gecode to require an C-style array here:)
+		Gecode::Iter::Values::Array values_iter(const_cast<int *>(&cd.values[0]),cd.values.size());
 		
 		if (a==0) {
 		    ret = Gecode::Int::IntView(s.MD[cd.pos]).inter_r(home, r,false);
-		    //ret = Gecode::Int::IntView(s.MD[cd.pos]).inter_v(home, values_iter, false);
+		    ret = Gecode::Int::IntView(s.MD[cd.pos]).inter_v(home, values_iter, false);
 		} else {
 		    ret = Gecode::Int::IntView(s.MD[cd.pos]).minus_r(home, r, false);
-		    // ret = Gecode::Int::IntView(s.MD[cd.pos]).minus_v(home, values_iter, false);
+		    ret = Gecode::Int::IntView(s.MD[cd.pos]).minus_v(home, values_iter, false);
 		    
 		    // EXPERIMENTAL limiting of discrepancy
 		    // s.discrepancy++;

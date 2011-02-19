@@ -800,8 +800,12 @@ AlignmentScore::choice(RNAalignment &s,
     vector<score_t> weights;
     score_t maxweight=numeric_limits<score_t>::min();
     
+    size_t total_size=0; // count total domain size
+    
     weights.resize(n+1);
     for (size_t i=0; i<=n; i++) {
+	
+	total_size += MD[i].size();
 	
 	// weight by maximal base pair bound
 	weights[i]=numeric_limits<score_t>::min();
@@ -915,14 +919,9 @@ AlignmentScore::choice(RNAalignment &s,
 	}
     }
     
-    // reserve space in bitvector values
-    //s.choice_data.values.resize(s.region,m);
-    
-    // just to be sure, clear the bit set
-    // for (size_t j=0; j<=m; j++) { s.choice_data.values.clear(j); }
-    
-    
-    float percentage=0.8;
+    float fraction=total_size/(float)(n*m);
+    float percentage=max((float)0.5,1-sqrt(fraction));
+
     // determine the j in MD[pos], where the bound is greater or equal
     // than minb+percentage*(maxb-minb)
     // Only determine continous range that contains all sufficiently large bounds.
@@ -930,7 +929,9 @@ AlignmentScore::choice(RNAalignment &s,
     size_t minval=m+1;
     size_t maxval=0;
     
-    
+    s.choice_data.values.resize(0);
+    s.choice_data.values.reserve(m/4);
+
     for (size_t j=s.MD[pos].min(); j<=(size_t)s.MD[pos].max(); j++) {
 	infty_score_t b;
 	if (s.MD[pos].in(j) && (b=Fwd(pos,j)+Bwd(pos,j)).is_finite() ) {
@@ -939,7 +940,7 @@ AlignmentScore::choice(RNAalignment &s,
 	    if (b.finite_value()>=minb+percentage*(maxb-minb)) { 
 		minval=min(minval,j);
 		maxval=max(maxval,j);
-		//s.choice_data.values.set(j);
+		s.choice_data.values.push_back(j);
 	    }
 	}
     }
@@ -955,12 +956,8 @@ AlignmentScore::choice(RNAalignment &s,
 	// include the j in the trace for the left branch. Recall: val
 	// is the value of MD[pos] that is compatible to trace.
 	if (val<=medval) { 
-	    // clear all values larger than medval
-	    //for (size_t k=medval+1; k<=maxval; k++) { s.choice_data.values.clear(k); }
 	    maxval=medval;
 	} else {
-	    // clear all values smaller or equal medval
-	    //for (size_t k=minval; k<=medval; k++) { s.choice_data.values.clear(k); }
 	    minval=medval+1;
 	}
     }

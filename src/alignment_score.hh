@@ -15,6 +15,31 @@
 #include "LocARNA/scoring.hh"
 
 
+// TODO: OPTIMIZE SPEED/SPACE of propagation
+
+// Storing n^2 matrices is not necessary, since most of the time, the
+// matrices are very sparse. One can cheaply store only the defined
+// values for each matrix row. (introduce new matrix class for this purpose!)
+
+// Gecode supports optimized memory management. This is currently not
+// used for the dynamic programming matrices, which is likely to have
+// a strong negative performance impact.  Currently, the matrices are
+// allocated and freed for each call of propagate!  NOTE that we do
+// not define them as class memebers, since we don't want to copy the
+// matrices with the propagator.  Due to affine gap cost this problem
+// becomes even more severe.
+
+// Affine gap cost computation can be space optimized: apparently
+// pruning does make use of Fwd/Bwd and FwdA/BwdA but does not require
+// FwdB/BwdB.  For this reason, the full matrices Fwd,Bwd,FwdA,BwdA
+// have to be stored, but storing FwdB/BwdB is actually not
+// necessary. Since we don't need full matrices for computation, we
+// could save the space (and allocation/deallocation)!
+
+// Finally, one could combine backward computation and pruning for
+// another great speed up!
+
+
 
 class RNAalignment;
 
