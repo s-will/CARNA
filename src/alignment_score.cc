@@ -404,9 +404,9 @@ AlignmentScore::print_vars() const {
 void
 AlignmentScore::
 forward_algorithm(Gecode::Space& home,
-			 InftyScoreMatrix &Fwd,
-			 InftyScoreMatrix &FwdA,
-			 InftyScoreMatrix &FwdB,
+			 InftyScoreRRMatrix &Fwd,
+			 InftyScoreRRMatrix &FwdA,
+			 InftyScoreRRMatrix &FwdB,
 			 const ScoreMatrix &UBM
 			 ) {
 
@@ -432,6 +432,9 @@ forward_algorithm(Gecode::Space& home,
     FwdA(0,0) = (infty_score_t) (2*scoring.indel_opening()); // infty_score_t::neg_infty;
     FwdB(0,0) = (infty_score_t) (2*scoring.indel_opening()); // infty_score_t::neg_infty;
     for(size_type i=1; i<=n; i++) {
+	if (!trace_allowed(i,0)) continue; // assuming monotonicity:
+					   // one could as well break
+	
 	if (deletion_arrow_allowed(i,0)) {
 	    FwdA(i,0) = FwdA(i-1,0) + 2*scoring.gapA(i,0);
 	} else {
@@ -442,11 +445,13 @@ forward_algorithm(Gecode::Space& home,
     }
     
     for(size_type j=1; j<=max_col(0); j++) {
+	if (!trace_allowed(0,j)) continue; // assuming monotonicity:
+					   // one could as well break
+	
 	FwdA(0,j)=infty_score_t::neg_infty;
 	FwdB(0,j) = FwdB(0,j-1)  + 2*scoring.gapB(0,j);
 	Fwd(0,j) = FwdB(0,j);
     }
-    
     
     Fwd(n,m) = infty_score_t::neg_infty;
     // end init
@@ -457,6 +462,8 @@ forward_algorithm(Gecode::Space& home,
 	size_t maxj = max_col(i);
 		
 	for(size_type j=minj; j<=maxj; j++) {
+	    //note: trace_allowed(i,j) holds (by j loop range)
+
 	    Fwd(i,j) = infty_score_t::neg_infty;
 	    FwdA(i,j) = infty_score_t::neg_infty;
 	    FwdB(i,j) = infty_score_t::neg_infty;
@@ -482,9 +489,9 @@ forward_algorithm(Gecode::Space& home,
 void
 AlignmentScore::
 backtrace_forward(Gecode::Space &home, 
-		  const InftyScoreMatrix &Fwd,
-		  const InftyScoreMatrix &FwdA,
-		  const InftyScoreMatrix &FwdB,
+		  const InftyScoreRRMatrix &Fwd,
+		  const InftyScoreRRMatrix &FwdA,
+		  const InftyScoreRRMatrix &FwdB,
 		  const ScoreMatrix &UBM,
 		  SizeVec &traceA,
 		  SizeVec &traceB
@@ -565,9 +572,9 @@ backtrace_forward(Gecode::Space &home,
 
 void
 AlignmentScore::backward_algorithm(Gecode::Space& home, 
-				   InftyScoreMatrix &Bwd,
-				   InftyScoreMatrix &BwdA,
-				   InftyScoreMatrix &BwdB,
+				   InftyScoreRRMatrix &Bwd,
+				   InftyScoreRRMatrix &BwdA,
+				   InftyScoreRRMatrix &BwdB,
 				   const ScoreMatrix &UBM) {
     const size_t n=seqA.length();
     const size_t m=seqB.length();
@@ -591,6 +598,10 @@ AlignmentScore::backward_algorithm(Gecode::Space& home,
   
     for(size_type i=n; i>0;) { // for i=n-1 downto 0
 	--i;
+
+	if (!trace_allowed(i,m)) continue; // assuming monotonicity:
+					   // one could as well break
+
 	if (deletion_arrow_allowed(i+1,m)) {
 	    BwdA(i,m) = BwdA(i+1,m) + 2*scoring.gapA(i+1,m);
 	} else {
@@ -601,6 +612,10 @@ AlignmentScore::backward_algorithm(Gecode::Space& home,
     }
     for(size_type j=max_col(n); j>min_col(n);) { // for j=m-1 downto 0
 	--j;
+
+	if (!trace_allowed(n,j)) continue; // assuming monotonicity:
+					   // one could as well break
+
 	if (insertion_arrow_allowed(n,j+1)) {
 	    BwdB(n,j) = BwdB(n,j+1) + 2*scoring.gapB(n,j+1);
 	} else {
@@ -610,8 +625,7 @@ AlignmentScore::backward_algorithm(Gecode::Space& home,
 	Bwd(n,j) = BwdB(n,j);
     }
     
-    Bwd(0,0) = infty_score_t::neg_infty;
-   
+    Bwd(0,0) = infty_score_t::neg_infty;   
 
     // recurse
     for(size_type i=n; i>0;) { // for i=n-1 downto 0
@@ -622,6 +636,9 @@ AlignmentScore::backward_algorithm(Gecode::Space& home,
 		
 	for(size_type j=maxj+1; j>minj;) { // for j=maxj downto minj
 	    --j;
+	    
+	    //note: trace_allowed(i,j) holds (by j loop range)
+
 	    Bwd(i,j) = infty_score_t::neg_infty;
 	    BwdA(i,j) = infty_score_t::neg_infty;
 	    BwdB(i,j) = infty_score_t::neg_infty;
@@ -647,12 +664,12 @@ AlignmentScore::backward_algorithm(Gecode::Space& home,
 
 Gecode::ModEvent
 AlignmentScore::prune(Gecode::Space& home, 
-		      const InftyScoreMatrix &Fwd,
-		      const InftyScoreMatrix &FwdA,
-		      //const InftyScoreMatrix &FwdB,
-		      const InftyScoreMatrix &Bwd,
-		      const InftyScoreMatrix &BwdA,
-		      //const InftyScoreMatrix &BwdB,
+		      const InftyScoreRRMatrix &Fwd,
+		      const InftyScoreRRMatrix &FwdA,
+		      //const InftyScoreRRMatrix &FwdB,
+		      const InftyScoreRRMatrix &Bwd,
+		      const InftyScoreRRMatrix &BwdA,
+		      //const InftyScoreRRMatrix &BwdB,
 		      const ScoreMatrix &UBM
 		      ) {
     // NOTE: using the precomputed upper bounds for matching is weaker than
@@ -754,8 +771,8 @@ AlignmentScore::prune(Gecode::Space& home,
 
 void
 AlignmentScore::choice(RNAalignment &s,
-		       const InftyScoreMatrix &Fwd,
-		       const InftyScoreMatrix &Bwd,
+		       const InftyScoreRRMatrix &Fwd,
+		       const InftyScoreRRMatrix &Bwd,
 		       const SizeVec &traceA,
 		       const SizeVec &traceB,
 		       const ScoreMatrix &UBM,
@@ -789,7 +806,7 @@ AlignmentScore::choice(RNAalignment &s,
     s.choice_data.enum_M=false;
  
     // ------------------------------------------------------------
-    // STEP 2: select MD[pos] 
+    // STEP 2: select pos / variable MD[pos] 
     //
     
     // determine position with largest weight
@@ -861,11 +878,13 @@ AlignmentScore::choice(RNAalignment &s,
     
     assert(best_run_len>0); // otherwise status() is incorrect
     
+    // select mid position
     pos=best_left_end + (best_run_len/2); // split the longest run
     
+
     assert(0<=pos && pos<=n);
-
-
+    
+    
     // print trace (DEBUGGING)
     //if (debug_out) {std::cout << "TRACE"<<std::endl;
     //	for (size_type i=1; i<=n; ++i ) {
@@ -1229,13 +1248,19 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     }
     ////////////////////////////////////////////////////////////
 
-
-
-    // -------------------- RUN FORWARD ALGORITHM
-    InftyScoreMatrix Fwd(n+1,m+1); // ForWarD matrix
+    // construct range vector for DP matrices
+    std::vector<RowRangeMatrix<infty_score_t>::size_pair_type> ranges;
+    for (size_t i=0; i<(size_t)MD.size(); i++) {
+	ranges.push_back(RowRangeMatrix<infty_score_t>::size_pair_type(min_col(i),max_col(i)));
+    }
     
-    InftyScoreMatrix FwdA(n+1,m+1); // ForWarD matrix, A_i gapped
-    InftyScoreMatrix FwdB(n+1,m+1); // ForWarD matrix, B_j gapped
+    // -------------------- RUN FORWARD ALGORITHM
+    //InftyScoreRRMatrix Fwd(n+1,m+1); // ForWarD matrix
+    //InftyScoreRRMatrix FwdA(n+1,m+1); // ForWarD matrix, A_i gapped
+    //InftyScoreRRMatrix FwdB(n+1,m+1); // ForWarD matrix, B_j gapped
+    InftyScoreRRMatrix Fwd(ranges); // ForWarD matrix
+    InftyScoreRRMatrix FwdA(ranges); // ForWarD matrix, A_i gapped
+    InftyScoreRRMatrix FwdB(ranges); // ForWarD matrix, B_j gapped
     
     forward_algorithm(home,Fwd,FwdA,FwdB,UBM);
     
@@ -1299,9 +1324,12 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
     
     // -------------------- RUN BACKWARD ALGORITHM
-    InftyScoreMatrix Bwd(n+1,m+1); 
-    InftyScoreMatrix BwdA(n+1,m+1); 
-    InftyScoreMatrix BwdB(n+1,m+1);
+    //InftyScoreMatrix Bwd(n+1,m+1); 
+    //InftyScoreMatrix BwdA(n+1,m+1); 
+    //InftyScoreMatrix BwdB(n+1,m+1);
+    InftyScoreRRMatrix Bwd(ranges); 
+    InftyScoreRRMatrix BwdA(ranges); 
+    InftyScoreRRMatrix BwdB(ranges);
 
     backward_algorithm(home,Bwd,BwdA,BwdB,UBM);
     //if (debug_out) {std::cout << "Bwd"<<std::endl<<Bwd <<std::endl;}

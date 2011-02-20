@@ -14,12 +14,18 @@
 #include "LocARNA/rna_data.hh"
 #include "LocARNA/scoring.hh"
 
+#include "row_range_matrix.hh"
+
 
 // TODO: OPTIMIZE SPEED/SPACE of propagation
 
 // Storing n^2 matrices is not necessary, since most of the time, the
 // matrices are very sparse. One can cheaply store only the defined
 // values for each matrix row. (introduce new matrix class for this purpose!)
+// DONE => use class RowRangeMatrix
+// This optimization seems to be very effective, which
+// emphasizes the importance of optimizing space and memory management.
+
 
 // Gecode supports optimized memory management. This is currently not
 // used for the dynamic programming matrices, which is likely to have
@@ -61,6 +67,7 @@ public:
 
     typedef LocARNA::Matrix<LocARNA::score_t> ScoreMatrix;
     typedef LocARNA::Matrix<LocARNA::infty_score_t> InftyScoreMatrix;
+    typedef RowRangeMatrix<LocARNA::infty_score_t> InftyScoreRRMatrix;
     typedef LocARNA::Matrix<bool> BoolMatrix;
     
 private:
@@ -181,6 +188,11 @@ protected:
 	
 	return max_c;
     }
+
+    //! test whether trace through (i,j) is allowed
+    bool trace_allowed(size_t i, size_t j) const {
+	return min_col(i)<=j && j<=max_col(i);
+    }
     
     // test whether match/insertion/deletion at (i,j) is allowed due
     // to the variables M and MD. If allowed, the methods guarantee
@@ -242,16 +254,16 @@ protected:
     //! with restriction that B_j is inserted.
     void
     forward_algorithm(Gecode::Space& home,
-			     InftyScoreMatrix &Fwd,
-			     InftyScoreMatrix &FwdA,
-			     InftyScoreMatrix &FwdB,
+			     InftyScoreRRMatrix &Fwd,
+			     InftyScoreRRMatrix &FwdA,
+			     InftyScoreRRMatrix &FwdB,
 			     const ScoreMatrix &UBM);
 
     void
     backtrace_forward(Gecode::Space &home, 
-		      const InftyScoreMatrix &Fwd,
-		      const InftyScoreMatrix &FwdA,
-		      const InftyScoreMatrix &FwdB,
+		      const InftyScoreRRMatrix &Fwd,
+		      const InftyScoreRRMatrix &FwdA,
+		      const InftyScoreRRMatrix &FwdB,
 		      const ScoreMatrix &UBM,
 		      SizeVec &traceA,
 		      SizeVec &traceB
@@ -259,9 +271,9 @@ protected:
 
     void
     backward_algorithm(Gecode::Space& home, 
-			      InftyScoreMatrix &Bwd,
-			      InftyScoreMatrix &BwdA,
-			      InftyScoreMatrix &BwdB,
+			      InftyScoreRRMatrix &Bwd,
+			      InftyScoreRRMatrix &BwdA,
+			      InftyScoreRRMatrix &BwdB,
 			      const ScoreMatrix &UBM);
     
     //! set the MD and M variables in the range [start..end] to
@@ -287,12 +299,12 @@ protected:
 
     Gecode::ModEvent 
     prune(Gecode::Space& home, 
-	  const InftyScoreMatrix &Fwd,
-	  const InftyScoreMatrix &FwdA,
-	  //const InftyScoreMatrix &FwdB,
-	  const InftyScoreMatrix &Bwd,
-	  const InftyScoreMatrix &BwdA,
-	  //const InftyScoreMatrix &BwdB,
+	  const InftyScoreRRMatrix &Fwd,
+	  const InftyScoreRRMatrix &FwdA,
+	  //const InftyScoreRRMatrix &FwdB,
+	  const InftyScoreRRMatrix &Bwd,
+	  const InftyScoreRRMatrix &BwdA,
+	  //const InftyScoreRRMatrix &BwdB,
 	  const ScoreMatrix &UBM);
 
     //! determines the indices of arcs that are forced to occur in any
@@ -320,8 +332,8 @@ protected:
     // computes choice for the current space
     void
     choice(RNAalignment &s,
-	   const InftyScoreMatrix &Fwd,
-	   const InftyScoreMatrix &Bwd,
+	   const InftyScoreRRMatrix &Fwd,
+	   const InftyScoreRRMatrix &Bwd,
 	   const SizeVec &traceA,
 	   const SizeVec &traceB,
 	   const ScoreMatrix &UBM,

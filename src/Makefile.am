@@ -7,6 +7,6 @@ bin_PROGRAMS = carna #exampleVisualization
 #	WinDisplay.cpp 
 
 carna_SOURCES = RNAalignment.hh RNAalignment.cpp WinHandler.hh	\
-		alignment_score.hh alignment_score.cc
+		alignment_score.hh alignment_score.cc row_range_matrix.hh
 
 #Propagator_example/Neq.cc Propagator_example/Neq.hh 
