@@ -938,8 +938,9 @@ AlignmentScore::choice(RNAalignment &s,
 	}
     }
     
-    float fraction=total_size/(float)(n*m);
-    float percentage=max((float)0.5,1-sqrt(fraction));
+    // use strategy with fixed percentage !?
+    // float fraction=total_size/(float)(n*m);
+    float percentage=0.8; // max((float)0.5,1-sqrt(fraction));
 
     // determine the j in MD[pos], where the bound is greater or equal
     // than minb+percentage*(maxb-minb)
