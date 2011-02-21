@@ -199,7 +199,7 @@ option_def my_options[] = {
 
     {"min-prob",'p',0,O_ARG_DOUBLE,&min_prob,"0.0005","prob","Minimal probability"},
     {"max-diff-am",'D',0,O_ARG_INT,&max_diff_am,"-1","diff","Maximal difference for sizes of matched arcs"},
-    {"max-diff-match",'d',0,O_ARG_INT,&max_diff,"-1","diff","Maximal difference for alignment edges"},
+    {"max-diff",'d',0,O_ARG_INT,&max_diff,"-1","diff","Maximal difference for alignment cuts"},
     //{"min-am-prob",'a',0,O_ARG_DOUBLE,&min_am_prob,"0.0005","amprob","Minimal Arc-match probability"},
     //{"min-bm-prob",'b',0,O_ARG_DOUBLE,&min_bm_prob,"0.0005","bmprob","Minimal Base-match probability"},
 
@@ -369,10 +369,6 @@ main(int argc, char* argv[]) {
 
     // --------------------
     // handle max_diff restriction
-    if (max_diff!=-1) {
-	int len_diff = (lenA>lenB) ? (lenA-lenB) : (lenB-lenA);
-	max_diff = std::max(max_diff, (int)(len_diff*1.1));
-    }
 
     TraceController trace_controller(seqA,seqB,NULL,max_diff,false);
 

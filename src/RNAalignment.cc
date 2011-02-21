@@ -45,14 +45,42 @@ RNAalignment::RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequen
        The trace controller gives information about the possible
        trace cells in each row of the alignment matrix.
     
-       Assume in rows i-1 and i, we have the trace cells
+       We show the relation of trace controller and domains by example:
+       Assume in rows i-1 and i, we have the trace cells as marked by +
     
+          |0123456789
+       i-1|   ++++
+       i  |     ++++
        
-       ==============
-       !!!  TODO  !!!
-       ==============
-    */
+       I.e., tc.min_col(i-1)=3, tc.max_col(i-1)=6, tc.min_col(i)=5, tc.max_col(i)=8
+       We conclude that
+       dom(MD[i]) = [5..7] ! ( there is no deletion or match of i after or with j=8
+       and dom(M[i])=[0..1]
 
+       From
+          |0123456789
+       i-1|  +++
+       i  |     ++++
+       
+       we conclude that
+       dom(MD[i])={5} and dom(M[i])={1}
+    */
+    const LocARNA::TraceController &tc = aligner_params.trace_controller;
+
+    for (size_t i=1; i<=n; i++) {
+	// MD[i] :>= tc.min_col(i)
+	rel(*this,MD[i],Gecode::IRT_GQ,tc.min_col(i));
+	// MD[i] :<= tc.max_col(i-1)+1
+	rel(*this,MD[i],Gecode::IRT_LQ,tc.max_col(i-1));
+	
+	if (tc.max_col(i-1)==tc.min_col(i)+1) {
+	    rel(*this,M[i],Gecode::IRT_EQ,1); // M[i]:=1
+	}
+	if (tc.min_col(i-1)==tc.min_col(i) && tc.min_col(i)==tc.max_col(i)) {
+	    rel(*this,M[i],Gecode::IRT_EQ,0); // M[i]:=0
+	}
+    }
+    
     
 
     AlignmentScore::post(*this,seqA,seqB,arcmatches,aligner_params,scoring,
