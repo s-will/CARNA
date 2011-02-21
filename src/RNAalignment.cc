@@ -40,6 +40,21 @@ RNAalignment::RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequen
     }
     */
 
+    /* restrict domains according to TraceController
+       
+       The trace controller gives information about the possible
+       trace cells in each row of the alignment matrix.
+    
+       Assume in rows i-1 and i, we have the trace cells
+    
+       
+       ==============
+       !!!  TODO  !!!
+       ==============
+    */
+
+    
+
     AlignmentScore::post(*this,seqA,seqB,arcmatches,aligner_params,scoring,
 			 MD,M,Score);
 	

@@ -93,6 +93,15 @@ protected:
     AlignmentScore(Gecode::Space& home, bool share, AlignmentScore& p);
 
     /// Constructor for posting \a p
+    //! @param *this home space
+    //! @param seqA sequence A
+    //! @param seqB sequence B
+    //! @param arcmatches locarna object defining arc matches
+    //! @param aligner_params locarna object defining parameters for the alignment
+    //! @param scoring locarna object defining the scoring scheme
+    //! @param MD constraint variables defining "match or deletion" position in seqB for each position of seqA
+    //! @param M constraint variables defining whether MD refers to match (or deletion)
+    //! @param Score constraint variable for alignment score
     AlignmentScore(Gecode::Space& home,
 		   const LocARNA::Sequence &seqA,
 		   const LocARNA::Sequence &seqB, 
@@ -108,6 +117,7 @@ protected:
     
 protected:
 
+    //! print constraint variables MD,M,Score for debugging
     void
     print_vars() const;
     
@@ -130,14 +140,13 @@ protected:
 		   const ScoreMatrix &match_scores		   
 		   ) const;
 
+    //! evaluate one match in the trace
     LocARNA::score_t
     evaluate_tracematch(const SizeVec &traceA,
 			const SizeVec &traceB,
 			const ScoreMatrix &considered_ams,
 			const ScoreMatrix &match_scores,
 			size_type i,size_type j) const;
-
-
     
     //! test whether a match is guaranteed (i.e. forced) by the constraint store
     //! @param i position in sequence 1
@@ -290,6 +299,9 @@ protected:
 		      const SizeVec &traceA,
 		      const SizeVec &traceB);
 
+    //! determine the runs in the trace that are 'tight' and therefore
+    //! have to occur in any solution as in the trace. Then, fix the
+    //! constraint variables accordingly.
     Gecode::ModEvent
     fix_tight_runs(Gecode::Space &home,
 		   const SizeVec &traceA,
@@ -297,6 +309,9 @@ protected:
 		   const BoolMatrix &tight);
 
 
+    //! prune the domains of the constraint variables M and MD
+    //! according to the bounds derivable from forward and backward
+    //! matrices.
     Gecode::ModEvent 
     prune(Gecode::Space& home, 
 	  const InftyScoreRRMatrix &Fwd,
@@ -329,7 +344,7 @@ protected:
 		     bool right,
 		     bool *tight) const;
     
-    // computes choice for the current space
+    // compute choice for the current space
     void
     choice(RNAalignment &s,
 	   const InftyScoreRRMatrix &Fwd,
@@ -339,13 +354,25 @@ protected:
 	   const ScoreMatrix &UBM,
 	   const ScoreMatrix &match_scores
 	   ) const;
-    
+
+    //! determine arc matches where the match of the left or right ends is determined
+    //! and remove them from further consideration. In such cases, the similarity of the
+    //! arc match can be transfered to the match similarity of the undetermined ends
     void
     prune_decided_arc_matches(ScoreMatrix &considered_ams, ScoreMatrix &match_scores);
-
  
 public:
-    //! post constraint
+    
+    //! post the alignment score constraint
+    //! @param *this home space
+    //! @param seqA sequence A
+    //! @param seqB sequence B
+    //! @param arcmatches locarna object defining arc matches
+    //! @param aligner_params locarna object defining parameters for the alignment
+    //! @param scoring locarna object defining the scoring scheme
+    //! @param MD constraint variables defining "match or deletion" position in seqB for each position of seqA
+    //! @param M constraint variables defining whether MD refers to match (or deletion)
+    //! @param Score constraint variable for alignment score
     static Gecode::ExecStatus post(Gecode::Space& home,
 				   const LocARNA::Sequence &seqA,
 				   const LocARNA::Sequence &seqB,
