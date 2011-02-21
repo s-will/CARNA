@@ -1,12 +1,9 @@
 AM_CPPFLAGS = $(DEPS_CFLAGS)
 carna_LDADD = $(DEPS_LIBS)
 
-bin_PROGRAMS = carna #exampleVisualization
+bin_PROGRAMS = carna
 
-#exampleVisualization_SOURCES = exampleVisualization.cpp  \
-#	WinDisplay.cpp 
+carna_SOURCES = carna.cc RNAalignment.hh RNAalignment.cc WinHandler.hh	\
+		WinHandler.cc alignment_score.hh alignment_score.cc	\
+		row_range_matrix.hh
 
-carna_SOURCES = RNAalignment.hh RNAalignment.cpp WinHandler.hh	\
-		alignment_score.hh alignment_score.cc row_range_matrix.hh
-
-#Propagator_example/Neq.cc Propagator_example/Neq.hh 

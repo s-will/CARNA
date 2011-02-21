@@ -1,15 +1,35 @@
+/*
+  CARNA --- Constraint-based Alignment of RNA
+  
+  A constraint-programming based approach for alignment of RNA with
+  structures of unlimited complexity.
+  
+  Authors: Alessandor Dal Palu, Mathias Moehl, Sebastian Will
+
+
+  The Carna-algorithm was published at the conference CP 2010.
+  
+  Alessandro Dal Palu, Mathias Möhl, and Sebastian Will.  A propagator
+  for maximum weight string alignment with arbitrary pairwise
+  dependencies. In Proceedings of the 16th International Conference on
+  Principles and Practice of Constraint Programming (CP-2010), page 8,
+  2010.
+
+*/
+
+
 // include config.h
 #include "../config.h"
 
 // get all locarna headers
 #include <locarna.hh>
+#include <LocARNA/ribosum85_60.icc>
 
 #include <gecode/search.hh>
 #include <gecode/gist.hh>
 #include <gecode/minimodel.hh>
 
 #include "RNAalignment.hh"
-
 
 using namespace std;
 using namespace Gecode;
@@ -237,137 +257,6 @@ option_def my_options[] = {
 
 // end option declaration
 // ------------------------------------------------------------
-
-
-bool RNAalignment::all_assigned() const {
-    bool all_assigned=true;
-
-    for (size_t i=1; i<=seqA.length(); i++) {
-	all_assigned &= MD[i].assigned();
-	all_assigned &= M[i].assigned();
-    }
-
-    return all_assigned;
-}
-
-Alignment
-RNAalignment::to_alignment() const {
-
-    Alignment alignment(seqA,seqB);
-
-    size_t j=1;
-    for (size_t i=1; i<=seqA.length(); i++) {
-
-	for (;j<(size_t)MD[i].val();j++) {
-	    alignment.append(-1,j);
-	}
-
-	if (M[i].val()==1) {
-	    alignment.append(i,j);
-	    j++;
-	} else {
-	    alignment.append(i,-1);
-	}
-    }
-
-    for (;j<=seqB.length();j++) {
-	alignment.append(-1,j);
-    }
-
-    return alignment;
-}
-
-void RNAalignment::print_clustal_format(std::ostream& out_s) const{
-
-    size_t width=60;
-
-    if (all_assigned()) {
-	to_alignment().write_clustal(out_s,
-				     width,
-				     (LocARNA::infty_score_t)Score.val(),
-				     false,false,true,false);
-    }
-}
-
-void
-RNAalignment::print_pp_format(std::ostream& out_s,
-			      const LocARNA::BasePairs& bpsA, const LocARNA::BasePairs& bpsB,
-			      const LocARNA::Scoring& scoring,
-			      const LocARNA::AnchorConstraints& seq_constraints) const {
-
-    size_t width=60;
-
-    if (all_assigned()) {
-
-	to_alignment().write_pp(out_s,
-				bpsA, bpsB,
-				scoring,
-				seq_constraints,
-				width);
-    }
-
-}
-
-
-void
-RNAalignment::print(std::ostream& out) const {
-
-    size_t width=60;
-
-    if (all_assigned()) {
-
-	to_alignment().write(out,
-			     width,
-			     (LocARNA::infty_score_t)Score.val()
-			     );
-
-    } else {
-
-	out << "Matches/Deletions:    ";
-	for (size_t i=0; i<=seqA.length(); i++) {
-	    if (!(M[i].assigned() && MD[i].assigned())) {
-		out <<i<<(M[i].assigned()?(M[i].val()==0?"g":"~"):"?")<<MD[i]<<", ";
-	    }
-	}
-	out << std::endl;
-    }
-
-    out << "Score:      " << Score << std::endl;
-
-
-    // ////////////////////////////////////////
-    // list undecided base pairs
-
-    for (ArcMatches::const_iterator it=arcmatches.begin(); arcmatches.end()!=it; ++it) {
-	const Arc &arcA=it->arcA();
-	const Arc &arcB=it->arcB();
-
-	if (
-	    // arc match possible
-	    M[arcA.left()].in(1) && MD[arcA.left()].in(arcB.left())
-	    &&
-	    M[arcA.right()].in(1) && MD[arcA.right()].in(arcB.right())
-
-	    && // not both ends are fixed
-	    !((M[arcA.left()].assigned() && MD[arcA.left()].assigned())
-	      || (M[arcA.right()].assigned() && MD[arcA.right()].assigned()))
-	     ) {
-
-	    out << arcA << "?" << arcB <<" ";
-	}
-    }
-    out << std::endl;
-
-
-    // ////////////////////////////////////////
-    // update display
-    if (wind!=NULL) wind->update(MD,M);
-
-}
-
-
-
-
 
 /** \brief Main-function
  *  \relates RNAalignment
