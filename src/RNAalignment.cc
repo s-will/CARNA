@@ -30,16 +30,16 @@ RNAalignment::RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequen
     rel(*this,MD[0],Gecode::IRT_EQ,0);
     rel(*this,M[0],Gecode::IRT_EQ,1);
 	
-    /*
-    //update domains of MD according to anchor constaints
+    // impose anchor constaints
     for(size_t i=1;i<=n; i++){
-    AnchorConstraints::size_pair_t range = 
-    aligner_params.constraints.get_range_seqA()[i];
-    rel(*this,MD[i],Gecode::IRT_GQ,range.first);
-    rel(*this,MD[i],Gecode::IRT_LQ,range.second);
+	int j=aligner_params.constraints.match_to_a(i);
+	if (j>0) {
+	    // there is an anchor i~j
+	    rel(*this,MD[i],Gecode::IRT_EQ,j);
+	    rel(*this,M[i],Gecode::IRT_EQ,1);
+	}
     }
-    */
-
+    
     /* restrict domains according to TraceController
        
        The trace controller gives information about the possible

@@ -386,11 +386,6 @@ main(int argc, char* argv[]) {
     AnchorConstraints seq_constraints(seqA.length(),seqCA,
 				      seqB.length(),seqCB);
 
-    if (! seq_constraints.empty()) {
-	std::cerr << "WARNING: anchor constraints are currently not working and therefore are disabled."<<std::endl;
-	exit(-1);
-    }
-
     if (opt_verbose) {
 	if (! seq_constraints.empty()) {
 	    std::cout << "Found sequence constraints."<<std::endl;
