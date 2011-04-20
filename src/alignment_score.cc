@@ -9,6 +9,7 @@
 #include <assert.h>
 
 using namespace LocARNA;
+using namespace std;
 
 const bool debug_out=false;
 //const bool debug_out=true;

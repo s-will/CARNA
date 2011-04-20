@@ -1,21 +1,24 @@
 #ifndef RNA_ALIGNMENT
 #define RNA_ALIGNMENT
 
+#include "config.h"
+
 #include <fstream>
 #include <iostream>
+
+#ifdef HAVE_GIST
 #include "WinHandler.hh"
+#endif // HAVE_GIST
+
 #include "alignment_score.hh"
 
 #include "locarna.hh"
 
-
 // EXPERIMENTAL: therefore only global var
 //const size_t discrepancy_limit=7;
 
-
 const bool custom_branching=true;
 
-typedef std::vector<int>::size_type size_type;
 
 class RNAalignBrancher;
 
@@ -75,7 +78,10 @@ public:
     
 protected:
    
+#ifdef HAVE_GIST
     WinHandler* wind;
+#endif
+
     
     //! MD[i] is position of match or deletion in row i. We model only
     //! match and deletion positions explicitely. Insertion positions are
@@ -109,7 +115,9 @@ public:
 	arcmatches(s.arcmatches),
 	n(s.n),
 	m(s.m),
+#ifdef HAVE_GIST
 	wind(s.wind),
+#endif
 	choice_data(s.choice_data)
 	//, discrepancy(s.discrepancy)
     {
@@ -193,7 +201,7 @@ public:
 	virtual bool status(const Gecode::Space& home) const {
 	    const RNAalignment& s = static_cast<const RNAalignment&>(home);
 	    
-	    for (size_t i=start; i<(size_type)s.MD.size(); i++) {
+	    for (size_t i=start; i<(size_t)s.MD.size(); i++) {
 		if (! s.MD[i].assigned()) {start=i;return true;}
 	    }
 	    return false;

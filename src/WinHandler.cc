@@ -1,3 +1,7 @@
+#include "config.h"
+
+#ifdef HAVE_GIST
+
 #include "WinHandler.hh"
 
 WinHandler::WinHandler(int Rows, int Cols, string t)
@@ -223,3 +227,5 @@ void WinHandler::do_work()
     }
 
 }                    
+
+#endif //HAVE_GIST

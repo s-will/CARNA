@@ -26,8 +26,11 @@
 #include <LocARNA/ribosum85_60.icc>
 
 #include <gecode/search.hh>
-#include <gecode/gist.hh>
 #include <gecode/minimodel.hh>
+
+#ifdef HAVE_GIST
+#include <gecode/gist.hh>
+#endif
 
 #include "RNAalignment.hh"
 
@@ -187,7 +190,15 @@ option_def my_options[] = {
     // {"free-endgaps",0,0,O_ARG_STRING,&free_endgaps,"----","spec","Whether and which end gaps are free. order: L1,R1,L2,R2"},
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Controlling output"},
-    {"gist",0,&opt_gist,O_NO_ARG,0,O_NODEFAULT,"","Use gist for interactive/graphical search."},
+    
+    {"gist",0,&opt_gist,O_NO_ARG,0,O_NODEFAULT,"",
+#ifdef HAVE_GIST
+     "Use gist for interactive/graphical search."
+#else
+     "Use gist for graphical search (feature disabled, recompile to activate)."
+#endif
+    },
+
     {"width",'w',0,O_ARG_INT,&output_width,"120","columns","Output width"},
     {"clustal",0,&opt_clustal_out,O_ARG_STRING,&clustal_out,O_NODEFAULT,"file","Clustal output"},
     {"pp",0,&opt_pp_out,O_ARG_STRING,&pp_out,O_NODEFAULT,"file","PP output"},
@@ -307,6 +318,15 @@ main(int argc, char* argv[]) {
     //
     // END process options
     // ----------------------------------------
+
+
+#ifndef HAVE_GIST
+    if (opt_gist) {
+	std::cerr << "Graphical output (option --gist) was disabled when compiling." << std::endl
+		  << "For enabling this feature, please reconfigure and recompile." << std::endl;
+	exit(-1);
+    }
+#endif
 
 
     // options consistency
@@ -444,6 +464,7 @@ main(int argc, char* argv[]) {
 				 seq_constraints
 				 );
 
+
     // ------------------------------------------------------------
     // construct the constraint model / root space
     //
@@ -457,6 +478,7 @@ main(int argc, char* argv[]) {
     // run the search engine
     //
     if (opt_gist) {
+#ifdef HAVE_GIST
 	Gist::Print<RNAalignment> p("Node explorer");
 	Gist::Options o;
 	o.inspect.click(&p);
@@ -465,6 +487,7 @@ main(int argc, char* argv[]) {
 
 	//Gist::dfs(s,o);
 	Gist::bab(s,o);
+#endif
     } else {
 	Search::Options o;
 

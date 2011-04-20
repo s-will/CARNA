@@ -76,6 +76,18 @@ else
     AC_DEFINE([NDEBUG], [], [Define to 1 for turning off debugging])
 fi
 
+####################
+## enable/disable graphical search with gist
+AC_MSG_CHECKING([whether to build with gist support])
+ENABLE_GIST=yes
+AC_ARG_ENABLE([gist],
+    AC_HELP_STRING(
+        [--disable-gist],
+        [disable gist support (def=enabled)]
+    ),
+    [ENABLE_GIST="$enableval"]
+)
+AC_MSG_RESULT([$ENABLE_GIST])
 
 # turn off deprecated warnings 
 CPPFLAGS="$CPPFLAGS -Wno-deprecated"
@@ -95,32 +107,35 @@ AC_ARG_VAR(GECODE_HOME,[Home of GECODE installation (libs and headers)])
 AC_MSG_RESULT([$GECODE_HOME])
 
 
-GECODE_LIBFLAGS="-lgecodekernel -lgecodesearch -lgecodeint -lgecodeset -lgecodeminimodel  -lgecodesupport  -lgecodegist"
+GECODE_LIBFLAGS="-lgecodekernel -lgecodesearch -lgecodeint -lgecodeset -lgecodeminimodel  -lgecodesupport"
+
+if test $ENABLE_GIST = "yes" ; then
+   GECODE_LIBFLAGS="$GECODE_LIBFLAGS -lgecodegist"
+fi
 
 LDFLAGS="$LDFLAGS $GECODE_LIBFLAGS"
 
 
 #####################
 ## Check for CImg library
-
-AC_MSG_CHECKING([whether CImg is installed])
 AC_CHECK_HEADER(CImg.h,
-	[],
-        [AC_MSG_ERROR([Please install CImg library])],	
+	[CIMG_AVAILABLE="yes"],
+        [CIMG_AVAILABLE="no"],
 	[])
 
+AC_MSG_CHECKING([whether CImg has correct version])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-     [[#include <CImg.h>
-     #ifndef cimg_version 
-     # error cimg not defined
-     #endif
-     #if cimg_version < 132
-     # error wrong version
-     #endif
-     ]])],
-                        [],
-                        AC_MSG_ERROR([Wrong CImg version please use >=1.3.2]))
-
+  [[#include <CImg.h>
+  #ifndef cimg_version 
+  # error cimg not defined
+  #endif
+  #if cimg_version < 132
+  # error wrong version
+  #endif
+  ]])],
+  [CIMG_CORRECT_VERSION="yes"],
+  [CIMG_CORRECT_VERSION="no"])
+AC_MSG_RESULT([$CIMG_CORRECT_VERSION])
 
 
 ####################
@@ -153,9 +168,6 @@ AC_CONFIG_FILES([Makefile])
 #AC_FUNC_MALLOC
 
 
-AC_OUTPUT([src/Makefile Utils/Makefile])
-
-
 ## ----------------------------------------
 ## Give information in case Vienna package missing
 ##
@@ -173,3 +185,37 @@ AC_OUTPUT([src/Makefile Utils/Makefile])
 #    AC_MSG_NOTICE(It can be obtained from http://www.tbi.univie.ac.at/~ivo/RNA/.)
 #    AC_MSG_NOTICE()
 # fi
+
+
+## ----------------------------------------
+## Complain if gist enabled but CImg.h missing or wrong version
+
+if test "$ENABLE_GIST" = "yes" ; then
+   if test "$CIMG_AVAILABE" = "no" ; then
+     AC_MSG_NOTICE([])
+     AC_MSG_NOTICE([----------------------------------------])
+     AC_MSG_NOTICE([ERROR: "CImg could not be found. Please install CImg library."])
+     exit -1
+   else
+      if test $CIMG_CORRECT_VERSION = "no" ; then
+         AC_MSG_NOTICE([])
+     	 AC_MSG_NOTICE([----------------------------------------])
+     	 AC_MSG_NOTICE([ERROR: "Wrong CImg version please use >=1.3.2"])
+	 exit -1
+      fi
+   fi
+   
+   # define HAVE_GIST, such that we can use this flag for conditional
+   # compilation
+   AC_DEFINE([HAVE_GIST],[],[Whether gist is available])
+   AC_MSG_NOTICE([])
+   AC_MSG_NOTICE([----------------------------------------])
+   AC_MSG_NOTICE([Gist support enabled])
+else
+   AC_MSG_NOTICE([])
+   AC_MSG_NOTICE([----------------------------------------])
+   AC_MSG_NOTICE([Gist support disabled])
+fi
+
+
+AC_OUTPUT([src/Makefile Utils/Makefile])

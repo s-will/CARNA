@@ -1,1 +1,4 @@
 start with version 0.1
+
+make gist/graphics support optional, configurable by --disable-gist
+

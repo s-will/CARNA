@@ -19,11 +19,13 @@ RNAalignment::RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequen
     choice_data()
     //, discrepancy(0)
 {
+#  ifdef HAVE_GIST
     if (opt_graphical_output) 
 	wind=new WinHandler(n+1,m+1,"Display variables status");
     else {
 	wind=NULL;
     }
+#  endif // HAVE_GIST
 
 
     //ignore MD_0 and M_0
@@ -241,10 +243,11 @@ RNAalignment::print(std::ostream& out) const {
     }
     out << std::endl;
 
-
+#  ifdef HAVE_GIST
     // ////////////////////////////////////////
     // update display
     if (wind!=NULL) wind->update(MD,M);
+#  endif // HAVE_GIST
 
 }
 
