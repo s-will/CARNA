@@ -1,4 +1,12 @@
-start with version 0.1
-
-make gist/graphics support optional, configurable by --disable-gist
-
+Implement model and propagator
+Optimize propagator
+Visualization of solutions in gist search
+(V0.1)
+Use Gecode 3.5.0
+Use LocARNA library
+Reorganize Code
+Add affine gap cost in propagator
+Add max-diff heuristic
+Add anchor constraints
+Make gist/graphics support optional, configurable by --disable-gist
+(V0.2)
