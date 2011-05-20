@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([carna], [0.2], [])
+AC_INIT([carna], [0.2.1], [])
 
 AM_INIT_AUTOMAKE
 
@@ -107,13 +107,14 @@ AC_ARG_VAR(GECODE_HOME,[Home of GECODE installation (libs and headers)])
 AC_MSG_RESULT([$GECODE_HOME])
 
 
-GECODE_LIBFLAGS="-lgecodekernel -lgecodesearch -lgecodeint -lgecodeset -lgecodeminimodel  -lgecodesupport"
+GECODE_LIBFLAGS="-lgecodesearch -lgecodeminimodel -lgecodeint -lgecodeset -lgecodesupport -lgecodekernel"
 
 if test $ENABLE_GIST = "yes" ; then
-   GECODE_LIBFLAGS="$GECODE_LIBFLAGS -lgecodegist"
+   GECODE_LIBFLAGS="-lgecodegist $GECODE_LIBFLAGS"
 fi
 
-LDFLAGS="$LDFLAGS $GECODE_LIBFLAGS"
+ # add GECODE libraries to list of libs for linking
+LIBS="$LIBS $GECODE_LIBFLAGS"
 
 
 #####################
@@ -219,3 +220,4 @@ fi
 
 
 AC_OUTPUT([src/Makefile Utils/Makefile])
+

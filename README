@@ -4,7 +4,7 @@ CARNA 0.1 (Constraint Alignment of RNA)
 Compile 
 =======
 
-Carna requires Gecode 3.2.2 and the CImg library. To install Carna,
+Carna requires Gecode 3.5 and the CImg library. To install Carna,
 get these first. Make sure to build Gecode with qt-support
 (i.e. configure --enable-qt)
 
