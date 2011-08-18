@@ -10,3 +10,5 @@ Add max-diff heuristic
 Add anchor constraints
 Make gist/graphics support optional, configurable by --disable-gist
 (V0.2)
+Bugfix in propagator traceback
+(V0.2.2)
