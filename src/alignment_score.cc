@@ -545,10 +545,10 @@ backtrace_forward(Gecode::Space &home,
 		}
 		break;
 	    case FWD_B:
-		if ( FwdB(i,j) == FwdB(i,j-1) + 2*scoring.gapA(i,j) ) {
+		if ( FwdB(i,j) == FwdB(i,j-1) + 2*scoring.gapB(i,j) ) {
 		    traceB[j]=0;
 		    --j;
-		} else if ( FwdB(i,j) == Fwd(i,j-1) + 2*scoring.gapA(i,j) + 2*scoring.indel_opening() ) {
+		} else if ( FwdB(i,j) == Fwd(i,j-1) + 2*scoring.gapB(i,j) + 2*scoring.indel_opening() ) {
 		    traceB[j]=0;
 		    --j;
 		    state=FWD;
