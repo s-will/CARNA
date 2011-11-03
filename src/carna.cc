@@ -382,8 +382,8 @@ main(int argc, char* argv[]) {
     // Get input data and generate data objects
     //
 
-    LocARNA::RnaData rnadataA(file1,false); // false->opt_stacking not implemented in Carna
-    LocARNA::RnaData rnadataB(file2,false); // false->opt_stacking not implemented in Carna
+    LocARNA::RnaData rnadataA(file1,false,false); // false->opt_stacking not implemented in Carna
+    LocARNA::RnaData rnadataB(file2,false,false); // false->opt_stacking not implemented in Carna
 
     LocARNA::Sequence seqA=rnadataA.get_sequence();
     LocARNA::Sequence seqB=rnadataB.get_sequence();
