@@ -23,7 +23,12 @@
 
 // get all locarna headers
 #include <locarna.hh>
+
+#include <LocARNA/aux.hh>
+
+namespace LocARNA {
 #include <LocARNA/ribosum85_60.icc>
+}
 
 #include <gecode/search.hh>
 #include <gecode/minimodel.hh>
@@ -35,9 +40,8 @@
 #include "RNAalignment.hh"
 
 using namespace std;
-using namespace Gecode;
-using namespace LocARNA;
-
+//using namespace Gecode;
+//using namespace LocARNA;
 
 const std::string
 VERSION_STRING = (std::string)PACKAGE_STRING;
@@ -168,7 +172,7 @@ int time_limit;
 
 // bool opt_eval;
 
-option_def my_options[] = {
+LocARNA::option_def my_options[] = {
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Scoring parameters"},
 
     {"match",'m',0,O_ARG_INT,&match_score,"50","score","Match score"},
@@ -304,7 +308,7 @@ main(int argc, char* argv[]) {
 
     if (!process_success) {
 	std::cerr << "ERROR --- "
-		  <<O_error_msg<<std::endl;
+		  <<LocARNA::O_error_msg<<std::endl;
 	printf("USAGE: ");
 	print_usage(argv[0],my_options);
 	printf("\n");
@@ -343,23 +347,23 @@ main(int argc, char* argv[]) {
     // ----------------------------------------
     // Ribosum matrix
     //
-    RibosumFreq *ribosum=NULL;
+    LocARNA::RibosumFreq *ribosum=NULL;
 
     if (use_ribosum) {
 	if (ribosum_file == "RIBOSUM85_60") {
 	    if (opt_verbose) {
 		std::cout <<"Use built-in ribosum."<<std::endl;
 	    }
-	    ribosum = new Ribosum85_60();
+	    ribosum = new LocARNA::Ribosum85_60();
 	} else {
-	    ribosum = new RibosumFreq(ribosum_file);
+	    ribosum = new LocARNA::RibosumFreq(ribosum_file);
 	}
     }
 
     // ----------------------------------------
     // Scoring Parameter
     //
-    ScoringParams scoring_params(match_score,
+    LocARNA::ScoringParams scoring_params(match_score,
 				 mismatch_score,
 				 indel_score,
 				 indel_opening_score,
@@ -378,19 +382,19 @@ main(int argc, char* argv[]) {
     // Get input data and generate data objects
     //
 
-    RnaData rnadataA(file1,false); // false->opt_stacking not implemented in Carna
-    RnaData rnadataB(file2,false); // false->opt_stacking not implemented in Carna
+    LocARNA::RnaData rnadataA(file1,false); // false->opt_stacking not implemented in Carna
+    LocARNA::RnaData rnadataB(file2,false); // false->opt_stacking not implemented in Carna
 
-    Sequence seqA=rnadataA.get_sequence();
-    Sequence seqB=rnadataB.get_sequence();
+    LocARNA::Sequence seqA=rnadataA.get_sequence();
+    LocARNA::Sequence seqB=rnadataB.get_sequence();
 
-    size_type lenA=seqA.length();
-    size_type lenB=seqB.length();
+    LocARNA::size_type lenA=seqA.length();
+    LocARNA::size_type lenB=seqB.length();
 
     // --------------------
     // handle max_diff restriction
 
-    TraceController trace_controller(seqA,seqB,NULL,max_diff,false);
+    LocARNA::TraceController trace_controller(seqA,seqB,NULL,max_diff,false);
 
     // ------------------------------------------------------------
     // Handle constraints (optionally)
@@ -403,7 +407,7 @@ main(int argc, char* argv[]) {
 	if ( seqCB=="" ) seqCB = rnadataB.get_seq_constraints();
     }
 
-    AnchorConstraints seq_constraints(seqA.length(),seqCA,
+    LocARNA::AnchorConstraints seq_constraints(seqA.length(),seqCA,
 				      seqB.length(),seqCB);
 
     if (opt_verbose) {
@@ -415,18 +419,18 @@ main(int argc, char* argv[]) {
     // ----------------------------------------
     // construct set of relevant arc matches
     //
-    ArcMatches *arc_matches;
+    LocARNA::ArcMatches *arc_matches;
     // always initialize from RnaData (reading in arc-matches could be supported later)
-    arc_matches = new ArcMatches(rnadataA,
-				 rnadataB,
-				 min_prob,
-				 (max_diff_am!=-1)?(size_type)max_diff_am:std::max(lenA,lenB),
-				 trace_controller,
-				 seq_constraints
-				 );
+    arc_matches = new LocARNA::ArcMatches(rnadataA,
+					  rnadataB,
+					  min_prob,
+					  (max_diff_am!=-1)?(LocARNA::size_type)max_diff_am:std::max(lenA,lenB),
+					  trace_controller,
+					  seq_constraints
+					  );
 
-    BasePairs bpsA = arc_matches->get_base_pairsA();
-    BasePairs bpsB = arc_matches->get_base_pairsB();
+    LocARNA::BasePairs bpsA = arc_matches->get_base_pairsA();
+    LocARNA::BasePairs bpsB = arc_matches->get_base_pairsB();
 
     // ----------------------------------------
     // report on input in verbose mode
@@ -447,22 +451,22 @@ main(int argc, char* argv[]) {
     // ----------------------------------------
     // construct scoring
 
-    Scoring scoring(seqA,seqB,arc_matches,0L,&scoring_params);
+    LocARNA::Scoring scoring(seqA,seqB,arc_matches,0L,&scoring_params);
 
     // ------------------------------------------------------------
     // parameter for the alignment
     //
-    AlignerParams aligner_params(0, //no_lonely_pairs option not implemented in Carna
-				 struct_local,
-				 sequ_local,
-				 free_endgaps,
-				 trace_controller,
-				 max_diff_am,
-				 0, // min_am_prob and
-				 0, // min_bm_prob are not used in Carna
-				 false, // opt_stacking not implemented in Carna
-				 seq_constraints
-				 );
+    LocARNA::AlignerParams aligner_params(0, //no_lonely_pairs option not implemented in Carna
+					  struct_local,
+					  sequ_local,
+					  free_endgaps,
+					  trace_controller,
+					  max_diff_am,
+					  0, // min_am_prob and
+					  0, // min_bm_prob are not used in Carna
+					  false, // opt_stacking not implemented in Carna
+					  seq_constraints
+					  );
 
 
     // ------------------------------------------------------------
@@ -489,7 +493,7 @@ main(int argc, char* argv[]) {
 	Gist::bab(s,o);
 #endif
     } else {
-	Search::Options o;
+	Gecode::Search::Options o;
 
 	o.c_d =  c_d;
 	
@@ -500,7 +504,7 @@ main(int argc, char* argv[]) {
 	}
 
 	// construct engine
-	BAB<RNAalignment> e(s,o);
+	Gecode::BAB<RNAalignment> e(s,o);
 
 
 	// ----------------------------------------

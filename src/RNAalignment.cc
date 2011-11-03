@@ -112,7 +112,7 @@ RNAalignment::RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequen
 	// resort MD vector, such that we start enumerating in the middle
 	// Ideally sort like balanced binary tree in array
 	Gecode::IntVarArgs MD_resorted(MD.size());
-	for (size_type i=0; i<(size_type)MD.size(); i++) { 
+	for (size_t i=0; i<(size_t)MD.size(); i++) { 
 	    MD_resorted[i] = MD[(i+MD.size()/2)%MD.size()];
 	}
 	Gecode::branch(*this, MD_resorted, Gecode::INT_VAR_SIZE_MAX, Gecode::INT_VAL_MED);

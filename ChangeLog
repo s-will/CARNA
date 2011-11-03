@@ -10,5 +10,7 @@ Add max-diff heuristic
 Add anchor constraints
 Make gist/graphics support optional, configurable by --disable-gist
 (V0.2)
+110511 - Martin Mann - fix of gecode lib order for linking
+110511 - Martin Mann - fix of size_type namespace
 Bugfix in propagator traceback
 (V0.2.2)
