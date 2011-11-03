@@ -178,9 +178,10 @@ void
 RNAalignment::print_pp_format(std::ostream& out_s,
 			      const LocARNA::BasePairs& bpsA, const LocARNA::BasePairs& bpsB,
 			      const LocARNA::Scoring& scoring,
-			      const LocARNA::AnchorConstraints& seq_constraints) const {
-
-    size_t width=60;
+			      const LocARNA::AnchorConstraints& seq_constraints,
+			      const size_t output_width,
+			      bool alifold_consensus_dp
+			      ) const {
 
     if (all_assigned()) {
 
@@ -188,7 +189,9 @@ RNAalignment::print_pp_format(std::ostream& out_s,
 				bpsA, bpsB,
 				scoring,
 				seq_constraints,
-				width);
+				output_width,
+				alifold_consensus_dp
+				);
     }
 
 }

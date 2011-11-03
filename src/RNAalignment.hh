@@ -149,7 +149,10 @@ public:
     print_pp_format(std::ostream& out_s,
 		    const LocARNA::BasePairs& bpsA, const LocARNA::BasePairs& bpsB, 
 		    const LocARNA::Scoring& scoring, 
-		    const LocARNA::AnchorConstraints& seq_constraints) const;
+		    const LocARNA::AnchorConstraints& seq_constraints,
+		    const size_t output_width,
+		    bool alifold_consensus_dp
+		    ) const;
 
     /// Print solution
     virtual 

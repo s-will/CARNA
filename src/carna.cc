@@ -104,6 +104,8 @@ bool opt_clustal_out;
 std::string pp_out;
 bool opt_pp_out;
 
+bool opt_alifold_consensus_dp; //!< whether to compute consensus dp by alifold
+
 // ------------------------------------------------------------
 //
 // Options
@@ -208,6 +210,11 @@ LocARNA::option_def my_options[] = {
     {"pp",0,&opt_pp_out,O_ARG_STRING,&pp_out,O_NODEFAULT,"file","PP output"},
     // {"local-output",'L',&opt_local_output,O_NO_ARG,0,O_NODEFAULT,"","Output only local sub-alignment"},
     // {"pos-output",'P',&opt_pos_output,O_NO_ARG,0,O_NODEFAULT,"","Output only local sub-alignment positions"},
+    
+#ifdef HAVE_LIBRNA
+    {"alifold-consensus-dp",0,&opt_alifold_consensus_dp,O_NO_ARG,0,O_NODEFAULT,"","Compute consensus dot plot by alifold"},
+#endif
+    
     {"write-structure",0,&opt_write_structure,O_NO_ARG,0,O_NODEFAULT,"","Write guidance structure in output"},
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Heuristics for speed accuracy trade off"},
@@ -531,7 +538,14 @@ main(int argc, char* argv[]) {
 		ofstream outfile;
 		outfile.open(pp_out.c_str(),ios::out | ios::trunc);
 		if (outfile.good()) {
-		    ex->print_pp_format(outfile,bpsA,bpsB,scoring, seq_constraints);
+		    ex->print_pp_format(outfile,
+					bpsA,
+					bpsB,
+					scoring, 
+					seq_constraints, 
+					output_width,
+					opt_alifold_consensus_dp
+					);
 		    outfile.close();
 		} else {
 		   std::cerr << "Cannot write solution to file "<<pp_out<<std::endl;
