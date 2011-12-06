@@ -61,7 +61,7 @@ int struct_weight;
 
 int tau_factor; // contribution of sequence similarity in an arc match (in percent)
 
-//bool no_lonely_pairs; // no lonely pairs option
+bool opt_no_lonely_pairs; // no lonely pairs option
 
 bool struct_local; // allow exclusions for maximizing alignment of connected substructures
 bool sequ_local; // maximize alignment of subsequences
@@ -252,7 +252,7 @@ LocARNA::option_def my_options[] = {
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Constraints"},
 
-    //{"noLP",0,&no_lonely_pairs,O_NO_ARG,0,O_NODEFAULT,"","No lonely pairs."},
+    {"noLP",0,&opt_no_lonely_pairs,O_NO_ARG,0,O_NODEFAULT,"","No lonely pairs (only compatibility with locarna; no effect)"},
     {"anchorA",0,0,O_ARG_STRING,&seq_constraints_A,"","string","Anchor constraints sequence A."},
     {"anchorB",0,0,O_ARG_STRING,&seq_constraints_B,"","string","Anchor constraints sequence B."},
     {"ignore-constraints",0,&opt_ignore_constraints,O_NO_ARG,0,O_NODEFAULT,"","Ignore constraints in pp-file"},
@@ -285,7 +285,7 @@ LocARNA::option_def my_options[] = {
  */
 int
 main(int argc, char* argv[]) {
-
+    
     // ----------------------------------------
     // BEGIN process options
     //
@@ -312,6 +312,7 @@ main(int argc, char* argv[]) {
 	cout << VERSION_STRING<<endl;
 	if (opt_version) exit(0); else cout <<endl;
     }
+
 
     if (!process_success) {
 	std::cerr << "ERROR --- "
@@ -367,23 +368,25 @@ main(int argc, char* argv[]) {
 	}
     }
 
+
     // ----------------------------------------
     // Scoring Parameter
     //
-    LocARNA::ScoringParams scoring_params(match_score,
-				 mismatch_score,
-				 indel_score,
-				 indel_opening_score,
-				 ribosum,
-				 struct_weight,
-				 tau_factor,
-				 exclusion_score,
-				 opt_exp_prob?exp_prob:-1,
-				 0, // temperature
-				 false, // opt_stacking not implemented in Carna
-				 false,
-				 0,0,0,0
-				 );
+    LocARNA::ScoringParams 
+	scoring_params(match_score,
+		       mismatch_score,
+		       indel_score,
+		       indel_opening_score,
+		       ribosum,
+		       struct_weight,
+		       tau_factor,
+		       exclusion_score,
+		       opt_exp_prob?exp_prob:-1,
+		       0, // temperature
+		       false, // opt_stacking not implemented in Carna
+		       false,
+		       0,0,0,0
+		       );
 
     // ------------------------------------------------------------
     // Get input data and generate data objects
@@ -414,8 +417,9 @@ main(int argc, char* argv[]) {
 	if ( seqCB=="" ) seqCB = rnadataB.get_seq_constraints();
     }
 
-    LocARNA::AnchorConstraints seq_constraints(seqA.length(),seqCA,
-				      seqB.length(),seqCB);
+    LocARNA::AnchorConstraints 
+	seq_constraints(seqA.length(),seqCA,
+			seqB.length(),seqCB);
 
     if (opt_verbose) {
 	if (! seq_constraints.empty()) {
@@ -423,10 +427,11 @@ main(int argc, char* argv[]) {
 	}
     }
 
+
     // ----------------------------------------
     // construct set of relevant arc matches
     //
-    LocARNA::ArcMatches *arc_matches;
+    LocARNA::ArcMatches *arc_matches=NULL;
     // always initialize from RnaData (reading in arc-matches could be supported later)
     arc_matches = new LocARNA::ArcMatches(rnadataA,
 					  rnadataB,
@@ -463,7 +468,7 @@ main(int argc, char* argv[]) {
     // ------------------------------------------------------------
     // parameter for the alignment
     //
-    LocARNA::AlignerParams aligner_params(0, //no_lonely_pairs option not implemented in Carna
+    LocARNA::AlignerParams aligner_params(0, //no_lonely_pairs does not make sense in carna
 					  struct_local,
 					  sequ_local,
 					  free_endgaps,
@@ -484,6 +489,7 @@ main(int argc, char* argv[]) {
 				       aligner_params,scoring,
 				       opt_gist	
 				       );
+    
 
     // ------------------------------------------------------------
     // run the search engine
@@ -503,6 +509,7 @@ main(int argc, char* argv[]) {
 	Gecode::Search::Options o;
 
 	o.c_d =  c_d;
+	o.stop=0L;
 	
 	if (opt_time_limit) {
 	    Gecode::Search::Stop *timestop=0L;
@@ -516,7 +523,7 @@ main(int argc, char* argv[]) {
 
 	// ----------------------------------------
 	// enumerate solutions
-	RNAalignment* ex;
+	RNAalignment* ex=NULL;
 	while ((ex = e.next()) && (ex != NULL)) {
 	    // write each solution to stdout and optionally to files
 	    // in clustal and pp format
@@ -552,7 +559,7 @@ main(int argc, char* argv[]) {
 		}
 	    }
 
-	    delete ex;
+	    if (ex) delete ex;
 	}
 
 
@@ -571,5 +578,8 @@ main(int argc, char* argv[]) {
 
     }
 
+    if (ribosum) delete ribosum;
+    if (arc_matches) delete arc_matches;
+    if (s) delete s;
     return 0;
 }
