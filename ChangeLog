@@ -14,3 +14,7 @@ Make gist/graphics support optional, configurable by --disable-gist
 110511 - Martin Mann - fix of size_type namespace
 Bugfix in propagator traceback
 (V0.2.2)
+Add alifold-consensus-dp option
+Add noLP option
+Some bug fixes
+(V0.2.3)
