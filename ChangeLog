@@ -18,3 +18,7 @@ Add alifold-consensus-dp option
 Add noLP option
 Some bug fixes
 (V0.2.3)
+Modify handling of time-limit, such that a first solution is always
+searched and written, i.e. the search will never be interrupted by time-out
+before first solution.
+(V0.2.4)

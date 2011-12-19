@@ -21,6 +21,8 @@
 // include config.h
 #include "../config.h"
 
+#include <limits>
+
 // get all locarna headers
 #include <locarna.hh>
 
@@ -29,6 +31,8 @@
 namespace LocARNA {
 #include <LocARNA/ribosum85_60.icc>
 }
+
+
 
 #include <gecode/search.hh>
 #include <gecode/minimodel.hh>
@@ -262,7 +266,7 @@ LocARNA::option_def my_options[] = {
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Controlling Gecode"},
     {"c_d",0,0,O_ARG_INT,&c_d,"1","distance","Recomputation distance"},
-    {"time-limit",0,&opt_time_limit,O_ARG_INT,&time_limit,O_NODEFAULT,"time","Search time limit"},
+    {"time-limit",0,&opt_time_limit,O_ARG_INT,&time_limit,O_NODEFAULT,"time","Search time limit (always searches for first solution)."},
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Standard options"},
 
@@ -496,14 +500,14 @@ main(int argc, char* argv[]) {
     //
     if (opt_gist) {
 #ifdef HAVE_GIST
-	Gist::Print<RNAalignment> p("Node explorer");
-	Gist::Options o;
+	Gecode::Gist::Print<RNAalignment> p("Node explorer");
+	Gecode::Gist::Options o;
 	o.inspect.click(&p);
 
 	o.c_d =  c_d;
 
-	//Gist::dfs(s,o);
-	Gist::bab(s,o);
+	//Gecode::Gist::dfs(s,o);
+	Gecode::Gist::bab(s,o);
 #endif
     } else {
 	Gecode::Search::Options o;
@@ -513,13 +517,14 @@ main(int argc, char* argv[]) {
 	
 	if (opt_time_limit) {
 	    Gecode::Search::Stop *timestop=0L;
-	    timestop = new Gecode::Search::TimeStop(time_limit);
+	    timestop = new Gecode::Search::TimeStop(std::numeric_limits<unsigned long int>::max());
 	    o.stop=timestop;
 	}
 
 	// construct engine
 	Gecode::BAB<RNAalignment> e(s,o);
-
+	
+	bool first_solution=true;
 
 	// ----------------------------------------
 	// enumerate solutions
@@ -527,7 +532,12 @@ main(int argc, char* argv[]) {
 	while ((ex = e.next()) && (ex != NULL)) {
 	    // write each solution to stdout and optionally to files
 	    // in clustal and pp format
-
+	    
+	    if (first_solution && opt_time_limit) {
+		((Gecode::Search::TimeStop *)o.stop)->limit(time_limit);
+		first_solution=false;
+	    }
+	    
 	    ex->print(std::cout);
 
 	    if (!clustal_out.empty()){
@@ -561,7 +571,7 @@ main(int argc, char* argv[]) {
 
 	    if (ex) delete ex;
 	}
-
+	
 
 	Gecode::Search::Statistics stats = e.statistics();
 
