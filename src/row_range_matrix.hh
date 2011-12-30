@@ -7,21 +7,33 @@
 template <class elem_t>
 class RowRangeMatrix {
 public:
+    //! size type
     typedef typename std::vector<elem_t>::size_type size_type;
     
+    //! pair of sizes, entry in range vector
     typedef std::pair<size_type,size_type> size_pair_type;
 
 protected:
-    std::vector<elem_t> mat_; //!< matrix elements go here
+    
+    //! vector of matrix elements
+    std::vector<elem_t> mat_; 
 
 #ifndef NDEBUG
-    //! store actual ranges, if we want range checks for debugging
+    //! stores actual ranges, if we want range checks for debugging
     //! otherwise this information is not necessary after construction 
     std::vector<size_pair_type> ranges;
 #endif
     
     std::vector<int> offset; //!< offset for each row
     
+    /** 
+     * Address of matrix element
+     * 
+     * @param i row index
+     * @param j column index
+     * 
+     * @return index of element in one dimensional vector
+     */
     size_type addr(size_type i, size_type j) const {
 	assert(i<ranges.size());
 	assert(ranges[i].first<=j && j<=ranges[i].second); 
@@ -32,15 +44,20 @@ public:
     RowRangeMatrix() {
     }
 
-    //! construct the matrix from range vector
-    //! @param ranges_ a vector of column ranges for each matrix row
+    /** 
+     * construct the matrix from range vector
+     * 
+     * @param ranges_ vector of column ranges for each matrix row
+     */
     RowRangeMatrix(const std::vector<size_pair_type> &ranges_) {
 	resize(ranges_);
     }
 
-    //! resize the matrix according to range vector
-    //! @param ranges_ a vector of column ranges for each matrix row
-    void
+    /** 
+     * resize the matrix according to range vector
+     * 
+     * @param ranges_ vector of column ranges for each matrix row
+     */void
     resize(const std::vector<size_pair_type> &ranges_) {
 	offset.resize(ranges_.size());
 	
@@ -63,22 +80,49 @@ public:
 	mat_.resize(acc);
     }
     
-    //! read only access to (i,j)
+    /** 
+     *  read only access to matrix entry
+     * 
+     * @param i row index
+     * @param j column index
+     * 
+     * @return constant reference to matrix entry
+     */
     const elem_t & operator() (size_type i,size_type j) const {
 	return mat_[addr(i,j)];
     }
     
-    //! read/write access to (i,j)
+    /** 
+     *  read/write access to matrix entry
+     * 
+     * @param i row index
+     * @param j column index
+     * 
+     * @return reference to matrix entry
+     */
     elem_t & operator() (size_type i,size_type j) {
 	return mat_[addr(i,j)];
     }
 
-    //! read only access to (i,j)
+    /** 
+     *  read only access to matrix entry
+     * 
+     * @param i row index
+     * @param j column index
+     * 
+     * @return value of matrix entry
+     */
     const elem_t get(size_type i,size_type j) const {
 	return mat_[addr(i,j)];
     }
 
-    //! write access to (i,j)
+    /** 
+     *  write access to matrix entry
+     * 
+     * @param i row index
+     * @param j column index
+     * @param x new value
+     */
     void
     set(size_type i,size_type j, const elem_t &x) {
 	mat_[addr(i,j)]=x;

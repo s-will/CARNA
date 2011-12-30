@@ -11,8 +11,8 @@
 using namespace LocARNA;
 using namespace std;
 
-const bool debug_out=false;
-//const bool debug_out=true;
+//const bool debug_out=false;
+const bool debug_out=true;
 
 
 // DETAIL: for the upper bound in ub_match, arc match scores to the

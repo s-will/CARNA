@@ -78,10 +78,12 @@ private:
     const LocARNA::AlignerParams &params;
     const LocARNA::Scoring &scoring;
 
-    //! MD[i] is the position in seqB to that position i in seqA is
-    //! either matched or after that position i is deleted.  Note that
-    //! positions of insertions are therefore implicit. The semantics
-    //! of MD and M is encapsulated by the "allowed" methods.
+    /**
+     * MD[i] is the position in seqB to that position i in seqA is
+     * either matched or after that position i is deleted.  Note that
+     * positions of insertions are therefore implicit. The semantics
+     * of MD and M is encapsulated by the "allowed" methods.
+    */
     IntViewArray MD;
     //! M[i] flags whether position i is deleted after j=MD[i] or matched i~MD[i]
     BoolViewArray M;
@@ -89,19 +91,21 @@ private:
         
 protected:
   
-    /// Constructor for cloning \a p
+    //! Constructor for cloning \a p
     AlignmentScore(Gecode::Space& home, bool share, AlignmentScore& p);
 
-    /// Constructor for posting \a p
-    //! @param *this home space
-    //! @param seqA sequence A
-    //! @param seqB sequence B
-    //! @param arcmatches locarna object defining arc matches
-    //! @param aligner_params locarna object defining parameters for the alignment
-    //! @param scoring locarna object defining the scoring scheme
-    //! @param MD constraint variables defining "match or deletion" position in seqB for each position of seqA
-    //! @param M constraint variables defining whether MD refers to match (or deletion)
-    //! @param Score constraint variable for alignment score
+    /**
+     * Constructor for posting \a p
+     * @param *this home space
+     * @param seqA sequence A
+     * @param seqB sequence B
+     * @param arcmatches locarna object defining arc matches
+     * @param aligner_params locarna object defining parameters for the alignment
+     * @param scoring locarna object defining the scoring scheme
+     * @param MD constraint variables defining "match or deletion" position in seqB for each position of seqA
+     * @param M constraint variables defining whether MD refers to match (or deletion)
+     * @param Score constraint variable for alignment score
+    */
     AlignmentScore(Gecode::Space& home,
 		   const LocARNA::Sequence &seqA,
 		   const LocARNA::Sequence &seqB, 
@@ -113,26 +117,44 @@ protected:
 		   Gecode::Int::IntView &Score
 		   );
 
+    /** 
+     * \brief virtual destructor
+     * 
+     */
     virtual ~AlignmentScore();
     
 protected:
 
-    //! print constraint variables MD,M,Score for debugging
+    
+    /** 
+     * print constraint variables MD,M,Score for debugging
+     * 
+     */
     void
     print_vars() const;
     
-    //! upper bound for the contribution of matching positions i
-    //! and j of respective sequences R and S
-    //! if tight!=NULL && tight!=false, return in tight, whether the bound is tight
+    /**
+     * upper bound for the contribution of a match 
+     *
+     * @param i index in first sequence R
+     * @param j index in second sequence S
+     * @param considered_ams 
+     * @param match_scores 
+     * @param[in,out] tight return in tight, whether the bound is tight (if tight!=NULL && tight!=false)
+     * 
+     * @return upper bound for contribution of matching i and j 
+     */
     LocARNA::score_t
     ub_match(size_type i, size_type j,
 	     const ScoreMatrix &considered_ams,
 	     const ScoreMatrix &match_scores,
 	     bool *tight=NULL) const;
 
-    //! calculate the score for an alingment given by trace vectors
-    //! @param traceA trace vector for positions in sequence A
-    //! @param traceB trace vector for positions in sequence B
+    /**
+     * calculate the score for an alingment given by trace vectors
+     * @param traceA trace vector for positions in sequence A
+     * @param traceB trace vector for positions in sequence B
+    */
     LocARNA::score_t
     evaluate_trace(const SizeVec &traceA,
 		   const SizeVec &traceB,
@@ -140,7 +162,18 @@ protected:
 		   const ScoreMatrix &match_scores		   
 		   ) const;
 
-    //! evaluate one match in the trace
+    /** 
+     * evaluate one match in the trace
+     * 
+     * @param traceA 
+     * @param traceB 
+     * @param considered_ams 
+     * @param match_scores 
+     * @param i 
+     * @param j 
+     * 
+     * @return score contribution for matching i and j in trace 
+     */
     LocARNA::score_t
     evaluate_tracematch(const SizeVec &traceA,
 			const SizeVec &traceB,
@@ -148,42 +181,50 @@ protected:
 			const ScoreMatrix &match_scores,
 			size_type i,size_type j) const;
     
-    //! test whether a match is guaranteed (i.e. forced) by the constraint store
-    //! @param i position in sequence 1
-    //! @param j position in sequence 2
-    //! @returns whether the match between i and j is guaranteed
-    //! assume that all the consistency checking with other variables MD,M has been done. 
-    //! match_forced(i,j) implies match_allowed(i,j)
+    /**
+     * test whether a match is guaranteed (i.e. forced) by the constraint store
+     * @param i position in sequence 1
+     * @param j position in sequence 2
+     * @returns whether the match between i and j is guaranteed
+     * assume that all the consistency checking with other variables MD,M has been done. 
+     * match_forced(i,j) implies match_allowed(i,j)
+    */
     bool
     match_forced(size_type i,size_type j) const {
 	return MD[i].assigned() && (size_t)MD[i].val()==j && !M[i].in(0);
     }
 
-    //! test whether a match or deletion is allowed by the constraint store
-    //! @param i position in sequence 1
-    //! @param j position in sequence 2
-    //! @returns whether the match between i and j is of deletion of i between j,j+1 is allowed
-    //! assume that all the consistency checking with other variables MD,M has been done 
+    /**
+     * test whether a match or deletion is allowed by the constraint store
+     * @param i position in sequence 1
+     * @param j position in sequence 2
+     * @returns whether the match between i and j is of deletion of i between j,j+1 is allowed
+     * assume that all the consistency checking with other variables MD,M has been done 
+    */
     bool
     match_or_deletion_allowed(size_type i,size_type j) const {
 	return MD[i].in((int)j);
     }
 
-    //! minimum column in matrix row.
-    //! @params i matrix row
-    //! @returns the minimal j where (i,j) is potentially on a trace
-    //! through the alignment matrices due to the local MD, M
-    //! variables.
+    /**
+     * minimum column in matrix row.
+     * @params i matrix row
+     * @returns the minimal j where (i,j) is potentially on a trace
+     * through the alignment matrices due to the local MD, M
+     * variables.
+    */
     size_t min_col(size_t i) const {
 	assert(i<=(size_t)MD.size());
 	return MD[i].min();
     }
     
-    //! maximum column in matrix row.
-    //! @params i matrix row
-    //! @returns the maximal j where (i,j) is potentially on a trace
-    //! through the alignment matrices due to the local MD, M
-    //! variables.
+    /**
+     * maximum column in matrix row.
+     * @params i matrix row
+     * @returns the maximal j where (i,j) is potentially on a trace
+     * through the alignment matrices due to the local MD, M
+     * variables.
+    */
     size_t max_col(size_t i) const {
 	assert(i<=(size_t)MD.size());
 	
@@ -198,7 +239,14 @@ protected:
 	return max_c;
     }
 
-    //! test whether trace through (i,j) is allowed
+    /** 
+     * test whether trace through a matrix entry is allowed
+     * 
+     * @param i index in first sequence R
+     * @param j index in second sequence S
+     * 
+     * @return whether trace through (i,j) is allowed 
+     */
     bool trace_allowed(size_t i, size_t j) const {
 	return min_col(i)<=j && j<=max_col(i);
     }
@@ -207,10 +255,12 @@ protected:
     // to the variables M and MD. If allowed, the methods guarantee
     // that origin and target of the trace arrow are valid, i.e. min_col(i)<=j<=max_col(i).
     
-    //! test whether a match is allowed by the constraint store
-    //! @param i position in sequence 1
-    //! @param j position in sequence 2
-    //! @returns whether the match between i and j is allowed
+    /**
+     * test whether a match is allowed by the constraint store
+     * @param i position in sequence 1
+     * @param j position in sequence 2
+     * @returns whether the match between i and j is allowed
+    */
     bool
     match_arrow_allowed(size_type i,size_type j) const {
 	assert(1<=i && i<=seqA.length());
@@ -219,10 +269,12 @@ protected:
 	return MD[i-1].min()<(int)j && MD[i].in((int)j) && M[i].in(1);
     }
 
-    //! test whether an insertion is allowed by the constraint store
-    //! @param i position in sequence 1
-    //! @param j position in sequence 2
-    //! @returns whether the insertion j between i and i+1 is allowed
+    /**
+     * test whether an insertion is allowed by the constraint store
+     * @param i position in sequence 1
+     * @param j position in sequence 2
+     * @returns whether the insertion j between i and i+1 is allowed
+    */
     bool
     insertion_arrow_allowed(size_type i,size_type j) const {
 	assert(0<=i && i<=seqA.length());
@@ -230,10 +282,12 @@ protected:
 	return min_col(i)<j && j<=max_col(i);
     }
     
-    //! test whether a deletion is allowed by the constraint store
-    //! @param i position in sequence 1
-    //! @param j position in sequence 2
-    //! @returns whether the deletion of i between j and j+1 is allowed
+    /**
+     * test whether a deletion is allowed by the constraint store
+     * @param i position in sequence 1
+     * @param j position in sequence 2
+     * @returns whether the deletion of i between j and j+1 is allowed
+    */
     bool
     deletion_arrow_allowed(size_type i,size_type j) const {
 	assert(1<=i && i<=seqA.length());
@@ -242,25 +296,29 @@ protected:
 	return min_col(i-1)<=j && MD[i].in((int)j) && M[i].in(0);
     }
     
-    //! used for testing whether propagator can be deleted
-    //! @returns whether all vars are fixed
+    /**
+     * used for testing whether propagator can be deleted
+     * @returns whether all vars are fixed
+    */
     bool
     all_vars_fixed() const;
     
     
-    //! run forward algorithm for computing prefix alignment scores
-    //! in Fwd, given matrix of upper bounds for matches. Support affine gap cost model.
-    //! @param home home space
-    //! @param Fwd matrix of size n+1 x m+1, output parameter
-    //! @param FwdA matrix of size n+1 x m+1, output parameter
-    //! @param FwdB matrix of size n+1 x m+1, output parameter
-    //! @param precomputed UBM upper bounds for all matches i~j
-    //!
-    //! Result is returned in Fwd, FwdA, and FwdB. Fwd(i,j) is the
-    //! best prefix alignment score for prefixes A_1..i and
-    //! B_1..j. FwdA(i,j) same as Fwd(i,j) with restriction that
-    //! A_i is deleted. FwdB(i,j) same as Fwd(i,j)
-    //! with restriction that B_j is inserted.
+    /**
+     * run forward algorithm for computing prefix alignment scores
+     * in Fwd, given matrix of upper bounds for matches. Support affine gap cost model.
+     * @param home home space
+     * @param Fwd matrix of size n+1 x m+1, output parameter
+     * @param FwdA matrix of size n+1 x m+1, output parameter
+     * @param FwdB matrix of size n+1 x m+1, output parameter
+     * @param precomputed UBM upper bounds for all matches i~j
+     *
+     * Result is returned in Fwd, FwdA, and FwdB. Fwd(i,j) is the
+     * best prefix alignment score for prefixes A_1..i and
+     * B_1..j. FwdA(i,j) same as Fwd(i,j) with restriction that
+     * A_i is deleted. FwdB(i,j) same as Fwd(i,j)
+     * with restriction that B_j is inserted.
+    */
     void
     forward_algorithm(Gecode::Space& home,
 			     InftyScoreRRMatrix &Fwd,
@@ -268,6 +326,17 @@ protected:
 			     InftyScoreRRMatrix &FwdB,
 			     const ScoreMatrix &UBM);
 
+    /** 
+     * Perform forward algorithm
+     * 
+     * @param home 
+     * @param Fwd 
+     * @param FwdA 
+     * @param FwdB 
+     * @param UBM 
+     * @param traceA 
+     * @param traceB 
+     */
     void
     backtrace_forward(Gecode::Space &home, 
 		      const InftyScoreRRMatrix &Fwd,
@@ -278,6 +347,15 @@ protected:
 		      SizeVec &traceB
 		      );
 
+    /** 
+     * Perform backward algorithm
+     * 
+     * @param home 
+     * @param Bwd 
+     * @param BwdA 
+     * @param BwdB 
+     * @param UBM 
+     */
     void
     backward_algorithm(Gecode::Space& home, 
 			      InftyScoreRRMatrix &Bwd,
@@ -285,13 +363,15 @@ protected:
 			      InftyScoreRRMatrix &BwdB,
 			      const ScoreMatrix &UBM);
     
-    //! set the MD and M variables in the range [start..end] to
-    //! the values described by the trace
-    //! @param start Begin of range
-    //! @param end End of range
-    //! @param traceA The trace
-    //! @returns Modification event
-    //! @pre the range must describe a run
+    /**
+     * set the MD and M variables in the range [start..end] to
+     * the values described by the trace
+     * @param start Begin of range
+     * @param end End of range
+     * @param traceA The trace
+     * @returns Modification event
+     * @pre the range must describe a run
+    */
     Gecode::ModEvent
     fix_vars_to_trace(Gecode::Space &home,
 		      size_t start,
@@ -299,9 +379,18 @@ protected:
 		      const SizeVec &traceA,
 		      const SizeVec &traceB);
 
-    //! determine the runs in the trace that are 'tight' and therefore
-    //! have to occur in any solution as in the trace. Then, fix the
-    //! constraint variables accordingly.
+    /**
+     * determine the runs in the trace that are 'tight' and therefore
+     * have to occur in any solution as in the trace. Then, fix the
+     * constraint variables accordingly.
+     * 
+     * @param home 
+     * @param traceA 
+     * @param traceB 
+     * @param tight 
+     * 
+     * @return 
+     */
     Gecode::ModEvent
     fix_tight_runs(Gecode::Space &home,
 		   const SizeVec &traceA,
@@ -309,9 +398,22 @@ protected:
 		   const BoolMatrix &tight);
 
 
-    //! prune the domains of the constraint variables M and MD
-    //! according to the bounds derivable from forward and backward
-    //! matrices.
+    /**
+     * prune the domains of the constraint variables M and MD
+     * according to the bounds derivable from forward and backward
+     * matrices.
+     * 
+     * @param home 
+     * @param Fwd 
+     * @param FwdA 
+     * @param FwdB 
+     * @param Bwd 
+     * @param BwdA 
+     * @param BwdB 
+     * @param UBM 
+     * 
+     * @return 
+     */
     Gecode::ModEvent 
     prune(Gecode::Space& home, 
 	  const InftyScoreRRMatrix &Fwd,
@@ -322,9 +424,18 @@ protected:
 	  //const InftyScoreRRMatrix &BwdB,
 	  const ScoreMatrix &UBM);
 
-    //! determines the indices of arcs that are forced to occur in any
-    //! arc match.  return result in the output parameters forcedA and
-    //! forcedB
+    /**
+     * determines the indices of arcs that are forced to occur in any
+     * arc match.  return result in the output parameters forcedA and
+     * forcedB
+     * 
+     * @param adjlA 
+     * @param adjlB 
+     * @param forcedA 
+     * @param forcedB 
+     * @param right 
+     * @param tight 
+     */
     template<class AdjList>
     void
     determine_forced_arcs(const AdjList &adjlA,
@@ -334,8 +445,18 @@ protected:
 			  bool right,
 			  bool *tight) const;
 	
-    //! bound on all arcmatches to the right (left) from i,j
-    //! if tight!=null and tight!=false return in tight, whether the bound is tight
+    /** 
+     * bound on all arcmatches to the right (left) from i,j
+     * if tight!=null and tight!=false return in tight, whether the bound is tight
+     * 
+     * @param adjlA 
+     * @param adjlB 
+     * @param considered_ams 
+     * @param right 
+     * @param tight 
+     * 
+     * @return 
+     */
     template<class AdjList>
     LocARNA::score_t
     bound_arcmatches(const AdjList &adjlA, 
@@ -344,7 +465,17 @@ protected:
 		     bool right,
 		     bool *tight) const;
     
-    // compute choice for the current space
+    /** 
+     * compute choice for the current space
+     * 
+     * @param s 
+     * @param Fwd 
+     * @param Bwd 
+     * @param traceA 
+     * @param traceB 
+     * @param UBM 
+     * @param match_scores 
+     */
     void
     choice(RNAalignment &s,
 	   const InftyScoreRRMatrix &Fwd,
@@ -355,24 +486,31 @@ protected:
 	   const ScoreMatrix &match_scores
 	   ) const;
 
-    //! determine arc matches where the match of the left or right ends is determined
-    //! and remove them from further consideration. In such cases, the similarity of the
-    //! arc match can be transfered to the match similarity of the undetermined ends
-    void
+    /** 
+     * determine arc matches where the match of the left or right ends is determined
+     * and remove them from further consideration. In such cases, the similarity of the
+     * arc match can be transfered to the match similarity of the undetermined ends
+     * 
+     * @param considered_ams 
+     * @param match_scores 
+     */void
     prune_decided_arc_matches(ScoreMatrix &considered_ams, ScoreMatrix &match_scores);
  
 public:
     
-    //! post the alignment score constraint
-    //! @param *this home space
-    //! @param seqA sequence A
-    //! @param seqB sequence B
-    //! @param arcmatches locarna object defining arc matches
-    //! @param aligner_params locarna object defining parameters for the alignment
-    //! @param scoring locarna object defining the scoring scheme
-    //! @param MD constraint variables defining "match or deletion" position in seqB for each position of seqA
-    //! @param M constraint variables defining whether MD refers to match (or deletion)
-    //! @param Score constraint variable for alignment score
+    /**
+     * post the alignment score constraint
+     *
+     * @param home home space
+     * @param seqA sequence A
+     * @param seqB sequence B
+     * @param arcmatches locarna object defining arc matches
+     * @param aligner_params locarna object defining parameters for the alignment
+     * @param scoring locarna object defining the scoring scheme
+     * @param MD constraint variables defining "match or deletion" position in seqB for each position of seqA
+     * @param M constraint variables defining whether MD refers to match (or deletion)
+     * @param Score constraint variable for alignment score
+    */
     static Gecode::ExecStatus post(Gecode::Space& home,
 				   const LocARNA::Sequence &seqA,
 				   const LocARNA::Sequence &seqB,
@@ -384,13 +522,33 @@ public:
 				   Gecode::IntVar &Score
 				   );
     
-    /// Copy propagator during cloning
+    /** 
+     * Copy propagator during cloning
+     * 
+     * @param home home space 
+     * @param share Gecode share flag
+     * 
+     * @return pointer to actor
+     */
     virtual Gecode::Actor* copy(Gecode::Space& home, bool share);
     
-    /// Cost function
+    /** 
+     * Cost function
+     * 
+     * @param home home space 
+     * @param med delta for mod event
+     * 
+     * @return cost of propagation
+     */
     virtual Gecode::PropCost cost(const Gecode::Space& home, const Gecode::ModEventDelta& med) const;
     
-    /// Perform propagation
+    /** 
+     * Perform propagation
+     * 
+     * @param home the home space 
+     * 
+     * @return Gecode execution status
+     */
     virtual Gecode::ExecStatus propagate(Gecode::Space& home, const Gecode::ModEventDelta&);
 };
 
