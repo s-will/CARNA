@@ -124,14 +124,26 @@ protected:
     virtual ~AlignmentScore();
     
 protected:
-
     
     /** 
-     * print constraint variables MD,M,Score for debugging
+     * \brief print constraint variables MD,M,Score for debugging
      * 
+     * @param ostream output stream
      */
     void
-    print_vars() const;
+    print_vars(std::ostream &out) const;
+
+    /** 
+     * \brief print trace (DEBUGGING)
+     * 
+     * @param out output stream 
+     * @param traceA trace vector a
+     * @param traceB trace vector b
+     * @param trace_score score of the trace
+     */
+    void
+    print_trace(std::ostream &out, const SizeVec &traceA,
+		const SizeVec &traceB, LocARNA::score_t trace_score) const;
     
     /**
      * upper bound for the contribution of a match 
@@ -466,15 +478,20 @@ protected:
 		     bool *tight) const;
     
     /** 
-     * compute choice for the current space
+     * \brief compute choice for the current space
      * 
-     * @param s 
-     * @param Fwd 
-     * @param Bwd 
-     * @param traceA 
-     * @param traceB 
-     * @param UBM 
-     * @param match_scores 
+     * @param s the space
+     * @param Fwd the forward matrix
+     * @param Bwd the backward matrix
+     * @param traceA trace vector A
+     * @param traceB trace vector B
+     * @param trace_score score of the trace
+     * @param UBM matrix of upper bounds
+     * @param match_scores matrix of match scores
+     *
+     * Compute the choice in the propagator, such that
+     * the heuristic can be guided by the bounds without the
+     * need for costly re-computation in the brancher.
      */
     void
     choice(RNAalignment &s,
@@ -482,20 +499,37 @@ protected:
 	   const InftyScoreRRMatrix &Bwd,
 	   const SizeVec &traceA,
 	   const SizeVec &traceB,
+	   LocARNA::score_t trace_score,
 	   const ScoreMatrix &UBM,
 	   const ScoreMatrix &match_scores
 	   ) const;
 
     /** 
-     * determine arc matches where the match of the left or right ends is determined
-     * and remove them from further consideration. In such cases, the similarity of the
-     * arc match can be transfered to the match similarity of the undetermined ends
+     * \brief remove already decided arc matches from further consideration
+     *
+     * Determine arc matches where the match of the left or right ends
+     * is determined and remove them from further consideration. In
+     * such cases, the similarity of the arc match can be transfered
+     * to the match similarity of the undetermined ends
      * 
-     * @param considered_ams 
-     * @param match_scores 
-     */void
+     * @note this method initializes matrices of match scores and
+     * considered arc matches, the match score matrix is modified to
+     * additionally reflect the contributions of decided arc matches.
+     * These arc matches are then removed from the "list"
+     * considered_ams.
+     *
+     * @param[out] considered_ams matrix of scores for arc matches
+     * @param[out] match_scores   matrix of corrected scores for single matchs i~j
+     *
+     * @note the matrix considered_ams contains entries (a,b) for
+     * matching the arcs with indices a and b. If the arc is still
+     * "considered", the entry is the score of the arcmatch and 0
+     * otherwise. "considered" means that the score contribution
+     * is not reflected in match_scores.
+     */
+    void
     prune_decided_arc_matches(ScoreMatrix &considered_ams, ScoreMatrix &match_scores);
- 
+
 public:
     
     /**

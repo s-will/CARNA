@@ -517,10 +517,13 @@ main(int argc, char* argv[]) {
 	
 	if (opt_time_limit) {
 	    Gecode::Search::Stop *timestop=0L;
+	    // activate next line for "if time limit is exceeded, no solution is produced"
+	    // timestop = new Gecode::Search::TimeStop(time_limit);
+	    // activate instead for "the first solution is always produced"
 	    timestop = new Gecode::Search::TimeStop(std::numeric_limits<unsigned long int>::max());
 	    o.stop=timestop;
 	}
-
+	
 	// construct engine
 	Gecode::BAB<RNAalignment> e(s,o);
 	

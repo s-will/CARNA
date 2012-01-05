@@ -54,24 +54,30 @@ public:
 	size_t val;    //!< selected value of variable (unused by current strategy)
 	size_t minval; //!< minimal selected domain value
 	size_t maxval; //!< maximal selected domain value
-	std::vector<int> values; //!< selected domain values
 	
-	// An int vector is used for constructing the choice of domain values
-	// by the AlignmentScore propagator and communicating this to the
-	// space.  This is definitely not optimized for speed!!! One should
-	// better use ranges instead of single values and use specific Gecode
-	// mechanisms for doing this. Using the vector is a workaround, since
-	// I (SW) could not make Gecode's BitSet working (or what else is more
-	// appropriate?).
+	//! \brief selected domain values
+	//! @note An int vector is used for constructing the choice of domain values
+	//! by the AlignmentScore propagator and communicating this to the
+	//! space.  This is definitely not optimized for speed!!! One should
+	//! better use ranges instead of single values and use specific Gecode
+	//! mechanisms for doing this. Using the vector is a workaround, since
+	//! I (SW) could not make Gecode's BitSet working (or what else is more
+	//! appropriate?).
+	std::vector<int> values; 
 	
+	//! signal whether the currenty best trace yields a new lower
+	//! bound
+	bool new_lower_bound;
+	std::vector<size_t> best_traceA;
+	std::vector<size_t> best_traceB;
+	LocARNA::score_t best_trace_score;
 	
 	ChoiceData()
-	    : enum_M(false), pos(0),val(0), minval(0), maxval(0), values()
-	{}
-	
-	ChoiceData(const ChoiceData &cd)
-	    : enum_M(cd.enum_M), pos(cd.pos),val(cd.val), 
-	      minval(cd.minval), maxval(cd.maxval), values(cd.values)
+	    : enum_M(false), pos(0),val(0), minval(0), maxval(0), values(),
+	      new_lower_bound(false),
+	      best_traceA(),
+	      best_traceB(),
+	      best_trace_score(numeric_limits<LocARNA::score_t>::min())
 	{}
 	
     };
@@ -93,8 +99,9 @@ protected:
 
     //size_t discrepancy; // experimental for simulating LDS
     
-    //! the propagator AlignmentScore selects the choice for the brancher RNAalignBranch 
-    //! and communcates its choice in this field of the space
+    //! the propagator AlignmentScore selects the choice for the
+    //! brancher RNAalignBranch and communicates its choice in this
+    //! field of the space
     ChoiceData choice_data;
 
  
@@ -107,7 +114,7 @@ public:
 		 bool opt_graphical_output);
 
 
-    /// Constructor for cloning \a s
+    //! \brief Constructor for cloning s
     RNAalignment(bool share, RNAalignment& s) : 
 	Gecode::Space(share,s),
 	seqA(s.seqA),
@@ -126,7 +133,7 @@ public:
 	Score.update(*this,share,s.Score);
     }
     
-    /// Generate a new copy of the space
+    //! \brief Generate a new copy of the space
     virtual Gecode::Space*
     copy(bool share) {
 	return new RNAalignment(share,*this);
@@ -196,7 +203,24 @@ public:
 	RNAalignBrancher(Gecode::Space &home) : Gecode::Brancher(home),start(1) {}
 	RNAalignBrancher(Gecode::Space &home,bool share,RNAalignBrancher &b) 
 	    : Gecode::Brancher(home,share,b),start(b.start) {}
-    
+	
+	/** 
+	 * \brief Fix variables according to trace
+	 * 
+	 * Assigns the variables in the space such that the space is
+	 * solved and its solution corresponds to the trace
+	 *
+	 * @param home the space
+	 * @param traceA trace vector for A
+	 * @param traceB trace vector for B
+	 * 
+	 * @return gecode exec status
+	 */
+	Gecode::ModEvent
+	fix_vars_from_trace(Gecode::Space& home,
+			    const std::vector<size_t> &traceA,
+			    const std::vector<size_t> &traceB) const;
+
     public:
 
 	// return true, if there are unassigned vars left for this brancher

@@ -12,7 +12,7 @@ using namespace LocARNA;
 using namespace std;
 
 const bool debug_out=false;
-//const bool debug_out=true;
+// const bool debug_out=true;
 
 
 // DETAIL: for the upper bound in ub_match, arc match scores to the
@@ -389,15 +389,15 @@ AlignmentScore::evaluate_trace(const SizeVec &traceA,
 }
 
 void
-AlignmentScore::print_vars() const {
-    std::cout << "Matches/Deletions:    ";
+AlignmentScore::print_vars(std::ostream &out) const {
+    out << "Matches/Deletions:    ";
     for (size_t i=0; i<=seqA.length(); i++) {
-	std::cout <<i<<(M[i].assigned()?(M[i].val()==0?"g":"~"):"?")<<MD[i]<<", "; 
+	out <<i<<(M[i].assigned()?(M[i].val()==0?"g":"~"):"?")<<MD[i]<<", "; 
     }
     
-    //std::cout << "Matches/Deletions:    " << MD << std::endl;
-    //std::cout << "Match Flags:          " << M << std::endl;
-    std::cout << "Score:      " << Score << std::endl;
+    //out << "Matches/Deletions:    " << MD << std::endl;
+    //out << "Match Flags:          " << M << std::endl;
+    out << "Score:      " << Score << std::endl;
 }
 
 
@@ -762,7 +762,7 @@ AlignmentScore::prune(Gecode::Space& home,
 	}
 	if (!match) {
 	    ret |= M[i].nq(home,1); // match of i not possible
-	    //std::cerr << "M["<<i<<"].nq(home,1) "<<ret<<std::endl;
+	    // std::cerr << "M["<<i<<"].nq(home,1) "<<ret<<std::endl;
 	}
     }
     
@@ -776,6 +776,7 @@ AlignmentScore::choice(RNAalignment &s,
 		       const InftyScoreRRMatrix &Bwd,
 		       const SizeVec &traceA,
 		       const SizeVec &traceB,
+		       score_t trace_score,
 		       const ScoreMatrix &UBM,
 		       const ScoreMatrix &match_scores) const {
     
@@ -784,12 +785,20 @@ AlignmentScore::choice(RNAalignment &s,
     // STEP 2: select MD variable MD[pos]
     // STEP 3: select domain change of MD[pos]
     
-    // NOTE: even more severe than in prune, UBM does not contain the best upper bounds anymore
-    // to save time, we use UBM nevertheless instead of re-computing the bounds 
+    // NOTE: even more severe than in prune, UBM does not contain the
+    // best upper bounds anymore to save time, we use UBM nevertheless
+    // instead of re-computing the bounds
     
     const size_t n=seqA.length();
     const size_t m=seqB.length();
-
+    
+    // ------------------------------------------------------------
+    // STEP 0: check whether the trace is a new solution
+    //
+    if (s.choice_data.new_lower_bound) {
+	return; //choice done
+    }
+    
     // ------------------------------------------------------------
     // STEP 1: check whether to enumerate M variables
     //
@@ -813,7 +822,7 @@ AlignmentScore::choice(RNAalignment &s,
     // determine position with largest weight
     
     if (debug_out) std::cout <<"Determine choice"<<std::endl;
-    //if (debug_out) print_vars();
+    //if (debug_out) print_vars(std::cout);
     
     vector<score_t> weights;
     score_t maxweight=numeric_limits<score_t>::min();
@@ -917,7 +926,7 @@ AlignmentScore::choice(RNAalignment &s,
 	
 	if (debug_out) std::cout << "CHOICE AT "<<pos <<" DELETION AFTER "<<val<<" "<<MD[pos] <<std::endl;
 	
-	if (debug_out) print_vars();
+	if (debug_out) print_vars(std::cout);
     }
     
     
@@ -952,16 +961,19 @@ AlignmentScore::choice(RNAalignment &s,
     
     s.choice_data.values.resize(0);
     s.choice_data.values.reserve(m/4);
-
+    
+    bool shrink=false;
     for (size_t j=s.MD[pos].min(); j<=(size_t)s.MD[pos].max(); j++) {
 	infty_score_t b;
-	if (s.MD[pos].in(j) && (b=Fwd(pos,j)+Bwd(pos,j)).is_finite() ) {
+	if (s.MD[pos].in(j) ) {
 	    if (debug_out) 
 		std::cout << j << ":" << b<<" ";
-	    if (b.finite_value()>=minb+percentage*(maxb-minb)) { 
+	    if ((b=Fwd(pos,j)+Bwd(pos,j)).is_finite() && b.finite_value()>=minb+percentage*(maxb-minb)) { 
 		minval=min(minval,j);
 		maxval=max(maxval,j);
 		s.choice_data.values.push_back(j);
+	    } else {
+		shrink=true;
 	    }
 	}
     }
@@ -969,18 +981,28 @@ AlignmentScore::choice(RNAalignment &s,
     // make sure that the domain gets smaller due to the above choice. If it does not
     // split the domain in the middle.
     //
-    if (minval==(size_t)s.MD[pos].min() && maxval==(size_t)s.MD[pos].max()) {
-	
+    if ( !shrink ) {
+		
 	size_t medval = (maxval-minval)/2+minval;
+	
+	//std::cerr << "SPLIT DOMAIN "<<MD[pos]<<" "<<minval<<" "<<medval<<" "<<maxval << " "<<s.choice_data.values.size()<<" "
+	// 	  << std::endl;
 	
 	// choose according to trace.  make sure that we always
 	// include the j in the trace for the left branch. Recall: val
 	// is the value of MD[pos] that is compatible to trace.
-	if (val<=medval) { 
+	if (val<=medval) {
 	    maxval=medval;
 	} else {
 	    minval=medval+1;
 	}
+	
+	// set values accordingly
+	s.choice_data.values.resize(0);
+	for (size_t j=minval; j<=maxval; j++) {
+	    s.choice_data.values.push_back(j);
+	}
+			
     }
     
     if (debug_out) { 
@@ -997,7 +1019,7 @@ AlignmentScore::choice(RNAalignment &s,
     s.choice_data.val=val;
     s.choice_data.minval=minval;
     s.choice_data.maxval=maxval;
-        
+    
 }
 
 
@@ -1064,7 +1086,7 @@ AlignmentScore::fix_tight_runs(Gecode::Space &home,
 		
 		// we can fix the whole run
 		/*
-		print_vars();
+		print_vars(std::cout);
 		for (size_t k=0; k<=n; k++) {
 		    if (traceA[k]!=0) {
 			bool t=tight.get(k,traceA[k]);
@@ -1098,7 +1120,7 @@ AlignmentScore::fix_tight_runs(Gecode::Space &home,
 	ret |= fix_vars_to_trace(home,last_assigned+1,n,traceA,traceB);
 	
     }
-    //print_vars();
+    //print_vars(std::cout);
     return ret;
 }
 
@@ -1172,8 +1194,23 @@ AlignmentScore::prune_decided_arc_matches(ScoreMatrix &considered_ams, ScoreMatr
 
 }
 
+void
+AlignmentScore::print_trace(std::ostream &out, const SizeVec &traceA,
+			    const SizeVec &traceB, score_t trace_score) const {
+    const size_t n=seqA.length();
+    const size_t m=seqB.length();
 
-
+    std::cout << "TRACE"<<std::endl;
+    std::cout << "Score: " << trace_score << std::endl;
+    for (size_type i=1; i<=n; ++i ) {
+	std::cout << i<<"~"<<traceA[i] << " ";
+    }
+    std::cout << std::endl;
+    for (size_type j=1; j<=m; j++) {
+	std::cout << traceB[j]<<"~"<<j << " ";
+    }
+    std::cout << std::endl;
+}
 
 Gecode::ExecStatus
 AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
@@ -1184,7 +1221,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 
     if (debug_out) {
 	std::cout << "Begin propagation"<<std::endl;
-	print_vars();
+	print_vars(std::cout);
     }
 
     // ----------------------------------------
@@ -1303,22 +1340,20 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
     
     if (debug_out) {
-	// print trace (DEBUGGING)
-	std::cout << "TRACE"<<std::endl;
-	std::cout << "Score: " << trace_score << std::endl;
-	for (size_type i=1; i<=n; ++i ) {
-	    std::cout << i<<"~"<<traceA[i] << " ";
-	}
-	std::cout << std::endl;
-	for (size_type j=1; j<=m; j++) {
-	    std::cout << traceB[j]<<"~"<<j << " ";
-	}
-	std::cout << std::endl;
+	print_trace(std::cout,traceA,traceB,trace_score);
     }
-
 
     // constrain Score by trace_score, which is a lower bound
     
+    // test whether the trace can improve the lower bound
+    RNAalignment &rahome = static_cast<RNAalignment&>(home);
+    if (Score.min()<trace_score) {
+	rahome.choice_data.new_lower_bound=true;
+	rahome.choice_data.best_traceA=traceA;
+	rahome.choice_data.best_traceB=traceB;
+	rahome.choice_data.best_trace_score=trace_score;	
+    }
+
     if (Gecode::me_failed(Score.gq(home,(int)trace_score))) {
      	if (debug_out) std::cout << "Setting of new lower bound failed."<<std::endl;
       	return Gecode::ES_FAILED;
@@ -1377,7 +1412,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
     if (debug_out) {
 	std::cout << "After Pruning:"<<std::endl;
-	print_vars();
+	print_vars(std::cout);
     }
     if (Gecode::me_failed(ret)) {
 	if (debug_out) std::cout << "Fail when pruning."<<std::endl;
@@ -1393,7 +1428,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     // -------------------- select CHOICE for the space
     if (!Gecode::me_modified(ret)) {
 	// don't call choice if propagate will be called again anyway (due to modifications)
-	choice(static_cast<RNAalignment&>(home),Fwd,Bwd,traceA,traceB,UBM,match_scores);
+	choice(static_cast<RNAalignment&>(home),Fwd,Bwd,traceA,traceB,trace_score,UBM,match_scores);
     }
 
     // -------------------- pass some debugging information to space

@@ -210,7 +210,6 @@ RNAalignment::print(std::ostream& out) const {
 			     );
 
     } else {
-
 	out << "Matches/Deletions:    ";
 	for (size_t i=0; i<=seqA.length(); i++) {
 	    if (!(M[i].assigned() && MD[i].assigned())) {
@@ -254,6 +253,32 @@ RNAalignment::print(std::ostream& out) const {
 
 }
 
+Gecode::ModEvent
+RNAalignment::RNAalignBrancher::
+fix_vars_from_trace(Gecode::Space& home,
+		    const std::vector<size_t> &traceA,
+		    const std::vector<size_t> &traceB
+		    ) const {
+    RNAalignment& s = static_cast<RNAalignment&>(home);
+
+    Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
+    
+    int last=0;
+    
+    for (size_t i=1; i<traceA.size(); i++) {
+	if (traceA[i]!=0) { // match i
+	    ret |= Gecode::Int::IntView(s.MD[i]).eq(home,(int)traceA[i]);
+	    ret |= Gecode::Int::BoolView(s.M[i]).eq(home,1);
+	    last=traceA[i];
+	} else { // deletion of i
+	    ret |= Gecode::Int::IntView(s.MD[i]).eq(home,last);
+	    ret |= Gecode::Int::BoolView(s.M[i]).eq(home,0);
+	}
+    }
+    return ret;
+}
+					       
+
 Gecode::ExecStatus 
 RNAalignment::RNAalignBrancher::commit(Gecode::Space& home, 
 			     const Gecode::Choice& _c,
@@ -261,24 +286,26 @@ RNAalignment::RNAalignBrancher::commit(Gecode::Space& home,
     RNAalignment& s = static_cast<RNAalignment&>(home);
     const Choice& c = static_cast<const Choice&>(_c);
     
-    /*
-    // split in eq and nq
-    if (a==0) {
-    return Gecode::me_failed(Gecode::Int::IntView(s.MD[c.pos]).eq(home, (int)c.val))
-    ? Gecode::ES_FAILED
-    : Gecode::ES_OK;
-    } else {
-    return Gecode::me_failed(Gecode::Int::IntView(s.MD[c.pos]).nq(home, (int)c.val))
-    ? Gecode::ES_FAILED
-    : Gecode::ES_OK;
-    }
-    */
-	    
     Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
 	    
     const RNAalignment::ChoiceData &cd=c.cd;
 	    
-    if (cd.enum_M) {
+    if (cd.new_lower_bound) {
+	s.choice_data.new_lower_bound=false;
+	
+	if (a==0) {
+	    //std::cout << "Commit to new better trace: "
+	    //<< cd.best_trace_score << " " << s.Score << std::endl;
+	
+	    ret = Gecode::Int::IntView(s.Score).eq(home, (int) cd.best_trace_score);
+	    
+	    ret |= fix_vars_from_trace(home,cd.best_traceA,cd.best_traceB);
+	    
+	} else {
+	    ret = Gecode::Int::IntView(s.Score).gr(home, (int) cd.best_trace_score);
+	}
+    }
+    else if (cd.enum_M) {
 	if (a==0) {
 	    ret = Gecode::Int::BoolView(s.M[cd.pos]).eq(home, 1);
 	} else {
@@ -293,7 +320,13 @@ RNAalignment::RNAalignBrancher::commit(Gecode::Space& home,
 	// this is a HACK, since it depends on the stl implementation.
 	// However, I would rather blame Gecode to require an C-style array here:)
 	Gecode::Iter::Values::Array values_iter(const_cast<int *>(&cd.values[0]),cd.values.size());
-		
+	
+	// std::cerr << "minval "<<cd.minval<<std::endl;
+	// std::cerr << "maxval "<<cd.maxval<<std::endl;
+	// for (size_t i=0; i<cd.values.size(); i++)
+	//     std::cerr << cd.values[i]<<" ";
+	// std::cerr << std::endl;
+	// std::cerr << "before MD["<<cd.pos<<"] " << s.MD[cd.pos]<<std::endl;
 	if (a==0) {
 	    ret = Gecode::Int::IntView(s.MD[cd.pos]).inter_r(home, r,false);
 	    ret = Gecode::Int::IntView(s.MD[cd.pos]).inter_v(home, values_iter, false);
@@ -305,6 +338,7 @@ RNAalignment::RNAalignBrancher::commit(Gecode::Space& home,
 	    // s.discrepancy++;
 	    // if (s.discrepancy>discrepancy_limit) { return Gecode::ES_FAILED; } 
 	}
+	//std::cerr << "after MD["<<cd.pos<<"] " << s.MD[cd.pos]<<std::endl;
     }
 	
     return Gecode::me_failed(ret)

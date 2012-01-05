@@ -22,3 +22,6 @@ Modify handling of time-limit, such that a first solution is always
 searched and written, i.e. the search will never be interrupted by time-out
 before first solution.
 (V0.2.4)
+Fix bug in branching strategy
+Change enumeration, such that traces that yield new lower bounds immediately generate solutions
+(V0.3)
