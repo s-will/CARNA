@@ -50,15 +50,14 @@ void WinHandler::update(const Gecode::IntVarArray &MD, const Gecode::BoolVarArra
     // idea of drawing edges for matches
     for (int i=0;i<nRows;i++){
 	for (int j=0;j<nCols;j++){
-	    if (MD[i].in(j) && M[i].in(1)){
+	    if (MD[i].in(j) && M[i].in(1)
+		&& (i==0 || j>MD[i-1].min())
+		){
 		int x,y;
 		x=j;//*scale-dx+scale/2+k;
 		y=i;//*scale-dx+scale/2;
 		if (x>0 && y>0 && x<img_x && y<img_y){
-		    if (!M[i].assigned())
-			rgbAdd(x,y,0,0,255); // if undecided -> cyan color
-		    else
-			rgbAdd(x,y,0,0,255);   // blue if chosen
+		    rgbAdd(x,y,0,0,255);   // blue
 		}
 	    }
 	}
@@ -72,18 +71,14 @@ void WinHandler::update(const Gecode::IntVarArray &MD, const Gecode::BoolVarArra
 		x=j;//*scale   +scale/2+k;
 		y=i;//*scale-dx+scale/2;
 		if (x>0 && y>0 && x<img_x && y<img_y){
-		    if (!M[i].assigned())
-			rgbAdd(x,y,255,0,0); // if undecided -> orange color
-		    else
-			rgbAdd(x,y,255,0,0);  // if can not be undef -> red
+		    rgbAdd(x,y,255,0,0);  // red
 		}
 	    }
-	}      
+	}
     }
     // insertions
     for (int i=0;i<nRows;i++){
 	for (int j=0;j<nCols;j++){
-	    int r=0,g=255,b=0;
 	
 	    int minj=nCols-1;
 	    if (i+1<nRows) {
@@ -95,16 +90,15 @@ void WinHandler::update(const Gecode::IntVarArray &MD, const Gecode::BoolVarArra
 		maxj = MD[i+1].max()-(!M[i+1].in(0)?1:0);
 	    }
 	
-	    if (MD[i].max()<j && j<=minj) {g=255;r=00;b=0;}
-	    if (MD[i].min()<j && j<=maxj) { //{g=10;r=200;b=10;}
+	    if (MD[i].min()<j && j<=maxj) {
 		int x,y;
 		x=j;//*scale-dx+scale/2;
 		y=i;//*scale+   scale/2+k;
 		if (x>0 && y>0 && x<img_x && y<img_y){
-		    rgbAdd(x,y,r,g,b);
+		    rgbAdd(x,y,0,255,0); //green
 		}
-	    }    
-	}      
+	    }
+	}
     }
     /*
     // keep for future use: text drawing in the picture
