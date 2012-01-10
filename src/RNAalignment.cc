@@ -162,13 +162,12 @@ RNAalignment::to_alignment() const {
     return alignment;
 }
 
-void RNAalignment::print_clustal_format(std::ostream& out_s) const{
-
-    size_t width=60;
+void 
+RNAalignment::print_clustal_format(std::ostream& out_s, size_t output_width) const{
 
     if (all_assigned()) {
 	to_alignment().write_clustal(out_s,
-				     width,
+				     output_width,
 				     (LocARNA::infty_score_t)Score.val(),
 				     false,false,true,false);
     }

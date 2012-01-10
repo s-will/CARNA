@@ -780,8 +780,12 @@ AlignmentScore::choice(RNAalignment &s,
 		       const ScoreMatrix &UBM,
 		       const ScoreMatrix &match_scores) const {
     
-    // We choose a variable and domain change in three steps
-    // STEP 1: decide whether to enumerate M or MD variable. In case, select M var
+    // We choose a variable and domain change in four steps
+    // STEP 0: decide whether the trace from the forward matrix is a new
+    //         lower bound.
+    //         Then, return; the brancher will enumerate the new solution.
+    // STEP 1: decide whether to enumerate M or MD variable. 
+    //         In case, select M var
     // STEP 2: select MD variable MD[pos]
     // STEP 3: select domain change of MD[pos]
     
@@ -814,10 +818,12 @@ AlignmentScore::choice(RNAalignment &s,
     }
     
     s.choice_data.enum_M=false;
- 
+    
     // ------------------------------------------------------------
     // STEP 2: select pos / variable MD[pos] 
     //
+
+    // TODO: revise the variable selection strategy
     
     // determine position with largest weight
     
@@ -834,16 +840,28 @@ AlignmentScore::choice(RNAalignment &s,
 	
 	total_size += MD[i].size();
 	
+	#define MAXIMIZE
 	// weight by maximal base pair bound
+#ifdef MAXIMIZE 
 	weights[i]=numeric_limits<score_t>::min();
+#else
+	weights[i]=0;
+#endif
 	
 	if (!s.MD[i].assigned()) {
 	    for (size_t j=s.MD[i].min(); j<=(size_t)s.MD[i].max(); j++) {
 		if (s.MD[i].in((int)j)) {
+#ifdef MAXIMIZE 
 		    weights[i]=max(weights[i],
 				   UBM(i,j)-match_scores(i,j) //ub_match(i,j,false) //CHECK: -2*scoring.base_match(i,j) or -match_scores(i,j)
-				   + 
+				   +
 				   (score_t)s.MD[i].size());
+#else
+		    weights[i] +=
+			UBM(i,j)-match_scores(i,j) //ub_match(i,j,false) //CHECK: -2*scoring.base_match(i,j) or -match_scores(i,j)
+			+
+			1;
+#endif
 		}
 	    }
 	}
@@ -894,14 +912,6 @@ AlignmentScore::choice(RNAalignment &s,
 
     assert(0<=pos && pos<=n);
     
-    
-    // print trace (DEBUGGING)
-    //if (debug_out) {std::cout << "TRACE"<<std::endl;
-    //	for (size_type i=1; i<=n; ++i ) {
-    //	    std::cout << traceA[i] << " ";
-    //	}
-    //	std::cout<<std::endl;
-    //}
     
     // ------------------------------------------------------------
     // STEP 3: select domain change of MD[pos] 

@@ -149,7 +149,7 @@ public:
     
     //! print solution in clustal format 
     void
-    print_clustal_format(std::ostream& out_s) const;
+    print_clustal_format(std::ostream& out_s, size_t output_width) const;
 
     //! print solution in pp format
     void 

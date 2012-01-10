@@ -547,7 +547,7 @@ main(int argc, char* argv[]) {
 		ofstream outfile;
 		outfile.open(clustal_out.c_str(),ios::out | ios::trunc);
 		if (outfile.good()) {
-		    ex->print_clustal_format(outfile);
+		    ex->print_clustal_format(outfile,output_width);
 		    outfile.close();
 		} else {
 		    std::cerr << "Cannot write solution to file "<<clustal_out<<std::endl;
