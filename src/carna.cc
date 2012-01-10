@@ -7,7 +7,7 @@
   Authors: Alessandor Dal Palu, Mathias Moehl, Sebastian Will
 
 
-  The Carna-algorithm was published at the conference CP 2010.
+  The Carna-algorithm has been published at the conference CP 2010.
   
   Alessandro Dal Palu, Mathias Möhl, and Sebastian Will.  A propagator
   for maximum weight string alignment with arbitrary pairwise
@@ -170,6 +170,11 @@ int c_d;
 bool opt_time_limit;
 int time_limit;
 
+bool opt_lower_bound;
+int lower_score_bound;
+bool opt_upper_bound;
+int upper_score_bound;
+
 // bool opt_mea_gapcost;
 // int mea_alpha;
 // int mea_beta;
@@ -260,9 +265,10 @@ LocARNA::option_def my_options[] = {
     {"anchorA",0,0,O_ARG_STRING,&seq_constraints_A,"","string","Anchor constraints sequence A."},
     {"anchorB",0,0,O_ARG_STRING,&seq_constraints_B,"","string","Anchor constraints sequence B."},
     {"ignore-constraints",0,&opt_ignore_constraints,O_NO_ARG,0,O_NODEFAULT,"","Ignore constraints in pp-file"},
-
-    //{"",0,0,O_SECTION_HIDE,0,O_NODEFAULT,"","Mode of operation"},
-    //{"eval",0,&opt_eval,O_NO_ARG,0,O_NODEFAULT,"","Turn on evaluation mode."},
+    
+    {"lb",0,&opt_lower_bound,O_ARG_INT,&lower_score_bound,O_NODEFAULT,"score","Lower score bound"},
+    {"ub",0,&opt_upper_bound,O_ARG_INT,&upper_score_bound,O_NODEFAULT,"score","Upper score bound"},
+    
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Controlling Gecode"},
     {"c_d",0,0,O_ARG_INT,&c_d,"1","distance","Recomputation distance"},
@@ -491,7 +497,9 @@ main(int argc, char* argv[]) {
     RNAalignment* s = new RNAalignment(seqA,seqB,
 				       *arc_matches,
 				       aligner_params,scoring,
-				       opt_gist	
+				       opt_lower_bound?lower_score_bound:Gecode::Int::Limits::min,
+				       opt_upper_bound?upper_score_bound:Gecode::Int::Limits::max,
+				       opt_gist
 				       );
     
 

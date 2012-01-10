@@ -3,10 +3,12 @@
 using namespace LocARNA;
 
 RNAalignment::RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequence &seqB_,
-	     const LocARNA::ArcMatches &arcmatches_,
-	     const LocARNA::AlignerParams &aligner_params, 
-	     const LocARNA::Scoring &scoring,
-	     bool opt_graphical_output)
+			   const LocARNA::ArcMatches &arcmatches_,
+			   const LocARNA::AlignerParams &aligner_params, 
+			   const LocARNA::Scoring &scoring,
+			   int lower_score_bound,
+			   int upper_score_bound,		 
+			   bool opt_graphical_output)
     :
     seqA(seqA_),
     seqB(seqB_),
@@ -15,7 +17,7 @@ RNAalignment::RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequen
     m(seqB.length()),
     MD(*this,n+1,0,m), //we only need MD_1,...,MD_n ==> ignore MD_0
     M(*this,n+1,0,1),
-    Score(*this,Gecode::Int::Limits::min,Gecode::Int::Limits::max),
+    Score(*this,lower_score_bound,upper_score_bound),
     choice_data()
     //, discrepancy(0)
 {

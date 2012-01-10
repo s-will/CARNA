@@ -106,13 +106,26 @@ protected:
 
  
 public:
-    // Constructor for setting up the constraint model
+    /** 
+     * Set up the constraint model
+     * 
+     * @param seqA_ sequence A 
+     * @param seqB_ sequence B
+     * @param arcmatches_ the arc matches
+     * @param aligner_params parameters for the aligner
+     * @param scoring scoring object
+     * @param lower_score_bound lower bound on the score (use Gecode::Int::Limits::min for no bound)
+     * @param upper_score_bound upper bound on the score (use Gecode::Int::Limits::max for no bound)
+     * @param opt_graphical_output support of gist graphical output
+     * 
+     */
     RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequence &seqB_,
 		 const LocARNA::ArcMatches &arcmatches_,
 		 const LocARNA::AlignerParams &aligner_params, 
 		 const LocARNA::Scoring &scoring,
+		 int lower_score_bound,
+		 int upper_score_bound,		 
 		 bool opt_graphical_output);
-
 
     //! \brief Constructor for cloning s
     RNAalignment(bool share, RNAalignment& s) : 
