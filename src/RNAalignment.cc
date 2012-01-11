@@ -314,7 +314,7 @@ RNAalignment::RNAalignBrancher::commit(Gecode::Space& home,
 	}
     } else {
 		
-	Gecode::Iter::Ranges::Singleton r((int)cd.minval,(int)cd.maxval);
+	//Gecode::Iter::Ranges::Singleton r((int)cd.minval,(int)cd.maxval);
 		
 	// note the const cast is necessary due to an ill specified Gecode interface.  
 	// &cd.values[0] points to the array encapsulated by the vector,
@@ -329,10 +329,10 @@ RNAalignment::RNAalignBrancher::commit(Gecode::Space& home,
 	// std::cerr << std::endl;
 	// std::cerr << "before MD["<<cd.pos<<"] " << s.MD[cd.pos]<<std::endl;
 	if (a==0) {
-	    ret = Gecode::Int::IntView(s.MD[cd.pos]).inter_r(home, r,false);
+	    //ret = Gecode::Int::IntView(s.MD[cd.pos]).inter_r(home, r,false);
 	    ret = Gecode::Int::IntView(s.MD[cd.pos]).inter_v(home, values_iter, false);
 	} else {
-	    ret = Gecode::Int::IntView(s.MD[cd.pos]).minus_r(home, r, false);
+	    //ret = Gecode::Int::IntView(s.MD[cd.pos]).minus_r(home, r, false);
 	    ret = Gecode::Int::IntView(s.MD[cd.pos]).minus_v(home, values_iter, false);
 		    
 	    // EXPERIMENTAL limiting of discrepancy

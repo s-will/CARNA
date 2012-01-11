@@ -52,18 +52,16 @@ public:
 	bool enum_M;   //!< whether to enumerate an M or MD variable
 	size_t pos;    //!< position of variable in M or MD
 	size_t val;    //!< selected value of variable (unused by current strategy)
-	size_t minval; //!< minimal selected domain value
-	size_t maxval; //!< maximal selected domain value
 	
 	//! \brief selected domain values
 	//! @note An int vector is used for constructing the choice of domain values
 	//! by the AlignmentScore propagator and communicating this to the
-	//! space.  This is definitely not optimized for speed!!! One should
+	//! space.  This is not optimized for speed! One should
 	//! better use ranges instead of single values and use specific Gecode
 	//! mechanisms for doing this. Using the vector is a workaround, since
 	//! I (SW) could not make Gecode's BitSet working (or what else is more
 	//! appropriate?).
-	std::vector<int> values; 
+	std::vector<int> values;
 	
 	//! signal whether the currenty best trace yields a new lower
 	//! bound
@@ -73,7 +71,7 @@ public:
 	LocARNA::score_t best_trace_score;
 	
 	ChoiceData()
-	    : enum_M(false), pos(0),val(0), minval(0), maxval(0), values(),
+	    : enum_M(false), pos(0),val(0), values(),
 	      new_lower_bound(false),
 	      best_traceA(),
 	      best_traceB(),
@@ -254,7 +252,7 @@ public:
 	    // the decision about choice is moved to the propagator, which
 	    // returned it's choice in the field choice of the space s
 	    
-	    //std::cout << "CHOICE "<<s.pos<<" "<<s.val<<" "<<s.minval<<" "<<s.maxval<<" "<<s.MD[s.pos]<<std::endl;
+	    //std::cout << "CHOICE "<<s.pos<<" "<<s.val<<" "<<s.MD[s.pos]<<std::endl;
 	    return new Choice(*this,s.choice_data);
 	}
 	

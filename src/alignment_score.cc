@@ -770,6 +770,7 @@ AlignmentScore::prune(Gecode::Space& home,
     return ret;
 }
 
+
 void
 AlignmentScore::choice(RNAalignment &s,
 		       const InftyScoreRRMatrix &Fwd,
@@ -964,10 +965,8 @@ AlignmentScore::choice(RNAalignment &s,
 
     // determine the j in MD[pos], where the bound is greater or equal
     // than minb+percentage*(maxb-minb)
-    // Only determine continous range that contains all sufficiently large bounds.
-    //
-    size_t minval=m+1;
-    size_t maxval=0;
+    //size_t minval=m+1;
+    //size_t maxval=0;
     
     s.choice_data.values.resize(0);
     s.choice_data.values.reserve(m/4);
@@ -979,8 +978,8 @@ AlignmentScore::choice(RNAalignment &s,
 	    if (debug_out) 
 		std::cout << j << ":" << b<<" ";
 	    if ((b=Fwd(pos,j)+Bwd(pos,j)).is_finite() && b.finite_value()>=minb+percentage*(maxb-minb)) { 
-		minval=min(minval,j);
-		maxval=max(maxval,j);
+		//minval=min(minval,j);
+		//maxval=max(maxval,j);
 		s.choice_data.values.push_back(j);
 	    } else {
 		shrink=true;
@@ -989,14 +988,14 @@ AlignmentScore::choice(RNAalignment &s,
     }
     
     // make sure that the domain gets smaller due to the above choice. If it does not
-    // split the domain in the middle.
+    // split the domain.
     //
     if ( !shrink ) {
-		
-	size_t medval = (maxval-minval)/2+minval;
 	
-	//std::cerr << "SPLIT DOMAIN "<<MD[pos]<<" "<<minval<<" "<<medval<<" "<<maxval << " "<<s.choice_data.values.size()<<" "
-	// 	  << std::endl;
+	size_t minval=s.MD[pos].min();
+	size_t maxval=s.MD[pos].max();
+    	
+	size_t medval = (maxval-minval)/2+minval;
 	
 	// choose according to trace.  make sure that we always
 	// include the j in the trace for the left branch. Recall: val
@@ -1012,24 +1011,19 @@ AlignmentScore::choice(RNAalignment &s,
 	for (size_t j=minval; j<=maxval; j++) {
 	    s.choice_data.values.push_back(j);
 	}
-			
     }
     
     if (debug_out) { 
-	if (minval==maxval) {
-	    std::cout << " IN: " << minval;
-	} else {
-	    std::cout << " IN: " << minval << "-" << maxval;
+	std::cout << " IN:";
+	for (size_t i=0; i< s.choice_data.values.size(); ++i) {
+	    std::cout << " " << s.choice_data.values[i];
 	}
 	std::cout << std::endl;
     }
     
     // copy choice to the space
     s.choice_data.pos=pos;
-    s.choice_data.val=val;
-    s.choice_data.minval=minval;
-    s.choice_data.maxval=maxval;
-    
+    s.choice_data.val=val;    
 }
 
 

@@ -127,12 +127,15 @@ my $norun;
 
 my $carnaArgs="";
 
+my $opt_sym;
+
 ## Getopt::Long::Configure("no_ignore_case");
 
 GetOptions(
     "v|verbose" => \$verbose,
     "vv|moreverbose" => \$moreverbose,
     #"quiet" => \$quiet,   
+    "sym" => \$opt_sym,
     "help"=> \$help,
     "man" => \$man,
     "norun" => \$norun,
@@ -513,11 +516,21 @@ foreach my $entry (@mfasta) {
     $i++;
 }
 
-
-my $cmd = "$CARNA_HOME/carna $carnaArgs "."1.pp.$tmpsuf 2.pp.$tmpsuf";
-
+my $ppfile1="1.pp.$tmpsuf";
+my $ppfile2="2.pp.$tmpsuf";
 my $constraintString1 = sequence_constraint_string($mfasta[0]);
 my $constraintString2 = sequence_constraint_string($mfasta[1]);
+
+if($opt_sym) {
+    #swap($ppfile1,$ppfile2);
+    my $tmp=$ppfile1; $ppfile1=$ppfile2; $ppfile2=$tmp;
+    #swap($constraintString1,$constraintString2);
+    $tmp=$constraintString1; $constraintString1=$constraintString2;
+    $constraintString2=$tmp;
+ }
+
+my $cmd = "$CARNA_HOME/carna $carnaArgs $ppfile1 $ppfile2";
+
 
 if (($constraintString1 ne "")
     &&
