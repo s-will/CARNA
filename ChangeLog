@@ -25,3 +25,5 @@ before first solution.
 Fix bug in branching strategy
 Change enumeration, such that traces that yield new lower bounds immediately generate solutions
 (V0.3)
+More bugfixes in branching heuristic and tight run optimization
+(V0.4)
