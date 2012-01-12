@@ -152,8 +152,12 @@ protected:
      * @param j index in second sequence S
      * @param considered_ams 
      * @param match_scores 
-     * @param[in,out] tight return in tight, whether the bound is tight (if tight!=NULL && tight!=false)
+     * @param[in,out] tight return in tight, whether the bound is
+     * tight (if tight!=NULL && tight!=false)
      * 
+     * @note the bound is tight iff no arc matches contribute to the bound,
+     * i.e. iff the bound is 0
+     *
      * @return upper bound for contribution of matching i and j 
      */
     LocARNA::score_t
@@ -323,7 +327,7 @@ protected:
      * @param Fwd matrix of size n+1 x m+1, output parameter
      * @param FwdA matrix of size n+1 x m+1, output parameter
      * @param FwdB matrix of size n+1 x m+1, output parameter
-     * @param precomputed UBM upper bounds for all matches i~j
+     * @param UBM precomputed upper bounds for all matches i~j
      *
      * Result is returned in Fwd, FwdA, and FwdB. Fwd(i,j) is the
      * best prefix alignment score for prefixes A_1..i and
@@ -345,7 +349,7 @@ protected:
      * @param Fwd 
      * @param FwdA 
      * @param FwdB 
-     * @param UBM 
+     * @param UBM precomputed upper bounds for all matches i~j
      * @param traceA 
      * @param traceB 
      */
@@ -366,7 +370,7 @@ protected:
      * @param Bwd 
      * @param BwdA 
      * @param BwdB 
-     * @param UBM 
+     * @param UBM precomputed upper bounds for all matches i~j 
      */
     void
     backward_algorithm(Gecode::Space& home, 
@@ -392,16 +396,17 @@ protected:
 		      const SizeVec &traceB);
 
     /**
-     * determine the runs in the trace that are 'tight' and therefore
+     * Determine the runs in the trace that are 'tight' and therefore
      * have to occur in any solution as in the trace. Then, fix the
      * constraint variables accordingly.
      * 
-     * @param home 
-     * @param traceA 
-     * @param traceB 
-     * @param tight 
+     * @param home the home space
+     * @param traceA the trace vector for A
+     * @param traceB the trace vector for B
+     * @param tight matrix of precomputed tightness of upper bounds
+     * for all matches i~j
      * 
-     * @return 
+     * @return gecode mod event 
      */
     Gecode::ModEvent
     fix_tight_runs(Gecode::Space &home,
@@ -422,7 +427,7 @@ protected:
      * @param Bwd 
      * @param BwdA 
      * @param BwdB 
-     * @param UBM 
+     * @param UBM precomputed upper bounds for all matches i~j
      * 
      * @return 
      */
@@ -461,21 +466,30 @@ protected:
      * bound on all arcmatches to the right (left) from i,j
      * if tight!=null and tight!=false return in tight, whether the bound is tight
      * 
-     * @param adjlA 
-     * @param adjlB 
-     * @param considered_ams 
-     * @param right 
-     * @param tight 
+     * @param adjlA adjacency list of a position in A 
+     * @param adjlB adjacency list of a position in B
+     * @param considered_ams the matrix of (scores of) considered arc matches
+     * @param right whether the lists adjlA and adjlB are right adjacency lists
      * 
-     * @return 
+     * @note the adjacency lists have to be either both right or both
+     * left adjacency lists; as usual in the locarna lib, the lists
+     * have to be sorted
+     *
+     * @return score upper bound of contributions due to the arc matches 
+     *
+     * @note the upper bound takes into account that the other ends of
+     * simultaneously scored arc matches can not cross each
+     * other. (The method determines the maximum clique of compatible
+     * arc matches by DP.)
+     *
+     * @note arc matches with negative scores do never contribute
      */
     template<class AdjList>
     LocARNA::score_t
     bound_arcmatches(const AdjList &adjlA, 
 		     const AdjList &adjlB,
 		     const ScoreMatrix &considered_ams,
-		     bool right,
-		     bool *tight) const;
+		     bool right) const;
     
     /** 
      * \brief compute choice for the current space
@@ -486,7 +500,7 @@ protected:
      * @param traceA trace vector A
      * @param traceB trace vector B
      * @param trace_score score of the trace
-     * @param UBM matrix of upper bounds
+     * @param UBM precomputed upper bounds for all matches i~j
      * @param match_scores matrix of match scores
      *
      * Compute the choice in the propagator, such that

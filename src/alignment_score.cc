@@ -159,8 +159,7 @@ score_t
 AlignmentScore::bound_arcmatches(const AdjList &adjlA,
 				 const AdjList &adjlB,
 				 const ScoreMatrix &considered_ams,
-				 bool right,
-				 bool *tight_ptr) const {
+				 bool right) const {
     
     // short cut for empty adjacency lists
     if (adjlA.size()==0 || adjlB.size()==0) {
@@ -224,17 +223,6 @@ AlignmentScore::bound_arcmatches(const AdjList &adjlA,
     }
 
     score_t bound = MAT[adjlB.size()].finite_value();
-
-    // when is the bound TIGHT? A: if there are no considered arc matches
-    // contributing to the bound.
-    // Since arc matches with negative score do never contribute,
-    // the bound is tight iff the bound is 0!!!
-    bool tight=(bound==0);
-
-    // RETURN tight
-    if (tight_ptr!=NULL && *tight_ptr==true) {
-	*tight_ptr = tight;
-    }
     
     // RETURN bound
     // maximal bound for arcs matches to the left is in MAT[adjlB.size()] 
@@ -247,7 +235,7 @@ score_t
 AlignmentScore::ub_match(size_type i, size_type j,
 			 const ScoreMatrix &considered_ams,
 			 const ScoreMatrix &match_scores,
-			 bool *tight) const {
+			 bool *tight_ptr) const {
     //std::cout << "AlignmentScore::ub_match "<<i<< " "<<j<<std::endl;
   
     // compute upper bound for the contribution of matching positions i
@@ -256,22 +244,35 @@ AlignmentScore::ub_match(size_type i, size_type j,
     //
     // when selecting a certain structure: maximize over possible base pair matchs
     
-    score_t bound=match_scores(i,j);
+    score_t bound=0;
     
     //std::cout << bound<<std::endl;
-    
+        
     bound += 
 	bound_arcmatches(arc_matches.get_base_pairsA().right_adjlist(i),
 			 arc_matches.get_base_pairsB().right_adjlist(j),
 			 considered_ams,
-			 true,tight);
+			 true);
     
     bound += 
 	bound_arcmatches(arc_matches.get_base_pairsA().left_adjlist(i),
 			 arc_matches.get_base_pairsB().left_adjlist(j),
 			 considered_ams,
-			 false,tight);
+			 false);
     
+    // when is the bound TIGHT? A: if there are no considered arc matches
+    // contributing to the bound.
+    // Since arc matches with negative score do never contribute,
+    // the bound is tight iff the bound is 0!!!
+    bool tight=(bound==0);
+
+    // return tightness
+    if (tight_ptr!=NULL && *tight_ptr==true) {
+	*tight_ptr = tight;
+    }
+    
+    bound += match_scores(i,j);
+
     //std::cout << "end AlignmentScore::ub_match "<<i<< " "<<j<<" "<<bound<<std::endl;
     
     return bound;
@@ -945,12 +946,12 @@ AlignmentScore::choice(RNAalignment &s,
     
     // step 3b) determine values for splitting choice
     
-    // determine minimal and maximal bound for each j in MD[pos]
+    // determine minimal and maximal bound accross all j in MD[pos]
     //
     score_t minb=numeric_limits<score_t>::max();
     score_t maxb=numeric_limits<score_t>::min();
 
-    if (debug_out) std::cout << "CHOICE AT "<<pos <<std::endl;
+    if (debug_out) std::cout << "CHOICE AT "<< pos <<std::endl;
     for (size_t j=s.MD[pos].min(); j<=(size_t)s.MD[pos].max(); j++) {
 	infty_score_t b;
 	if (s.MD[pos].in(j) && (b=Fwd(pos,j)+Bwd(pos,j)).is_finite()) {
@@ -961,42 +962,35 @@ AlignmentScore::choice(RNAalignment &s,
     
     // use strategy with fixed percentage !?
     // float fraction=total_size/(float)(n*m);
-    float percentage=0.8; // max((float)0.5,1-sqrt(fraction));
+    int percentage=80; // max((float)0.5,1-sqrt(fraction));
 
     // determine the j in MD[pos], where the bound is greater or equal
     // than minb+percentage*(maxb-minb)
-    //size_t minval=m+1;
-    //size_t maxval=0;
     
     s.choice_data.values.resize(0);
     s.choice_data.values.reserve(m/4);
     
-    bool shrink=false;
     for (size_t j=s.MD[pos].min(); j<=(size_t)s.MD[pos].max(); j++) {
 	infty_score_t b;
 	if (s.MD[pos].in(j) ) {
 	    if (debug_out) 
 		std::cout << j << ":" << b<<" ";
-	    if ((b=Fwd(pos,j)+Bwd(pos,j)).is_finite() && b.finite_value()>=minb+percentage*(maxb-minb)) { 
-		//minval=min(minval,j);
-		//maxval=max(maxval,j);
+	    if ((b=Fwd(pos,j)+Bwd(pos,j)).is_finite() && b.finite_value()>=minb+(percentage*(maxb-minb))/100) { 
 		s.choice_data.values.push_back(j);
-	    } else {
-		shrink=true;
-	    }
+	    } 
 	}
     }
     
     // make sure that the domain gets smaller due to the above choice. If it does not
     // split the domain.
     //
-    if ( !shrink ) {
+    if ( s.MD[pos].size()==s.choice_data.values.size() ) {
 	
 	size_t minval=s.MD[pos].min();
 	size_t maxval=s.MD[pos].max();
     	
-	size_t medval = (maxval-minval)/2+minval;
-	
+	size_t medval = minval + (maxval-minval)/2 ;
+		
 	// choose according to trace.  make sure that we always
 	// include the j in the trace for the left branch. Recall: val
 	// is the value of MD[pos] that is compatible to trace.
@@ -1014,7 +1008,7 @@ AlignmentScore::choice(RNAalignment &s,
     }
     
     if (debug_out) { 
-	std::cout << " IN:";
+	std::cout << s.MD[pos] << " IN:";
 	for (size_t i=0; i< s.choice_data.values.size(); ++i) {
 	    std::cout << " " << s.choice_data.values[i];
 	}
@@ -1034,6 +1028,7 @@ AlignmentScore::fix_vars_to_trace(Gecode::Space &home,
 				  const SizeVec &traceA,
 				  const SizeVec &traceB
 				  ) {
+    
     ////////////////////
     // some assertions
     assert(start>=0);
@@ -1048,6 +1043,7 @@ AlignmentScore::fix_vars_to_trace(Gecode::Space &home,
     
     
     Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
+    
     int last=0;
     if (start>0) {
 	last=MD[start-1].val();
@@ -1108,8 +1104,12 @@ AlignmentScore::fix_tight_runs(Gecode::Space &home,
 	    run_is_tight=true;
 	    
 	} else { // within a run
-	    if (traceA[i]!=0) {
-		run_is_tight &= tight.get(i,traceA[i]);
+	    // the run is tight at i if only if all possible matches
+	    // of i with some value val are tight
+	    if (M[i].in(1)) { // if match is possible
+		for (int val=MD[i].min(); run_is_tight && val<=MD[i].max(); val++) {
+		    run_is_tight &= (!MD[i].in(val)) || tight.get(i,val);
+		}
 	    }
 	}
     }
