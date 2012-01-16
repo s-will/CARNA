@@ -3,6 +3,8 @@
 
 #include "config.h"
 
+#include <limits>
+
 #include <fstream>
 #include <iostream>
 
@@ -75,7 +77,7 @@ public:
 	      new_lower_bound(false),
 	      best_traceA(),
 	      best_traceB(),
-	      best_trace_score(numeric_limits<LocARNA::score_t>::min())
+	      best_trace_score(std::numeric_limits<LocARNA::score_t>::min())
 	{}
 	
     };

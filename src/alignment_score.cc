@@ -9,7 +9,6 @@
 #include <assert.h>
 
 using namespace LocARNA;
-using namespace std;
 
 const bool debug_out=false;
 // const bool debug_out=true;
@@ -832,8 +831,8 @@ AlignmentScore::choice(RNAalignment &s,
     if (debug_out) std::cout <<"Determine choice"<<std::endl;
     //if (debug_out) print_vars(std::cout);
     
-    vector<score_t> weights;
-    score_t maxweight=numeric_limits<score_t>::min();
+    std::vector<score_t> weights;
+    score_t maxweight=std::numeric_limits<score_t>::min();
     
     size_t total_size=0; // count total domain size
     
@@ -845,7 +844,7 @@ AlignmentScore::choice(RNAalignment &s,
 	#define MAXIMIZE
 	// weight by maximal base pair bound
 #ifdef MAXIMIZE 
-	weights[i]=numeric_limits<score_t>::min();
+	weights[i]=std::numeric_limits<score_t>::min();
 #else
 	weights[i]=0;
 #endif
@@ -854,10 +853,10 @@ AlignmentScore::choice(RNAalignment &s,
 	    for (size_t j=s.MD[i].min(); j<=(size_t)s.MD[i].max(); j++) {
 		if (s.MD[i].in((int)j)) {
 #ifdef MAXIMIZE 
-		    weights[i]=max(weights[i],
-				   UBM(i,j)-match_scores(i,j) //ub_match(i,j,false) //CHECK: -2*scoring.base_match(i,j) or -match_scores(i,j)
-				   +
-				   (score_t)s.MD[i].size());
+		    weights[i]=std::max(weights[i],
+					UBM(i,j)-match_scores(i,j) //ub_match(i,j,false) //CHECK: -2*scoring.base_match(i,j) or -match_scores(i,j)
+					+
+					(score_t)s.MD[i].size());
 #else
 		    weights[i] +=
 			UBM(i,j)-match_scores(i,j) //ub_match(i,j,false) //CHECK: -2*scoring.base_match(i,j) or -match_scores(i,j)
@@ -878,7 +877,7 @@ AlignmentScore::choice(RNAalignment &s,
 	}
     }
     
-    if(maxweight == numeric_limits<score_t>::min()) {	
+    if(maxweight == std::numeric_limits<score_t>::min()) {	
 	return;
     }
     
@@ -948,15 +947,15 @@ AlignmentScore::choice(RNAalignment &s,
     
     // determine minimal and maximal bound accross all j in MD[pos]
     //
-    score_t minb=numeric_limits<score_t>::max();
-    score_t maxb=numeric_limits<score_t>::min();
+    score_t minb=std::numeric_limits<score_t>::max();
+    score_t maxb=std::numeric_limits<score_t>::min();
 
     if (debug_out) std::cout << "CHOICE AT "<< pos <<std::endl;
     for (size_t j=s.MD[pos].min(); j<=(size_t)s.MD[pos].max(); j++) {
 	infty_score_t b;
 	if (s.MD[pos].in(j) && (b=Fwd(pos,j)+Bwd(pos,j)).is_finite()) {
-	    minb=min(minb,b.finite_value());
-	    maxb=max(maxb,b.finite_value());
+	    minb=std::min(minb,b.finite_value());
+	    maxb=std::max(maxb,b.finite_value());
 	}
     }
     
@@ -1390,7 +1389,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 		size_t j = traceA[i];
 		score_t matchscore=evaluate_tracematch(traceA,traceB,considered_ams,match_scores,i,j);
 		
-		cout
+		std::cout
 		    << match_arrow_allowed(i,j)<<" "
 		    <<Fwd(i-1,j-1)<<"+"<< matchscore<<"["<<ub_match(i,j,considered_ams,match_scores)<<"]"<<"+"<<Bwd(i,j)<<" = "
 		    <<Fwd(i-1,j-1)+matchscore+Bwd(i,j);

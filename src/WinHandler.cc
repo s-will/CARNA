@@ -4,7 +4,7 @@
 
 #include "WinHandler.hh"
 
-WinHandler::WinHandler(int Rows, int Cols, string t)
+WinHandler::WinHandler(int Rows, int Cols, std::string t)
     : m_stoprequested(false), m_running(false)
 {
     nRows=Rows;
@@ -16,7 +16,7 @@ WinHandler::WinHandler(int Rows, int Cols, string t)
     img_y=Rows;
 
     
-    imageOut = CImg<>(img_x,img_y,1,3,0);
+    imageOut = cimg_library::CImg<>(img_x,img_y,1,3,0);
     //cout << "allocating image: " << img_x << " " << img_y << "\n";
     
     for (int i=0;i<img_x;i++)
@@ -146,7 +146,7 @@ void WinHandler::window_thread(){
 void WinHandler::do_work()
 {
     //printf("Working\n");
-    main_disp=CImgDisplay(imageOut,title,0);
+    main_disp=cimg_library::CImgDisplay(imageOut,title,0);
 
     
     // --------------------
@@ -161,14 +161,14 @@ void WinHandler::do_work()
     size_t wdim_x=img_x;
     size_t wdim_y=img_y;
     
-    const size_t mindim=max(300,min(2*img_x,2*img_y));
+    const size_t mindim=std::max(300,std::min(2*img_x,2*img_y));
     const size_t maxdim_x=1000;
     const size_t maxdim_y=750;
     
     double ratio=1;
     
-    if ((size_t)min(wdim_x,wdim_y) < mindim) {
-	ratio = ((double)mindim/min(wdim_x,wdim_y));
+    if ((size_t)std::min(wdim_x,wdim_y) < mindim) {
+	ratio = ((double)mindim/std::min(wdim_x,wdim_y));
     }
     
     wdim_x *= ratio;

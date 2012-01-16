@@ -11,8 +11,6 @@
 #include <semaphore.h>
 #include <pthread.h>
 
-using namespace cimg_library;
-using namespace std;
 
 class WinHandler
 {
@@ -20,8 +18,8 @@ class WinHandler
     pthread_t m_thread,w_thread;
     sem_t s1,lock;  /// semaphores
 
-    CImg<unsigned char> imageOut; 
-    CImgDisplay main_disp;
+    cimg_library::CImg<unsigned char> imageOut; 
+    cimg_library::CImgDisplay main_disp;
     const char* title;
 
     int nRows;
@@ -31,7 +29,7 @@ class WinHandler
     int img_y;  
 
 public:
-    WinHandler(int Rows, int Cols, string t);
+    WinHandler(int Rows, int Cols, std::string t);
   
     ~WinHandler()
     {
