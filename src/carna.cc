@@ -272,7 +272,7 @@ LocARNA::option_def my_options[] = {
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Controlling Gecode"},
     {"c_d",0,0,O_ARG_INT,&c_d,"1","distance","Recomputation distance"},
-    {"time-limit",0,&opt_time_limit,O_ARG_INT,&time_limit,O_NODEFAULT,"time","Search time limit (always searches for first solution)."},
+    {"time-limit",0,&opt_time_limit,O_ARG_INT,&time_limit,O_NODEFAULT,"time","Search time limit in milliseconds (always searches for first solution)."},
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Standard options"},
 
