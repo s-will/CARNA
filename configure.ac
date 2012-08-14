@@ -93,7 +93,7 @@ AC_MSG_RESULT([$ENABLE_GIST])
 CPPFLAGS="$CPPFLAGS -Wno-deprecated"
 
 # configure for use of LocARNA library
-PKG_CHECK_MODULES([DEPS], [LocARNA-1.0 >= 1.6.1])
+PKG_CHECK_MODULES([DEPS], [LocARNA-1.0.1 >= 1.7.2])
 
 ## where are GECODE libs and includes
 ##

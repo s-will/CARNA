@@ -364,13 +364,13 @@ AlignmentScore::evaluate_trace(const SizeVec &traceA,
 	    if (!gap_openA) score+=2*scoring.indel_opening();
 	    gap_openA=true;
 	    gap_openB=false;
-	    score += 2*scoring.gapA(i,j-1);
+	    score += 2*scoring.gapA(i);
 	    ++i;
 	} else if (j<=m && traceB[j]==0) { // insertion of j after i-1
 	    if (!gap_openB) score+=2*scoring.indel_opening();
 	    gap_openB=true;
 	    gap_openA=false;
-	    score += 2*scoring.gapB(i-1,j);
+	    score += 2*scoring.gapB(j);
 	    ++j;
 	} else { // match between i and j
 	    assert(j==traceA[i]);
@@ -437,7 +437,7 @@ forward_algorithm(Gecode::Space& home,
 					   // one could as well break
 	
 	if (deletion_arrow_allowed(i,0)) {
-	    FwdA(i,0) = FwdA(i-1,0) + 2*scoring.gapA(i,0);
+	    FwdA(i,0) = FwdA(i-1,0) + 2*scoring.gapA(i);
 	} else {
 	    FwdA(i,0) = infty_score_t::neg_infty;
 	}
@@ -450,7 +450,7 @@ forward_algorithm(Gecode::Space& home,
 					   // one could as well break
 	
 	FwdA(0,j)=infty_score_t::neg_infty;
-	FwdB(0,j) = FwdB(0,j-1)  + 2*scoring.gapB(0,j);
+	FwdB(0,j) = FwdB(0,j-1)  + 2*scoring.gapB(j);
 	Fwd(0,j) = FwdB(0,j);
     }
     
@@ -472,14 +472,14 @@ forward_algorithm(Gecode::Space& home,
 		Fwd(i,j) = Fwd(i-1,j-1) + UBM(i,j);
 	    }
 	    if (deletion_arrow_allowed(i,j)) {
-		FwdA(i,j) = std::max(FwdA(i,j),FwdA(i-1,j)+2*scoring.gapA(i,j));
-		FwdA(i,j) = std::max(FwdA(i,j),Fwd(i-1,j) +2*scoring.gapA(i,j)+2*scoring.indel_opening());
+		FwdA(i,j) = std::max(FwdA(i,j),FwdA(i-1,j)+2*scoring.gapA(i));
+		FwdA(i,j) = std::max(FwdA(i,j),Fwd(i-1,j) +2*scoring.gapA(i)+2*scoring.indel_opening());
 		
 		Fwd(i,j)  = std::max(Fwd(i,j),FwdA(i,j));
 	    }
 	    if (insertion_arrow_allowed(i,j)) {
-		FwdB(i,j) = std::max(FwdB(i,j),FwdB(i,j-1)+2*scoring.gapB(i,j));
-		FwdB(i,j) = std::max(FwdB(i,j),Fwd(i,j-1) +2*scoring.gapB(i,j)+2*scoring.indel_opening());
+		FwdB(i,j) = std::max(FwdB(i,j),FwdB(i,j-1)+2*scoring.gapB(j));
+		FwdB(i,j) = std::max(FwdB(i,j),Fwd(i,j-1) +2*scoring.gapB(j)+2*scoring.indel_opening());
 		
 		Fwd(i,j) = std::max(Fwd(i,j),FwdB(i,j));
 	    }
@@ -532,10 +532,10 @@ backtrace_forward(Gecode::Space &home,
 		}
 		break;
 	    case FWD_A:
-		if ( FwdA(i,j) == FwdA(i-1,j) + 2*scoring.gapA(i,j) ) {
+		if ( FwdA(i,j) == FwdA(i-1,j) + 2*scoring.gapA(i) ) {
 		    traceA[i]=0;
 		    --i;
-		} else if ( FwdA(i,j) == Fwd(i-1,j) + 2*scoring.gapA(i,j) + 2*scoring.indel_opening() ) {
+		} else if ( FwdA(i,j) == Fwd(i-1,j) + 2*scoring.gapA(i) + 2*scoring.indel_opening() ) {
 		    traceA[i]=0;
 		    --i;
 		    state=FWD;
@@ -545,10 +545,10 @@ backtrace_forward(Gecode::Space &home,
 		}
 		break;
 	    case FWD_B:
-		if ( FwdB(i,j) == FwdB(i,j-1) + 2*scoring.gapB(i,j) ) {
+		if ( FwdB(i,j) == FwdB(i,j-1) + 2*scoring.gapB(j) ) {
 		    traceB[j]=0;
 		    --j;
-		} else if ( FwdB(i,j) == Fwd(i,j-1) + 2*scoring.gapB(i,j) + 2*scoring.indel_opening() ) {
+		} else if ( FwdB(i,j) == Fwd(i,j-1) + 2*scoring.gapB(j) + 2*scoring.indel_opening() ) {
 		    traceB[j]=0;
 		    --j;
 		    state=FWD;
@@ -604,7 +604,7 @@ AlignmentScore::backward_algorithm(Gecode::Space& home,
 					   // one could as well break
 
 	if (deletion_arrow_allowed(i+1,m)) {
-	    BwdA(i,m) = BwdA(i+1,m) + 2*scoring.gapA(i+1,m);
+	    BwdA(i,m) = BwdA(i+1,m) + 2*scoring.gapA(i+1);
 	} else {
 	    Bwd(i,m) = infty_score_t::neg_infty;
 	}
@@ -618,7 +618,7 @@ AlignmentScore::backward_algorithm(Gecode::Space& home,
 					   // one could as well break
 
 	if (insertion_arrow_allowed(n,j+1)) {
-	    BwdB(n,j) = BwdB(n,j+1) + 2*scoring.gapB(n,j+1);
+	    BwdB(n,j) = BwdB(n,j+1) + 2*scoring.gapB(j+1);
 	} else {
 	    BwdB(n,j) = infty_score_t::neg_infty;
 	}
@@ -648,14 +648,14 @@ AlignmentScore::backward_algorithm(Gecode::Space& home,
 		Bwd(i,j) = Bwd(i+1,j+1) + UBM(i+1,j+1);
 	    }
 	    if (deletion_arrow_allowed(i+1,j)) { // delete i+1 after j
-		BwdA(i,j) = std::max(BwdA(i,j),BwdA(i+1,j)+2*scoring.gapA(i+1,j));
-		BwdA(i,j) = std::max(BwdA(i,j),Bwd(i+1,j) +2*scoring.gapA(i+1,j)+2*scoring.indel_opening());
+		BwdA(i,j) = std::max(BwdA(i,j),BwdA(i+1,j)+2*scoring.gapA(i+1));
+		BwdA(i,j) = std::max(BwdA(i,j),Bwd(i+1,j) +2*scoring.gapA(i+1)+2*scoring.indel_opening());
 
 		Bwd(i,j)=std::max(Bwd(i,j),BwdA(i,j));
 	    }
 	    if (insertion_arrow_allowed(i,j+1)) { // insert j+1 after i
-		BwdB(i,j) = std::max(BwdB(i,j),BwdB(i,j+1)+2*scoring.gapB(i,j+1));
-		BwdB(i,j) = std::max(BwdB(i,j),Bwd(i,j+1) +2*scoring.gapB(i,j+1)+2*scoring.indel_opening());
+		BwdB(i,j) = std::max(BwdB(i,j),BwdB(i,j+1)+2*scoring.gapB(j+1));
+		BwdB(i,j) = std::max(BwdB(i,j),Bwd(i,j+1) +2*scoring.gapB(j+1)+2*scoring.indel_opening());
 
 		Bwd(i,j)=std::max(Bwd(i,j),BwdB(i,j));
 	    }
@@ -697,7 +697,7 @@ AlignmentScore::prune(Gecode::Space& home,
 	for(size_type j=minj; j<=maxj; j++) {
 	    // prune MD variable for match i~j or deletion of i after j
 	    if (match_or_deletion_allowed(i,j)) {
-		infty_score_t ub = Fwd(i,j)+Bwd(i,j);
+		TaintedInftyInt ub = Fwd(i,j)+Bwd(i,j);
 		
 		//here, we are not interested in insertions!
 		//if (j>0 && insertion_arrow_allowed(i,j) && j<m && insertion_arrow_allowed(i,j+1)) {
@@ -708,7 +708,7 @@ AlignmentScore::prune(Gecode::Space& home,
 		    ub = std::max(ub, FwdA(i,j)+BwdA(i,j)-2*scoring.indel_opening()); 
 		}
 		
-		if ( (!ub.is_finite()) || (ub < (infty_score_t) Score.min())) {
+		if ( (!ub.is_finite()) || (ub.finite_value() < Score.min())) {
 		    ret |= MD[i].nq(home,(int)j);
 		    //std::cerr << "MD["<<i<<"].nq(home,(int)"<<j<<") "<< ret << " " << Fwd(i,j)+Bwd(i,j) << std::endl;
 		}
@@ -727,7 +727,7 @@ AlignmentScore::prune(Gecode::Space& home,
 	for(size_type j=minj; !del && j<=maxj; j++) {
 	    
 	    // upper bound for deletion of i after j
-	    infty_score_t ubd = FwdA(i,j)+Bwd(i,j);
+	    TaintedInftyInt ubd = FwdA(i,j)+Bwd(i,j);
 	    
 	    if (i>0 && deletion_arrow_allowed(i,j) && i<n && deletion_arrow_allowed(i+1,j)) {
 		ubd = std::max(ubd,FwdA(i,j)+BwdA(i,j)-2*scoring.indel_opening());
