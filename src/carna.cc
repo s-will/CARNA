@@ -127,7 +127,7 @@ bool opt_verbose;
 bool opt_write_structure;
 
 // stacking is not implemented in Carna
-// bool opt_stacking;
+bool opt_stacking=false;
 
 bool opt_gist;
 
@@ -401,9 +401,15 @@ main(int argc, char* argv[]) {
     // ------------------------------------------------------------
     // Get input data and generate data objects
     //
+    
+    
+    LocARNA::RnaData rnadataA(file1,true,opt_stacking,false);
+    LocARNA::RnaData rnadataB(file2,true,opt_stacking,false);
 
-    LocARNA::RnaData rnadataA(file1,false,false); // false->opt_stacking not implemented in Carna
-    LocARNA::RnaData rnadataB(file2,false,false); // false->opt_stacking not implemented in Carna
+    // optionally fold
+    LocARNA::PFoldParams pfparams(opt_no_lonely_pairs,opt_stacking);
+    if (!rnadataA.pairProbsAvailable()) {rnadataA.computeEnsembleProbs(pfparams,false);}
+    if (!rnadataB.pairProbsAvailable()) {rnadataB.computeEnsembleProbs(pfparams,false);}
 
     LocARNA::Sequence seqA=rnadataA.get_sequence();
     LocARNA::Sequence seqB=rnadataB.get_sequence();
