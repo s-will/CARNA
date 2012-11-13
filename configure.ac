@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([carna], [0.4.3], [])
+AC_INIT([carna], [1.2.1], [])
 
 AM_INIT_AUTOMAKE
 
