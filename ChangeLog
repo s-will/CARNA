@@ -31,3 +31,6 @@ Clean up
 Adapt to new LocARNA code
 Drastically increase version number to fit web server
 (V1.2.1)
+Make compatible with Gecode 3.7.3
+(V1.2.2)
+

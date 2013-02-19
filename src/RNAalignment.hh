@@ -51,9 +51,17 @@ public:
     class ChoiceData {
     public:
 	
+	friend 
+	Gecode::Archive &
+	operator << (Gecode::Archive &e, const ChoiceData &cd);
+	
+	friend 
+	Gecode::Archive &
+	operator >> (Gecode::Archive &e, ChoiceData &cd);
+	
 	bool enum_M;   //!< whether to enumerate an M or MD variable
-	size_t pos;    //!< position of variable in M or MD
-	size_t val;    //!< selected value of variable (unused by current strategy)
+	unsigned int pos;    //!< position of variable in M or MD
+	unsigned int val;    //!< selected value of variable (unused by current strategy)
 	
 	//! \brief selected domain values
 	//! @note An int vector is used for constructing the choice of domain values
@@ -68,8 +76,8 @@ public:
 	//! signal whether the currenty best trace yields a new lower
 	//! bound
 	bool new_lower_bound;
-	std::vector<size_t> best_traceA;
-	std::vector<size_t> best_traceB;
+	std::vector<unsigned int> best_traceA;
+	std::vector<unsigned int> best_traceB;
 	LocARNA::score_t best_trace_score;
 	
 	ChoiceData()
@@ -210,6 +218,13 @@ public:
 	    virtual size_t size(void) const {
 		return sizeof(Choice);
 	    }
+
+	    virtual
+	    void
+	    archive(Gecode::Archive &e) const {
+		Choice::archive(e);
+		e << cd;
+	    }
 	};
 	
 	
@@ -231,8 +246,8 @@ public:
 	 */
 	Gecode::ModEvent
 	fix_vars_from_trace(Gecode::Space& home,
-			    const std::vector<size_t> &traceA,
-			    const std::vector<size_t> &traceB) const;
+			    const std::vector<unsigned int> &traceA,
+			    const std::vector<unsigned int> &traceB) const;
 
     public:
 
@@ -248,7 +263,9 @@ public:
 	}
 	
 	// returns choice
-	virtual Gecode::Choice* choice(Gecode::Space& home) {
+	virtual
+	Gecode::Choice* 
+	choice(Gecode::Space& home) {
 	    const RNAalignment& s = static_cast<const RNAalignment&>(home);
 	
 	    // the decision about choice is moved to the propagator, which
@@ -256,6 +273,14 @@ public:
 	    
 	    //std::cout << "CHOICE "<<s.pos<<" "<<s.val<<" "<<s.MD[s.pos]<<std::endl;
 	    return new Choice(*this,s.choice_data);
+	}
+	
+	virtual
+	Gecode::Choice* 
+	choice(const Gecode::Space& home, Gecode::Archive & e) {
+	    RNAalignment::ChoiceData cd;
+	    e >> cd;
+	    return new Choice(*this, cd);
 	}
 	
 	/// commits the choice c and alternative a 

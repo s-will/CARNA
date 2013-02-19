@@ -63,7 +63,7 @@ public:
     typedef size_t size_type;
 
     typedef std::vector<bool> BoolVec;
-    typedef std::vector<size_type> SizeVec;
+    typedef std::vector<unsigned int> SizeVec;
 
     typedef LocARNA::Matrix<LocARNA::score_t> ScoreMatrix;
     typedef LocARNA::Matrix<LocARNA::infty_score_t> InftyScoreMatrix;

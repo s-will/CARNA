@@ -2,6 +2,57 @@
 
 using namespace LocARNA;
 
+template<class T>
+Gecode::Archive &
+operator << (Gecode::Archive &e, const std::vector<T> &v) {
+    e << (unsigned int)v.size();
+    for (size_t i=0; i<v.size(); i++) e << v[i];
+    return e;
+}
+
+template<class T>
+Gecode::Archive &
+operator >> (Gecode::Archive &e, std::vector<T> &v) {
+    unsigned int size;
+    e >> size;
+    v.resize(size);
+    
+    for (size_t i=0; i<size; i++) e >> v[i];
+    return e;
+}
+
+Gecode::Archive &
+operator << (Gecode::Archive &e, const RNAalignment::ChoiceData &cd) {
+    return
+	e << cd.enum_M
+	  << cd.pos
+	  << cd.val
+	  << cd.new_lower_bound
+	  << cd.values
+	  << cd.best_traceA
+	  << cd.best_traceB
+	  << (int)cd.best_trace_score;
+}
+
+Gecode::Archive &
+operator >> (Gecode::Archive &e, RNAalignment::ChoiceData &cd) {
+    int bts;
+
+    e >> cd.enum_M
+      >> cd.pos
+      >> cd.val
+      >> cd.new_lower_bound
+      >> cd.values
+      >> cd.best_traceA
+      >> cd.best_traceB
+      >> bts;
+    cd.best_trace_score=bts;
+    
+    return e;
+}
+								      
+
+
 RNAalignment::RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequence &seqB_,
 			   const LocARNA::ArcMatches &arcmatches_,
 			   const LocARNA::AlignerParams &aligner_params, 
@@ -257,8 +308,8 @@ RNAalignment::print(std::ostream& out) const {
 Gecode::ModEvent
 RNAalignment::RNAalignBrancher::
 fix_vars_from_trace(Gecode::Space& home,
-		    const std::vector<size_t> &traceA,
-		    const std::vector<size_t> &traceB
+		    const std::vector<unsigned int> &traceA,
+		    const std::vector<unsigned int> &traceB
 		    ) const {
     RNAalignment& s = static_cast<RNAalignment&>(home);
 
