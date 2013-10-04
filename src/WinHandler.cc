@@ -80,11 +80,6 @@ void WinHandler::update(const Gecode::IntVarArray &MD, const Gecode::BoolVarArra
     for (int i=0;i<nRows;i++){
 	for (int j=0;j<nCols;j++){
 	
-	    int minj=nCols-1;
-	    if (i+1<nRows) {
-		minj = MD[i+1].min()-(!M[i+1].in(0)?1:0);
-	    }
-	
 	    int maxj=nCols-1;
 	    if (i+1<nRows) {
 		maxj = MD[i+1].max()-(!M[i+1].in(0)?1:0);

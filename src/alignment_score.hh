@@ -14,6 +14,7 @@
 #include "LocARNA/params.hh"
 #include "LocARNA/rna_data.hh"
 #include "LocARNA/scoring.hh"
+#include "LocARNA/sequence.hh"
 
 #include "row_range_matrix.hh"
 
