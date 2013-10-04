@@ -1,6 +1,9 @@
 #include "RNAalignment.hh"
 
+#include <LocARNA/rna_ensemble.hh>
+
 using namespace LocARNA;
+
 
 template<class T>
 Gecode::Archive &
@@ -168,10 +171,10 @@ RNAalignment::RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequen
 	for (size_t i=0; i<(size_t)MD.size(); i++) { 
 	    MD_resorted[i] = MD[(i+MD.size()/2)%MD.size()];
 	}
-	Gecode::branch(*this, MD_resorted, Gecode::INT_VAR_SIZE_MAX, Gecode::INT_VAL_MED);
+	Gecode::branch(*this, MD_resorted, Gecode::INT_VAR_SIZE_MAX(), Gecode::INT_VAL_MED());
     }
 	
-    Gecode::branch(*this, M, Gecode::INT_VAR_SIZE_MAX, Gecode::INT_VAL_MAX);
+    Gecode::branch(*this, M, Gecode::INT_VAR_SIZE_MAX(), Gecode::INT_VAL_MAX());
 	
 }
 
@@ -215,39 +218,6 @@ RNAalignment::to_alignment() const {
     return alignment;
 }
 
-void 
-RNAalignment::print_clustal_format(std::ostream& out_s, size_t output_width) const{
-
-    if (all_assigned()) {
-	to_alignment().write_clustal(out_s,
-				     output_width,
-				     (LocARNA::infty_score_t)Score.val(),
-				     false,false,true,false);
-    }
-}
-
-void
-RNAalignment::print_pp_format(std::ostream& out_s,
-			      const LocARNA::BasePairs& bpsA, const LocARNA::BasePairs& bpsB,
-			      const LocARNA::Scoring& scoring,
-			      const LocARNA::AnchorConstraints& seq_constraints,
-			      const size_t output_width,
-			      bool alifold_consensus_dp
-			      ) const {
-
-    if (all_assigned()) {
-
-	to_alignment().write_pp(out_s,
-				bpsA, bpsB,
-				scoring,
-				seq_constraints,
-				output_width,
-				alifold_consensus_dp
-				);
-    }
-
-}
-
 
 void
 RNAalignment::print(std::ostream& out) const {
@@ -255,11 +225,9 @@ RNAalignment::print(std::ostream& out) const {
     size_t width=60;
 
     if (all_assigned()) {
-
-	to_alignment().write(out,
-			     width,
-			     (LocARNA::infty_score_t)Score.val()
-			     );
+	LocARNA::Alignment alignment=to_alignment();
+	MultipleAlignment ma(alignment, false);
+	ma.write(out,width);
 
     } else {
 	out << "Matches/Deletions:    ";

@@ -11,6 +11,7 @@
 #include <gecode/set.hh>
 #include <gecode/search.hh>
 
+#include "LocARNA/params.hh"
 #include "LocARNA/rna_data.hh"
 #include "LocARNA/scoring.hh"
 
@@ -46,6 +47,7 @@
 // another great speed up!
 
 
+#include <LocARNA/basepairs.hh>
 
 class RNAalignment;
 
@@ -69,6 +71,8 @@ public:
     typedef LocARNA::Matrix<LocARNA::infty_score_t> InftyScoreMatrix;
     typedef RowRangeMatrix<LocARNA::infty_score_t> InftyScoreRRMatrix;
     typedef LocARNA::Matrix<bool> BoolMatrix;
+
+    typedef LocARNA::BasePairs__Arc Arc; //!< arc
     
 private:
     

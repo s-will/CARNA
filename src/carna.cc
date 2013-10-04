@@ -99,8 +99,8 @@ int output_width;
 
 // ------------------------------------------------------------
 // File arguments
-std::string file1;
-std::string file2;
+std::string fileA;
+std::string fileB;
 
 std::string clustal_out;
 bool opt_clustal_out;
@@ -121,6 +121,7 @@ bool opt_help;
 bool opt_version;
 bool opt_verbose;
 
+bool opt_local_file_output=false;
 //bool opt_local_output;
 //bool opt_pos_output;
 
@@ -261,7 +262,7 @@ LocARNA::option_def my_options[] = {
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Constraints"},
 
-    {"noLP",0,&opt_no_lonely_pairs,O_NO_ARG,0,O_NODEFAULT,"","No lonely pairs (only compatibility with locarna; no effect)"},
+    {"noLP",0,&opt_no_lonely_pairs,O_NO_ARG,0,O_NODEFAULT,"","No lonely pairs (only used when predicing ensemble porobabilities and for compatibility with locarna; otherwise no effect)"},
     {"anchorA",0,0,O_ARG_STRING,&seq_constraints_A,"","string","Anchor constraints sequence A."},
     {"anchorB",0,0,O_ARG_STRING,&seq_constraints_B,"","string","Anchor constraints sequence B."},
     {"ignore-constraints",0,&opt_ignore_constraints,O_NO_ARG,0,O_NODEFAULT,"","Ignore constraints in pp-file"},
@@ -282,8 +283,8 @@ LocARNA::option_def my_options[] = {
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","RNA sequences and pair probabilities"},
 
-    {"",0,0,O_ARG_STRING,&file1,O_NODEFAULT,"file 1","Basepairs input file 1"},
-    {"",0,0,O_ARG_STRING,&file2,O_NODEFAULT,"file 2","Basepairs input file 2"},
+    {"",0,0,O_ARG_STRING,&fileA,O_NODEFAULT,"file 1","Basepairs input file 1"},
+    {"",0,0,O_ARG_STRING,&fileB,O_NODEFAULT,"file 2","Basepairs input file 2"},
     {"",0,0,0,0,O_NODEFAULT,"",""}
 };
 
@@ -378,41 +379,32 @@ main(int argc, char* argv[]) {
 	}
     }
 
-
-    // ----------------------------------------
-    // Scoring Parameter
-    //
-    LocARNA::ScoringParams 
-	scoring_params(match_score,
-		       mismatch_score,
-		       indel_score,
-		       indel_opening_score,
-		       ribosum,
-		       struct_weight,
-		       tau_factor,
-		       exclusion_score,
-		       opt_exp_prob?exp_prob:-1,
-		       0, // temperature
-		       false, // opt_stacking not implemented in Carna
-		       false,
-		       0,0,0,0
-		       );
-
     // ------------------------------------------------------------
     // Get input data and generate data objects
     //
+    LocARNA::PFoldParams pfparams(opt_no_lonely_pairs,false); //no_lonely_pairs,opt_stacking
     
+    LocARNA::RnaData *rna_dataA=0;
+    try {
+	rna_dataA = new LocARNA::RnaData(fileA,min_prob,pfparams);
+    } catch (LocARNA::failure &f) {
+	std::cerr << "ERROR:\tfailed to read from file "<<fileA <<std::endl
+		  << "\t"<< f.what() <<std::endl;
+	return -1;
+    }
     
-    LocARNA::RnaData rnadataA(file1,true,opt_stacking,false);
-    LocARNA::RnaData rnadataB(file2,true,opt_stacking,false);
-
-    // optionally fold
-    LocARNA::PFoldParams pfparams(opt_no_lonely_pairs,opt_stacking);
-    if (!rnadataA.pair_probs_available()) {rnadataA.compute_ensemble_probs(pfparams,false);}
-    if (!rnadataB.pair_probs_available()) {rnadataB.compute_ensemble_probs(pfparams,false);}
-
-    LocARNA::Sequence seqA=rnadataA.get_sequence();
-    LocARNA::Sequence seqB=rnadataB.get_sequence();
+    LocARNA::RnaData *rna_dataB=0;
+    try {
+	rna_dataB = new LocARNA::RnaData(fileB,min_prob,pfparams);
+    } catch (LocARNA::failure &f) {
+	std::cerr << "ERROR: failed to read from file "<<fileB <<std::endl
+		  << "       "<< f.what() <<std::endl;
+	if (rna_dataA) delete rna_dataA;
+	return -1;
+    }
+    
+    const LocARNA::Sequence &seqA=rna_dataA->sequence();
+    const LocARNA::Sequence &seqB=rna_dataB->sequence();
 
     LocARNA::size_type lenA=seqA.length();
     LocARNA::size_type lenB=seqB.length();
@@ -424,33 +416,26 @@ main(int argc, char* argv[]) {
 
     // ------------------------------------------------------------
     // Handle constraints (optionally)
-
-    std::string seqCA = seq_constraints_A;
-    std::string seqCB = seq_constraints_B;
-
-    if (!opt_ignore_constraints) {
-	if ( seqCA=="" ) seqCA = rnadataA.get_seq_constraints();
-	if ( seqCB=="" ) seqCB = rnadataB.get_seq_constraints();
-    }
-
+    
     LocARNA::AnchorConstraints 
-	seq_constraints(seqA.length(),seqCA,
-			seqB.length(),seqCB);
-
+	seq_constraints(lenA,
+			seqA.annotation(LocARNA::MultipleAlignment::AnnoType::anchors).single_string(),
+			lenB,
+			seqB.annotation(LocARNA::MultipleAlignment::AnnoType::anchors).single_string());
+    
     if (opt_verbose) {
 	if (! seq_constraints.empty()) {
 	    std::cout << "Found sequence constraints."<<std::endl;
 	}
     }
-
-
+    
     // ----------------------------------------
     // construct set of relevant arc matches
     //
     LocARNA::ArcMatches *arc_matches=NULL;
     // always initialize from RnaData (reading in arc-matches could be supported later)
-    arc_matches = new LocARNA::ArcMatches(rnadataA,
-					  rnadataB,
+    arc_matches = new LocARNA::ArcMatches(*rna_dataA,
+					  *rna_dataB,
 					  min_prob,
 					  (max_diff_am!=-1)?(LocARNA::size_type)max_diff_am:std::max(lenA,lenB),
 					  trace_controller,
@@ -479,7 +464,39 @@ main(int argc, char* argv[]) {
     // ----------------------------------------
     // construct scoring
 
-    LocARNA::Scoring scoring(seqA,seqB,arc_matches,0L,&scoring_params);
+    double my_exp_probA = opt_exp_prob?exp_prob:LocARNA::prob_exp_f(lenA);
+    double my_exp_probB = opt_exp_prob?exp_prob:LocARNA::prob_exp_f(lenB);
+
+
+    // ----------------------------------------
+    // Scoring Parameter
+    //
+    LocARNA::ScoringParams 
+	scoring_params(match_score,
+		       mismatch_score,
+		       indel_score,
+		       indel_opening_score,
+		       ribosum,
+		       struct_weight,
+		       tau_factor,
+		       exclusion_score,
+		       my_exp_probA,
+		       my_exp_probB,
+		       0, // temperature
+		       false, // opt_stacking not implemented in Carna
+		       false, // mea
+		       0,0,0,0
+		       );
+
+    LocARNA::Scoring scoring(seqA,
+		    seqB,
+		    *rna_dataA,
+		    *rna_dataB,
+		    *arc_matches,
+		    0L,
+		    scoring_params,
+		    false // no Boltzmann weights
+		    );    
 
     // ------------------------------------------------------------
     // parameter for the alignment
@@ -561,7 +578,20 @@ main(int argc, char* argv[]) {
 		ofstream outfile;
 		outfile.open(clustal_out.c_str(),ios::out | ios::trunc);
 		if (outfile.good()) {
-		    ex->print_clustal_format(outfile,output_width);
+		    
+		    assert(ex->all_assigned());
+		    LocARNA::Alignment alignment=ex->to_alignment();
+			
+		    LocARNA::MultipleAlignment ma(alignment,opt_local_file_output);
+		    
+		    outfile << "CLUSTAL W --- "<<PACKAGE_STRING;
+		    
+		    // for legacy, clustal files of pairwise alignments contain the score 
+		    if (seqA.num_of_rows()==1 && seqB.num_of_rows()==1)
+			outfile  <<" --- Score: " << ex->score();
+		    outfile <<std::endl<<std::endl;
+		    
+		    ma.write(outfile,output_width);
 		    outfile.close();
 		} else {
 		    std::cerr << "Cannot write solution to file "<<clustal_out<<std::endl;
@@ -571,31 +601,47 @@ main(int argc, char* argv[]) {
 	    if (!pp_out.empty()){
 		ofstream outfile;
 		outfile.open(pp_out.c_str(),ios::out | ios::trunc);
+		
 		if (outfile.good()) {
-		    ex->print_pp_format(outfile,
-					bpsA,
-					bpsB,
-					scoring, 
-					seq_constraints, 
-					output_width,
-					opt_alifold_consensus_dp
-					);
+		    assert(ex->all_assigned());
+		    
+		    LocARNA::Alignment alignment=ex->to_alignment();
+
+		    if (opt_alifold_consensus_dp) {
+			LocARNA::PFoldParams pfparams(opt_no_lonely_pairs,false); // opt_stacking
+			
+			LocARNA::MultipleAlignment ma(alignment,opt_local_file_output);
+			LocARNA::RnaEnsemble ens(ma,pfparams,false,true); // alifold the alignment
+			LocARNA::RnaData consensus(ens,min_prob,pfparams); // construct rna data from ensemble
+			consensus.write_pp(outfile); // write alifold dot plot
+		    } else {
+			// compute averaged consensus base pair probabilities
+			LocARNA::RnaData consensus(*rna_dataA,
+						   *rna_dataB,
+						   alignment,
+						   my_exp_probA,
+						   my_exp_probB,
+						   opt_local_file_output);
+			consensus.write_pp(outfile); // write averaged dot plot
+		    }
+		    
 		    outfile.close();
 		} else {
-		   std::cerr << "Cannot write solution to file "<<pp_out<<std::endl;
+		    std::cerr << "Cannot write solution to file "<<pp_out<<std::endl;
 		}
 	    }
-
 	    if (ex) delete ex;
 	}
 	
 
 	Gecode::Search::Statistics stats = e.statistics();
 
-	cout << "Nodes:  "<<stats.node << std::endl
-	     << "Fail:   "<<stats.fail << std::endl
-	     << "Depth:  "<<stats.depth << std::endl
-	     << "Memory: "<<stats.memory << std::endl;
+	cout << "Nodes:    "<<stats.node << std::endl
+	     << "Fail:     "<<stats.fail << std::endl
+	     << "Depth:    "<<stats.depth << std::endl
+	    //<< "Restarts: "<<stats.restart << std::endl
+	    //<< "Nogoods:  "<<stats.nogood
+	     << std::endl;
 
 	if (e.stopped()) {
 	    cout << "Time limit exceeded."<<std::endl;

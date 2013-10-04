@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([carna], [1.2.2], [])
+AC_INIT([carna], [1.2.3], [])
 
 AM_INIT_AUTOMAKE
 
@@ -93,7 +93,7 @@ AC_MSG_RESULT([$ENABLE_GIST])
 CPPFLAGS="$CPPFLAGS -Wno-deprecated"
 
 # configure for use of LocARNA library
-PKG_CHECK_MODULES([DEPS], [LocARNA-1.1 >= 1.7.2.5])
+PKG_CHECK_MODULES([DEPS], [LocARNA-1.2 >= 1.7.10])
 
 ## where are GECODE libs and includes
 ##
@@ -110,7 +110,7 @@ AC_MSG_RESULT([$GECODE_HOME])
 GECODE_LIBFLAGS="-lgecodesearch -lgecodeminimodel -lgecodeint -lgecodeset -lgecodesupport -lgecodekernel"
 
 if test $ENABLE_GIST = "yes" ; then
-   GECODE_LIBFLAGS="-lgecodegist $GECODE_LIBFLAGS"
+   GECODE_LIBFLAGS="-lgecodegist -lX11 $GECODE_LIBFLAGS"
 fi
 
  # add GECODE libraries to list of libs for linking

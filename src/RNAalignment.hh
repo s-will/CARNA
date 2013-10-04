@@ -35,6 +35,9 @@ class RNAalignment : public Gecode::Space {
     friend class AlignmentScore;
       
 protected:
+
+    typedef LocARNA::BasePairs__Arc Arc; //!< arc
+
     
     // only used for output
     const LocARNA::Sequence &seqA; 
@@ -168,6 +171,13 @@ public:
     LocARNA::Alignment
     to_alignment() const;
     
+    //! return score
+    //! pre: score is determined
+    LocARNA::score_t
+    score() const {
+	return Score.val();
+    }
+
     //! print solution in clustal format 
     void
     print_clustal_format(std::ostream& out_s, size_t output_width) const;
@@ -175,11 +185,12 @@ public:
     //! print solution in pp format
     void 
     print_pp_format(std::ostream& out_s,
-		    const LocARNA::BasePairs& bpsA, const LocARNA::BasePairs& bpsB, 
-		    const LocARNA::Scoring& scoring, 
-		    const LocARNA::AnchorConstraints& seq_constraints,
+		    const LocARNA::RnaData& rna_dataA, const LocARNA::RnaData& rna_dataB, 
 		    const size_t output_width,
-		    bool alifold_consensus_dp
+		    bool alifold_consensus_dp,
+		    double min_prob,
+		    double exp_probA,
+		    double exp_probB
 		    ) const;
 
     /// Print solution
