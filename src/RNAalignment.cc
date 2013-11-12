@@ -83,7 +83,9 @@ RNAalignment::RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequen
     }
 #  endif // HAVE_GIST
 
-
+    std::cout << "n: "<< n << std::endl; 
+    std::cout << "m: "<< m << std::endl; 
+    
     //ignore MD_0 and M_0
     rel(*this,MD[0],Gecode::IRT_EQ,0);
     rel(*this,M[0],Gecode::IRT_EQ,1);

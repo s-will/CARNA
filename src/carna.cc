@@ -475,7 +475,9 @@ main(int argc, char* argv[]) {
 	scoring_params(match_score,
 		       mismatch_score,
 		       indel_score,
+		       indel_score, // = indel loop score (not used by CARNA)
 		       indel_opening_score,
+		       indel_opening_score, // = indel loop opening score (not used by CARNA)
 		       ribosum,
 		       struct_weight,
 		       tau_factor,

@@ -1,7 +1,5 @@
 #!/usr/bin/perl -w
 
-# change path to Carna Home directory
-my $CARNA_HOME="@CARNAHOMEDIRECTORY@";
 
 =head1 NAME
 
@@ -111,6 +109,8 @@ Once you tell us, we will hunt them.
 
 
 use strict;
+
+use FindBin;
 
 ##------------------------------------------------------------
 ## options
@@ -529,7 +529,7 @@ if($opt_sym) {
     $constraintString2=$tmp;
  }
 
-my $cmd = "$CARNA_HOME/carna $carnaArgs $ppfile1 $ppfile2";
+my $cmd = "$FindBin::Bin/carna $carnaArgs $ppfile1 $ppfile2";
 
 
 if (($constraintString1 ne "")

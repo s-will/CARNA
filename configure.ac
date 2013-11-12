@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([carna], [1.2.3], [])
+AC_INIT([carna], [1.2.4], [])
 
 AM_INIT_AUTOMAKE
 
@@ -93,7 +93,7 @@ AC_MSG_RESULT([$ENABLE_GIST])
 CPPFLAGS="$CPPFLAGS -Wno-deprecated"
 
 # configure for use of LocARNA library
-PKG_CHECK_MODULES([DEPS], [LocARNA-1.2 >= 1.7.10])
+PKG_CHECK_MODULES([DEPS], [LocARNA-1.2 >= 1.7.11])
 
 ## where are GECODE libs and includes
 ##
@@ -220,4 +220,3 @@ fi
 
 
 AC_OUTPUT([src/Makefile Utils/Makefile])
-
