@@ -479,6 +479,7 @@ main(int argc, char* argv[]) {
 		       indel_opening_score,
 		       indel_opening_score, // = indel loop opening score (not used by CARNA)
 		       ribosum,
+		       0, // unpaired penalty (not configurable in CARNA)
 		       struct_weight,
 		       tau_factor,
 		       exclusion_score,
