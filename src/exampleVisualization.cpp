@@ -14,7 +14,7 @@ using namespace std;
  *
  *
  */
-class RNAalignment : public Space {
+class RnaAlignment : public Space {
 
   size_t n;
   size_t m;
@@ -35,7 +35,7 @@ protected:
   
 
 public:
-  RNAalignment(size_t n1, size_t m1)
+  RnaAlignment(size_t n1, size_t m1)
     : n(n1),
       m(m1),
       undef(m1+1),
@@ -103,7 +103,7 @@ public:
     }
 
   /// Constructor for cloning \a s
-  RNAalignment(bool share, RNAalignment& s) : Space(share,s){
+  RnaAlignment(bool share, RnaAlignment& s) : Space(share,s){
     M.update(*this, share, s.M);
     G.update(*this, share, s.G);
     H.update(*this, share, s.H);
@@ -118,7 +118,7 @@ public:
   /// Perform copying during cloning
   virtual Space*
   copy(bool share) {
-    return new RNAalignment(share,*this);
+    return new RnaAlignment(share,*this);
   }
 
   /// Print solution
@@ -136,14 +136,14 @@ public:
 
 
 /** \brief Main-function
- *  \relates RNAalignment
+ *  \relates RnaAlignment
  */
 int
 main(int argc, char* argv[]) {
 
 
-  RNAalignment* s = new RNAalignment(10,10);
-  Gist::Print<RNAalignment> p("Node explorer");
+  RnaAlignment* s = new RnaAlignment(10,10);
+  Gist::Print<RnaAlignment> p("Node explorer");
   Gist::Options o;
   o.inspect.click(&p);
 

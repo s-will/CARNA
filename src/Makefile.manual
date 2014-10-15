@@ -10,7 +10,7 @@ LIBS=-L$(GECODE_HOME)/lib -lgecodekernel -lgecodesearch -lgecodeint -lgecodemini
 
 OBJS=alignmentScorePropagator/NEq.o
 
-MAIN=RNAalignment
+MAIN=RnaAlignment
 EXAMPLE=exampleVisualization
 
 all: subdirs $(MAIN) $(EXAMPLE)

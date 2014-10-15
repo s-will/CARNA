@@ -50,7 +50,7 @@
 
 #include <LocARNA/basepairs.hh>
 
-class RNAalignment;
+class RnaAlignment;
 
 
 /**
@@ -513,7 +513,7 @@ protected:
      * need for costly re-computation in the brancher.
      */
     void
-    choice(RNAalignment &s,
+    choice(RnaAlignment &s,
 	   const InftyScoreRRMatrix &Fwd,
 	   const InftyScoreRRMatrix &Bwd,
 	   const SizeVec &traceA,

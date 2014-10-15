@@ -5,6 +5,7 @@
 
 #include <limits>
 
+
 #include <fstream>
 #include <iostream>
 
@@ -15,6 +16,10 @@
 #include "alignment_score.hh"
 
 #include "locarna.hh"
+
+#include "LocARNA/params.hh"
+
+#include "rna_alignment_params.hh"
 
 // EXPERIMENTAL: therefore only global var
 //const size_t discrepancy_limit=7;
@@ -28,28 +33,22 @@ class RNAalignBrancher;
 /**
  * \brief %RNA Alignment
  *
- *
- *
  */
-class RNAalignment : public Gecode::Space {
+class RnaAlignment : public Gecode::Space {
     friend class AlignmentScore;
-      
+    
 protected:
-
+    
     typedef LocARNA::BasePairs__Arc Arc; //!< arc
 
-    
-    // only used for output
-    const LocARNA::Sequence &seqA; 
-    const LocARNA::Sequence &seqB;
-    const LocARNA::ArcMatches &arcmatches;
+    const RnaAlignmentParams params;
     
     const size_t n;
     const size_t m;
     
 public:
     
-    //! choice class for the brancher RNAalignBranch. Confer commit
+    //! choice class for the brancher RnaAlignBranch. Confer commit
     //! method of the brancher for how this data is actually used.
     class ChoiceData {
     public:
@@ -111,39 +110,22 @@ protected:
     //size_t discrepancy; // experimental for simulating LDS
     
     //! the propagator AlignmentScore selects the choice for the
-    //! brancher RNAalignBranch and communicates its choice in this
+    //! brancher RnaAlignBranch and communicates its choice in this
     //! field of the space
     ChoiceData choice_data;
 
  
 public:
     /** 
-     * Set up the constraint model
-     * 
-     * @param seqA_ sequence A 
-     * @param seqB_ sequence B
-     * @param arcmatches_ the arc matches
-     * @param aligner_params parameters for the aligner
-     * @param scoring scoring object
-     * @param lower_score_bound lower bound on the score (use Gecode::Int::Limits::min for no bound)
-     * @param upper_score_bound upper bound on the score (use Gecode::Int::Limits::max for no bound)
-     * @param opt_graphical_output support of gist graphical output
-     * 
+     * \brief Construct from parameters
+     * \param params rna alignment parameter 
      */
-    RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequence &seqB_,
-		 const LocARNA::ArcMatches &arcmatches_,
-		 const LocARNA::AlignerParams &aligner_params, 
-		 const LocARNA::Scoring &scoring,
-		 int lower_score_bound,
-		 int upper_score_bound,		 
-		 bool opt_graphical_output);
-
+    RnaAlignment(const RnaAlignmentParams &params);
+    
     //! \brief Constructor for cloning s
-    RNAalignment(bool share, RNAalignment& s) : 
+    RnaAlignment(bool share, RnaAlignment& s) : 
 	Gecode::Space(share,s),
-	seqA(s.seqA),
-	seqB(s.seqB),
-	arcmatches(s.arcmatches),
+	params(s.params),
 	n(s.n),
 	m(s.m),
 #ifdef HAVE_GIST
@@ -157,10 +139,19 @@ public:
 	Score.update(*this,share,s.Score);
     }
     
+    /**
+     * @brief create with named parameters
+     * @return parameter object
+     */
+    static
+    RnaAlignmentParams 
+    create(const LocARNA::AlignerParams &params) {return RnaAlignmentParams(params);} 
+
+
     //! \brief Generate a new copy of the space
     virtual Gecode::Space*
     copy(bool share) {
-	return new RNAalignment(share,*this);
+	return new RnaAlignment(share,*this);
     }
     
     //! test whether all variables M and MD are assigned
@@ -199,7 +190,7 @@ public:
     print(std::ostream& out) const;
     
     virtual void constrain(const Space& _best) {
-	const RNAalignment& best = static_cast<const RNAalignment&>(_best);
+	const RnaAlignment& best = static_cast<const RnaAlignment&>(_best);
 	rel(*this,Score,Gecode::IRT_GR,best.Score);
     }
 
@@ -209,7 +200,7 @@ public:
      *
      *
      */
-    class RNAalignBrancher : public Gecode::Brancher {
+    class RnaAlignBrancher : public Gecode::Brancher {
     private:
 	mutable size_t start;
 
@@ -219,9 +210,9 @@ public:
 	    // performed by a particular brancher.
 	    
 	public:
-	    const RNAalignment::ChoiceData cd;
+	    const RnaAlignment::ChoiceData cd;
 	    
-	    Choice(const Brancher& b, const RNAalignment::ChoiceData &cd_)
+	    Choice(const Brancher& b, const RnaAlignment::ChoiceData &cd_)
 		: Gecode::Choice(b,2),
 		  cd(cd_)
 	    {}
@@ -239,8 +230,8 @@ public:
 	};
 	
 	
-	RNAalignBrancher(Gecode::Space &home) : Gecode::Brancher(home),start(1) {}
-	RNAalignBrancher(Gecode::Space &home,bool share,RNAalignBrancher &b) 
+	RnaAlignBrancher(Gecode::Space &home) : Gecode::Brancher(home),start(1) {}
+	RnaAlignBrancher(Gecode::Space &home,bool share,RnaAlignBrancher &b) 
 	    : Gecode::Brancher(home,share,b),start(b.start) {}
 	
 	/** 
@@ -265,7 +256,7 @@ public:
 	// return true, if there are unassigned vars left for this brancher
 	//        false, otherwise
 	virtual bool status(const Gecode::Space& home) const {
-	    const RNAalignment& s = static_cast<const RNAalignment&>(home);
+	    const RnaAlignment& s = static_cast<const RnaAlignment&>(home);
 	    
 	    for (size_t i=start; i<(size_t)s.MD.size(); i++) {
 		if (! s.MD[i].assigned()) {start=i;return true;}
@@ -277,7 +268,7 @@ public:
 	virtual
 	Gecode::Choice* 
 	choice(Gecode::Space& home) {
-	    const RNAalignment& s = static_cast<const RNAalignment&>(home);
+	    const RnaAlignment& s = static_cast<const RnaAlignment&>(home);
 	
 	    // the decision about choice is moved to the propagator, which
 	    // returned it's choice in the field choice of the space s
@@ -289,22 +280,22 @@ public:
 	virtual
 	Gecode::Choice* 
 	choice(const Gecode::Space& home, Gecode::Archive & e) {
-	    RNAalignment::ChoiceData cd;
+	    RnaAlignment::ChoiceData cd;
 	    e >> cd;
 	    return new Choice(*this, cd);
 	}
 	
 	/// commits the choice c and alternative a 
 	virtual Gecode::ExecStatus commit(Gecode::Space& home, 
-			     const Gecode::Choice& _c,
-			     unsigned int a);
+					  const Gecode::Choice& _c,
+					  unsigned int a);
     
 	virtual Gecode::Actor* copy(Gecode::Space& home, bool share) {
-	    return new (home) RNAalignBrancher(home, share, *this);
+	    return new (home) RnaAlignBrancher(home, share, *this);
 	}
     
-	static void post(RNAalignment& home) {
-	    (void) new (home) RNAalignBrancher(home);
+	static void post(RnaAlignment& home) {
+	    (void) new (home) RnaAlignBrancher(home);
 	}
     
 	virtual size_t dispose(Gecode::Space&) {

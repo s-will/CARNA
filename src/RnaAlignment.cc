@@ -1,4 +1,4 @@
-#include "RNAalignment.hh"
+#include "RnaAlignment.hh"
 
 #include <LocARNA/rna_ensemble.hh>
 
@@ -25,7 +25,7 @@ operator >> (Gecode::Archive &e, std::vector<T> &v) {
 }
 
 Gecode::Archive &
-operator << (Gecode::Archive &e, const RNAalignment::ChoiceData &cd) {
+operator << (Gecode::Archive &e, const RnaAlignment::ChoiceData &cd) {
     return
 	e << cd.enum_M
 	  << cd.pos
@@ -38,7 +38,7 @@ operator << (Gecode::Archive &e, const RNAalignment::ChoiceData &cd) {
 }
 
 Gecode::Archive &
-operator >> (Gecode::Archive &e, RNAalignment::ChoiceData &cd) {
+operator >> (Gecode::Archive &e, RnaAlignment::ChoiceData &cd) {
     int bts;
 
     e >> cd.enum_M
@@ -52,31 +52,21 @@ operator >> (Gecode::Archive &e, RNAalignment::ChoiceData &cd) {
     cd.best_trace_score=bts;
     
     return e;
-}
-								      
+} 
 
-
-RNAalignment::RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequence &seqB_,
-			   const LocARNA::ArcMatches &arcmatches_,
-			   const LocARNA::AlignerParams &aligner_params, 
-			   const LocARNA::Scoring &scoring,
-			   int lower_score_bound,
-			   int upper_score_bound,		 
-			   bool opt_graphical_output)
+RnaAlignment::RnaAlignment(const RnaAlignmentParams &ap)
     :
-    seqA(seqA_),
-    seqB(seqB_),
-    arcmatches(arcmatches_),
-    n(seqA.length()),
-    m(seqB.length()),
+    params(ap),
+    n(params.seqA_->length()),
+    m(params.seqB_->length()),
     MD(*this,n+1,0,m), //we only need MD_1,...,MD_n ==> ignore MD_0
     M(*this,n+1,0,1),
-    Score(*this,lower_score_bound,upper_score_bound),
+    Score(*this,params.lower_score_bound_,params.upper_score_bound_),
     choice_data()
     //, discrepancy(0)
 {
 #  ifdef HAVE_GIST
-    if (opt_graphical_output) 
+    if (params.gist_) 
 	wind=new WinHandler(n+1,m+1,"Display variables status");
     else {
 	wind=NULL;
@@ -92,7 +82,7 @@ RNAalignment::RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequen
 	
     // impose anchor constaints
     for(size_t i=1;i<=n; i++){
-	int j=aligner_params.constraints.match_to_a(i);
+	int j=params.constraints_->match_to_a(i);
 	if (j>0) {
 	    // there is an anchor i~j
 	    rel(*this,MD[i],Gecode::IRT_EQ,j);
@@ -125,7 +115,7 @@ RNAalignment::RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequen
        we conclude that
        dom(MD[i])={5} and dom(M[i])={1}
     */
-    const LocARNA::TraceController &tc = aligner_params.trace_controller;
+    const LocARNA::TraceController &tc = *params.trace_controller_;
 
     for (size_t i=1; i<=n; i++) {
 	// MD[i] :>= tc.min_col(i)
@@ -143,7 +133,12 @@ RNAalignment::RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequen
     
     
 
-    AlignmentScore::post(*this,seqA,seqB,arcmatches,aligner_params,scoring,
+    AlignmentScore::post(*this,
+			 *params.seqA_,
+			 *params.seqB_,
+			 *params.arc_matches_,
+			 params,
+			 *params.scoring_,
 			 MD,M,Score);
 	
     // simple relations
@@ -163,7 +158,7 @@ RNAalignment::RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequen
     //rel(*this,Score,Gecode::IRT_GR, 33592);
 	
     if (custom_branching) {
-	RNAalignBrancher::post(*this);
+	RnaAlignBrancher::post(*this);
     } else {
 	//  first enumerate MD, then the rest
 	    
@@ -182,10 +177,10 @@ RNAalignment::RNAalignment(const LocARNA::Sequence &seqA_, const LocARNA::Sequen
 
 
 
-bool RNAalignment::all_assigned() const {
+bool RnaAlignment::all_assigned() const {
     bool all_assigned=true;
 
-    for (size_t i=1; i<=seqA.length(); i++) {
+    for (size_t i=1; i<=params.seqA_->length(); i++) {
 	all_assigned &= MD[i].assigned();
 	all_assigned &= M[i].assigned();
     }
@@ -194,12 +189,12 @@ bool RNAalignment::all_assigned() const {
 }
 
 Alignment
-RNAalignment::to_alignment() const {
+RnaAlignment::to_alignment() const {
 
-    Alignment alignment(seqA,seqB);
+    Alignment alignment(*params.seqA_,*params.seqB_);
 
     size_t j=1;
-    for (size_t i=1; i<=seqA.length(); i++) {
+    for (size_t i=1; i<=params.seqA_->length(); i++) {
 
 	for (;j<(size_t)MD[i].val();j++) {
 	    alignment.append(-1,j);
@@ -213,7 +208,7 @@ RNAalignment::to_alignment() const {
 	}
     }
 
-    for (;j<=seqB.length();j++) {
+    for (;j<=params.seqB_->length();j++) {
 	alignment.append(-1,j);
     }
 
@@ -222,7 +217,7 @@ RNAalignment::to_alignment() const {
 
 
 void
-RNAalignment::print(std::ostream& out) const {
+RnaAlignment::print(std::ostream& out) const {
 
     size_t width=60;
 
@@ -233,7 +228,7 @@ RNAalignment::print(std::ostream& out) const {
 
     } else {
 	out << "Matches/Deletions:    ";
-	for (size_t i=0; i<=seqA.length(); i++) {
+	for (size_t i=0; i<=params.seqA_->length(); i++) {
 	    if (!(M[i].assigned() && MD[i].assigned())) {
 		out <<i<<(M[i].assigned()?(M[i].val()==0?"g":"~"):"?")<<MD[i]<<", ";
 	    }
@@ -247,7 +242,8 @@ RNAalignment::print(std::ostream& out) const {
     // ////////////////////////////////////////
     // list undecided base pairs
 
-    for (ArcMatches::const_iterator it=arcmatches.begin(); arcmatches.end()!=it; ++it) {
+    for (ArcMatches::const_iterator it=params.arc_matches_->begin();
+	 params.arc_matches_->end()!=it; ++it) {
 	const Arc &arcA=it->arcA();
 	const Arc &arcB=it->arcB();
 
@@ -276,12 +272,12 @@ RNAalignment::print(std::ostream& out) const {
 }
 
 Gecode::ModEvent
-RNAalignment::RNAalignBrancher::
+RnaAlignment::RnaAlignBrancher::
 fix_vars_from_trace(Gecode::Space& home,
 		    const std::vector<unsigned int> &traceA,
 		    const std::vector<unsigned int> &traceB
 		    ) const {
-    RNAalignment& s = static_cast<RNAalignment&>(home);
+    RnaAlignment& s = static_cast<RnaAlignment&>(home);
 
     Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
     
@@ -302,15 +298,15 @@ fix_vars_from_trace(Gecode::Space& home,
 					       
 
 Gecode::ExecStatus 
-RNAalignment::RNAalignBrancher::commit(Gecode::Space& home, 
+RnaAlignment::RnaAlignBrancher::commit(Gecode::Space& home, 
 			     const Gecode::Choice& _c,
 			     unsigned int a) {
-    RNAalignment& s = static_cast<RNAalignment&>(home);
+    RnaAlignment& s = static_cast<RnaAlignment&>(home);
     const Choice& c = static_cast<const Choice&>(_c);
     
     Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
 	    
-    const RNAalignment::ChoiceData &cd=c.cd;
+    const RnaAlignment::ChoiceData &cd=c.cd;
 	    
     if (cd.new_lower_bound) {
 	s.choice_data.new_lower_bound=false;

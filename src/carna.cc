@@ -26,8 +26,6 @@
 // get all locarna headers
 #include <locarna.hh>
 
-#include <LocARNA/aux.hh>
-
 namespace LocARNA {
 #include <LocARNA/ribosum85_60.icc>
 }
@@ -41,7 +39,7 @@ namespace LocARNA {
 #include <gecode/gist.hh>
 #endif
 
-#include "RNAalignment.hh"
+#include "RnaAlignment.hh"
 
 using namespace std;
 //using namespace Gecode;
@@ -55,6 +53,11 @@ VERSION_STRING = (std::string)PACKAGE_STRING;
 // Parameter
 
 double min_prob; // only pairs with a probability of at least min_prob are taken into account
+
+// maximal ratio of number of base pairs divided by sequence
+// length. This serves as a second filter on the "significant"
+// base pairs.
+double max_bps_length_ratio;
 
 int match_score;
 int mismatch_score;
@@ -79,6 +82,10 @@ std::string free_endgaps; //!< specification of free end gaps,
 int max_diff; // maximal difference for positions of alignment edges
 // (only used for ends of arcs)
 int max_diff_am; //maximal difference between two arc ends, -1 is off
+
+// maximal difference for alignment traces, at arc match
+// positions
+int max_diff_at_am;
 
 // only consider arc matchs where
 //   1. for global (bl-al)>max_diff || (br-ar)<=max_diff    (if max_diff>=0)
@@ -230,8 +237,10 @@ LocARNA::option_def my_options[] = {
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Heuristics for speed accuracy trade off"},
 
     {"min-prob",'p',0,O_ARG_DOUBLE,&min_prob,"0.0005","prob","Minimal probability"},
+    {"max-bps-length-ratio",0,0,O_ARG_DOUBLE,&max_bps_length_ratio,"0.0","factor","Maximal ratio of #base pairs divided by sequence length (default: no effect)"},
     {"max-diff-am",'D',0,O_ARG_INT,&max_diff_am,"-1","diff","Maximal difference for sizes of matched arcs"},
     {"max-diff",'d',0,O_ARG_INT,&max_diff,"-1","diff","Maximal difference for alignment cuts"},
+    {"max-diff-at-am",0,0,O_ARG_INT,&max_diff_at_am,"-1","diff","Maximal difference for alignment traces, only at arc match positions"},
     //{"min-am-prob",'a',0,O_ARG_DOUBLE,&min_am_prob,"0.0005","amprob","Minimal Arc-match probability"},
     //{"min-bm-prob",'b',0,O_ARG_DOUBLE,&min_bm_prob,"0.0005","bmprob","Minimal Base-match probability"},
 
@@ -292,7 +301,7 @@ LocARNA::option_def my_options[] = {
 // ------------------------------------------------------------
 
 /** \brief Main-function
- *  \relates RNAalignment
+ *  \relates RnaAlignment
  */
 int
 main(int argc, char* argv[]) {
@@ -386,7 +395,7 @@ main(int argc, char* argv[]) {
     
     LocARNA::RnaData *rna_dataA=0;
     try {
-	rna_dataA = new LocARNA::RnaData(fileA,min_prob,pfparams);
+	rna_dataA = new LocARNA::RnaData(fileA,min_prob,max_bps_length_ratio,pfparams); 
     } catch (LocARNA::failure &f) {
 	std::cerr << "ERROR:\tfailed to read from file "<<fileA <<std::endl
 		  << "\t"<< f.what() <<std::endl;
@@ -395,7 +404,7 @@ main(int argc, char* argv[]) {
     
     LocARNA::RnaData *rna_dataB=0;
     try {
-	rna_dataB = new LocARNA::RnaData(fileB,min_prob,pfparams);
+	rna_dataB = new LocARNA::RnaData(fileB,min_prob,max_bps_length_ratio,pfparams);
     } catch (LocARNA::failure &f) {
 	std::cerr << "ERROR: failed to read from file "<<fileB <<std::endl
 		  << "       "<< f.what() <<std::endl;
@@ -437,7 +446,12 @@ main(int argc, char* argv[]) {
     arc_matches = new LocARNA::ArcMatches(*rna_dataA,
 					  *rna_dataB,
 					  min_prob,
-					  (max_diff_am!=-1)?(LocARNA::size_type)max_diff_am:std::max(lenA,lenB),
+					  (max_diff_am!=-1)
+					  ?(LocARNA::size_type)max_diff_am
+					  :std::max(lenA,lenB),
+					  max_diff_at_am!=-1
+					  ? (LocARNA::size_type)max_diff_at_am
+					  : std::max(lenA,lenB),
 					  trace_controller,
 					  seq_constraints
 					  );
@@ -487,8 +501,9 @@ main(int argc, char* argv[]) {
 		       my_exp_probB,
 		       0, // temperature
 		       false, // opt_stacking not implemented in Carna
+		       false, // opt_new_stacking not implemented in Carna
 		       false, // mea
-		       0,0,0,0
+		       0,0,0,0 // alpha, beta,gamma,probabilit_scale (unused in Carna)
 		       );
 
     LocARNA::Scoring scoring(seqA,
@@ -502,46 +517,50 @@ main(int argc, char* argv[]) {
 		    );    
 
     // ------------------------------------------------------------
-    // parameter for the alignment
-    //
-    LocARNA::AlignerParams aligner_params(0, //no_lonely_pairs does not make sense in carna
-					  struct_local,
-					  sequ_local,
-					  free_endgaps,
-					  trace_controller,
-					  max_diff_am,
-					  0, // min_am_prob and
-					  0, // min_bm_prob are not used in Carna
-					  false, // opt_stacking not implemented in Carna
-					  seq_constraints
-					  );
-
-
-    // ------------------------------------------------------------
     // construct the constraint model / root space
     //
-    RNAalignment* s = new RNAalignment(seqA,seqB,
-				       *arc_matches,
-				       aligner_params,scoring,
-				       opt_lower_bound?lower_score_bound:Gecode::Int::Limits::min,
-				       opt_upper_bound?upper_score_bound:Gecode::Int::Limits::max,
-				       opt_gist
-				       );
     
+    const RnaAlignmentParams &rna_alignment_params =
+	RnaAlignment::create
+	(
+	 LocARNA::Aligner::create()
+	 . seqA(seqA)
+	 . seqB(seqB)
+	 . arc_matches(*arc_matches)
+	 . scoring(scoring)
+	 . no_lonely_pairs(false) // no_lonely_pairs does not make sense in carna
+	 . struct_local(struct_local)
+	 . sequ_local(sequ_local)
+	 . free_endgaps(free_endgaps)
+	 . max_diff_am(max_diff_am)
+	 . max_diff_at_am(max_diff_at_am)
+	 . trace_controller(trace_controller)
+	 . min_am_prob(0)
+	 . min_bm_prob(0)
+	 . stacking(false)
+	 . constraints(seq_constraints)
+	 )
+	. lower_score_bound(opt_lower_bound?lower_score_bound:Gecode::Int::Limits::min)
+	. upper_score_bound(opt_upper_bound?upper_score_bound:Gecode::Int::Limits::max)
+	. gist(opt_gist)
+	;
+        
+    RnaAlignment *rna_alignment_space = 
+	new RnaAlignment(rna_alignment_params);
 
     // ------------------------------------------------------------
     // run the search engine
     //
     if (opt_gist) {
 #ifdef HAVE_GIST
-	Gecode::Gist::Print<RNAalignment> p("Node explorer");
+	Gecode::Gist::Print<RnaAlignment> p("Node explorer");
 	Gecode::Gist::Options o;
 	o.inspect.click(&p);
 
 	o.c_d =  c_d;
 
 	//Gecode::Gist::dfs(s,o);
-	Gecode::Gist::bab(s,o);
+	Gecode::Gist::bab(rna_alignment_space,o);
 #endif
     } else {
 	Gecode::Search::Options o;
@@ -559,13 +578,13 @@ main(int argc, char* argv[]) {
 	}
 	
 	// construct engine
-	Gecode::BAB<RNAalignment> e(s,o);
+	Gecode::BAB<RnaAlignment> e(rna_alignment_space,o);
 	
 	bool first_solution=true;
 
 	// ----------------------------------------
 	// enumerate solutions
-	RNAalignment* ex=NULL;
+	RnaAlignment* ex=NULL;
 	while ((ex = e.next()) && (ex != NULL)) {
 	    // write each solution to stdout and optionally to files
 	    // in clustal and pp format
@@ -615,7 +634,8 @@ main(int argc, char* argv[]) {
 			
 			LocARNA::MultipleAlignment ma(alignment,opt_local_file_output);
 			LocARNA::RnaEnsemble ens(ma,pfparams,false,true); // alifold the alignment
-			LocARNA::RnaData consensus(ens,min_prob,pfparams); // construct rna data from ensemble
+			// construct consensus rna data from ensemble
+			LocARNA::RnaData consensus(ens,min_prob,max_bps_length_ratio,pfparams);
 			consensus.write_pp(outfile); // write alifold dot plot
 		    } else {
 			// compute averaged consensus base pair probabilities
@@ -653,9 +673,9 @@ main(int argc, char* argv[]) {
 	if (o.stop) delete o.stop;
 
     }
-
-    if (ribosum) delete ribosum;
+    
+    if (rna_alignment_space) delete rna_alignment_space;
     if (arc_matches) delete arc_matches;
-    if (s) delete s;
+    if (ribosum) delete ribosum;
     return 0;
 }

@@ -2,7 +2,7 @@
 #include "LocARNA/arc_matches.hh"
 
 //#include "WinDisplay.hh"
-#include "RNAalignment.hh"
+#include "RnaAlignment.hh"
 
 #include <limits>
 
@@ -772,7 +772,7 @@ AlignmentScore::prune(Gecode::Space& home,
 
 
 void
-AlignmentScore::choice(RNAalignment &s,
+AlignmentScore::choice(RnaAlignment &s,
 		       const InftyScoreRRMatrix &Fwd,
 		       const InftyScoreRRMatrix &Bwd,
 		       const SizeVec &traceA,
@@ -1349,7 +1349,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     // constrain Score by trace_score, which is a lower bound
     
     // test whether the trace can improve the lower bound
-    RNAalignment &rahome = static_cast<RNAalignment&>(home);
+    RnaAlignment &rahome = static_cast<RnaAlignment&>(home);
     if (Score.min()<trace_score) {
 	rahome.choice_data.new_lower_bound=true;
 	rahome.choice_data.best_traceA=traceA;
@@ -1431,7 +1431,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     // -------------------- select CHOICE for the space
     if (!Gecode::me_modified(ret)) {
 	// don't call choice if propagate will be called again anyway (due to modifications)
-	choice(static_cast<RNAalignment&>(home),Fwd,Bwd,traceA,traceB,trace_score,UBM,match_scores);
+	choice(static_cast<RnaAlignment&>(home),Fwd,Bwd,traceA,traceB,trace_score,UBM,match_scores);
     }
 
     // -------------------- pass some debugging information to space
