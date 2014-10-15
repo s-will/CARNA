@@ -11,8 +11,10 @@ carna.pl [options] input.fa
 
 =head1 DESCRIPTION
 
-carna.pl is a front end for the constraint RNA alignment program carna.
-Its main use is to provide an easy to use interface to carna.
+DEPRECATED: rather call carna binary directly (one input files per sequence)
+
+Call carna from a fasta file with two sequences. This script is a
+front end for the constraint RNA alignment program carna.
 
 =head1 OPTIONS
 

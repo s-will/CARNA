@@ -37,3 +37,6 @@ Adapt to gecode 4.2.0 and LocARNA 1.7.10
 (V1.2.3)
 Adapt to LocARNA 1.7.13
 (V1.2.5)
+Adapt to LocARNA 1.7.18 (api 1.3)
+Change defaults: --min-prob 0.01, --time-limit 300000
+(V1.2.6)

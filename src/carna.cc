@@ -175,7 +175,6 @@ int pf_struct_weight;
 
 int c_d;
 
-bool opt_time_limit;
 int time_limit;
 
 bool opt_lower_bound;
@@ -203,14 +202,6 @@ LocARNA::option_def my_options[] = {
     {"struct-weight",'s',0,O_ARG_INT,&struct_weight,"200","score","Maximal weight of 1/2 arc match"},
     {"exp-prob",'e',&opt_exp_prob,O_ARG_DOUBLE,&exp_prob,O_NODEFAULT,"prob","Expected probability"},
     {"tau",'t',0,O_ARG_INT,&tau_factor,"0","factor","Tau factor in percent"},
-    // {"exclusion",'E',0,O_ARG_INT,&exclusion_score,"0","score","Exclusion weight"},
-    //{"stacking",0,&opt_stacking,O_NO_ARG,0,O_NODEFAULT,"","Use stacking terms (needs stack-probs by RNAfold -p2)"},
-
-    // {"",0,0,O_SECTION,0,O_NODEFAULT,"","Type of locality"},
-
-    // {"struct-local",0,0,O_ARG_BOOL,&struct_local,"false","bool","Structure local"},
-    // {"sequ-local",0,0,O_ARG_BOOL,&sequ_local,"false","bool","Sequence local"},
-    // {"free-endgaps",0,0,O_ARG_STRING,&free_endgaps,"----","spec","Whether and which end gaps are free. order: L1,R1,L2,R2"},
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Controlling output"},
     
@@ -236,38 +227,11 @@ LocARNA::option_def my_options[] = {
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Heuristics for speed accuracy trade off"},
 
-    {"min-prob",'p',0,O_ARG_DOUBLE,&min_prob,"0.0005","prob","Minimal probability"},
+    {"min-prob",'p',0,O_ARG_DOUBLE,&min_prob,"0.01","prob","Minimal probability"},
     {"max-bps-length-ratio",0,0,O_ARG_DOUBLE,&max_bps_length_ratio,"0.0","factor","Maximal ratio of #base pairs divided by sequence length (default: no effect)"},
     {"max-diff-am",'D',0,O_ARG_INT,&max_diff_am,"-1","diff","Maximal difference for sizes of matched arcs"},
     {"max-diff",'d',0,O_ARG_INT,&max_diff,"-1","diff","Maximal difference for alignment cuts"},
     {"max-diff-at-am",0,0,O_ARG_INT,&max_diff_at_am,"-1","diff","Maximal difference for alignment traces, only at arc match positions"},
-    //{"min-am-prob",'a',0,O_ARG_DOUBLE,&min_am_prob,"0.0005","amprob","Minimal Arc-match probability"},
-    //{"min-bm-prob",'b',0,O_ARG_DOUBLE,&min_bm_prob,"0.0005","bmprob","Minimal Base-match probability"},
-
-    // {"",0,0,O_SECTION,0,O_NODEFAULT,"","Special sauce options"},
-    // {"kbest",'k',0,O_ARG_INT,&kbest_k,"-1","k","Find k-best alignments"},
-
-    // {"",0,0,O_SECTION,0,O_NODEFAULT,"","Options for controlling MEA score (experimental, under construction)."},
-
-    // {"mea-alignment",0,&opt_mea_alignment,O_NO_ARG,0,O_NODEFAULT,"","Do MEA alignment."},
-    // {"probcons-file",0,&opt_probcons_file,O_ARG_STRING,&probcons_file,O_NODEFAULT,"file","Probcons parameter file."},
-
-    // {"match-prob-method",0,0,O_ARG_INT,&match_prob_method,"0","int","Method for computation of match probs."},
-    // {"temperature",0,0,O_ARG_INT,&temperature,"150","int","Temperature for PF-computation."},
-    // {"pf-struct-weight",0,0,O_ARG_INT,&pf_struct_weight,"200","weight","Structure weight in PF-computation."},
-
-    // {"mea-gapcost",0,&opt_mea_gapcost,O_NO_ARG,0,O_NODEFAULT,"","Use gap cost in mea alignment."},
-    // {"mea-alpha",0,0,O_ARG_INT,&mea_alpha,"0","weight","Weight alpha for MEA."},
-    // {"mea-beta",0,0,O_ARG_INT,&mea_beta,"200","weight","Weight beta for MEA."},
-    // {"mea-gamma",0,0,O_ARG_INT,&mea_gamma,"100","weight","Weight gamma for MEA."},
-    // {"probability-scale",0,0,O_ARG_INT,&probability_scale,"10000","scale","Scale for probabilities/resolution of mea score."},
-
-    // {"write-match-probs",0,&opt_write_matchprobs,O_ARG_STRING,&matchprobs_file,O_NODEFAULT,"file","Write match probs to file (don't align!)."},
-    // {"read-match-probs",0,&opt_read_matchprobs,O_ARG_STRING,&matchprobs_file,O_NODEFAULT,"file","Read match probabilities from file."},
-
-    // {"write-arcmatch-scores",0,&opt_write_arcmatch_scores,O_ARG_STRING,&arcmatch_scores_file,O_NODEFAULT,"file","Write arcmatch scores (don't align!)."},
-    // {"read-arcmatch-scores",0,&opt_read_arcmatch_scores,O_ARG_STRING,&arcmatch_scores_file,O_NODEFAULT,"file","Read arcmatch scores."},
-    // {"read-arcmatch-probs",0,&opt_read_arcmatch_probs,O_ARG_STRING,&arcmatch_scores_file,O_NODEFAULT,"file","Read arcmatch probabilities (weight by mea_beta/100)."},
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Constraints"},
 
@@ -282,7 +246,7 @@ LocARNA::option_def my_options[] = {
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Controlling Gecode"},
     {"c_d",0,0,O_ARG_INT,&c_d,"1","distance","Recomputation distance"},
-    {"time-limit",0,&opt_time_limit,O_ARG_INT,&time_limit,O_NODEFAULT,"time","Search time limit in milliseconds (always searches for first solution)."},
+    {"time-limit",0,0,O_ARG_INT,&time_limit,"300000","time","Time limit in ms (always search first solution; turn off by 0)."},
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","Standard options"},
 
@@ -292,8 +256,8 @@ LocARNA::option_def my_options[] = {
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","RNA sequences and pair probabilities"},
 
-    {"",0,0,O_ARG_STRING,&fileA,O_NODEFAULT,"file 1","Basepairs input file 1"},
-    {"",0,0,O_ARG_STRING,&fileB,O_NODEFAULT,"file 2","Basepairs input file 2"},
+    {"",0,0,O_ARG_STRING,&fileA,O_NODEFAULT,"file 1","Input file 1  ;; input files can be fasta, dotplot, pp, or aln files"},
+    {"",0,0,O_ARG_STRING,&fileB,O_NODEFAULT,"file 2","Input file 2  ;; and can speficy structure and anchor constraints."},
     {"",0,0,0,0,O_NODEFAULT,"",""}
 };
 
@@ -568,7 +532,7 @@ main(int argc, char* argv[]) {
 	o.c_d =  c_d;
 	o.stop=0L;
 	
-	if (opt_time_limit) {
+	if (time_limit>0) {
 	    Gecode::Search::Stop *timestop=0L;
 	    // activate next line for "if time limit is exceeded, no solution is produced"
 	    // timestop = new Gecode::Search::TimeStop(time_limit);
@@ -589,7 +553,7 @@ main(int argc, char* argv[]) {
 	    // write each solution to stdout and optionally to files
 	    // in clustal and pp format
 	    
-	    if (first_solution && opt_time_limit) {
+	    if (first_solution && time_limit>0) {
 		((Gecode::Search::TimeStop *)o.stop)->limit(time_limit);
 		first_solution=false;
 	    }
