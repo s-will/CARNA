@@ -48,6 +48,18 @@
 // another great speed up!
 
 
+// IMPORTANT DETAIL: handling of negative arc match scores.  In CARNA,
+// arcs with very low probabilities are not represented due to
+// filtering. This is not consistent with scoring arc matches
+// negatively. (Otherwise, the match of more probable arcs could score
+// worse than the match of less probable ones, if one of the latter is
+// removed by the filter.)  THEREFORE: ignore negatively scoring arc
+// matches. This is NOT in agreement with the CP paper; however, there
+// the case of negative arc match scores was unlikely (likely, it did
+// not occur at all), such that the experimental results are still
+// valid.
+
+
 #include <LocARNA/basepairs.hh>
 
 class RnaAlignment;
@@ -160,8 +172,9 @@ protected:
      * @param[in,out] tight return in tight, whether the bound is
      * tight (if tight!=NULL && tight!=false)
      * 
-     * @note the bound is tight iff no arc matches contribute to the bound,
-     * i.e. iff the bound is 0
+     * @note The bound is tight iff no arc matches contribute to the
+     * bound; Since we ignore negative arc match scores, this is the
+     * case iff the bound equals 0
      *
      * @return upper bound for contribution of matching i and j 
      */
@@ -446,26 +459,26 @@ protected:
 	  //const InftyScoreRRMatrix &BwdB,
 	  const ScoreMatrix &UBM);
 
-    /**
-     * determines the indices of arcs that are forced to occur in any
-     * arc match.  return result in the output parameters forcedA and
-     * forcedB
-     * 
-     * @param adjlA 
-     * @param adjlB 
-     * @param forcedA 
-     * @param forcedB 
-     * @param right 
-     * @param tight 
-     */
-    template<class AdjList>
-    void
-    determine_forced_arcs(const AdjList &adjlA,
-			  const AdjList &adjlB,
-			  BoolVec &forcedA, 
-			  BoolVec &forcedB,
-			  bool right,
-			  bool *tight) const;
+    // /**
+    //  * determines the indices of arcs that are forced to occur in any
+    //  * arc match.  return result in the output parameters forcedA and
+    //  * forcedB
+    //  * 
+    //  * @param adjlA 
+    //  * @param adjlB 
+    //  * @param[out] forcedA 
+    //  * @param[out] forcedB 
+    //  * @param right whether arcs are going to the right (or left) 
+    //  * @param[out] tight 
+    //  */
+    // template<class AdjList>
+    // void
+    // determine_forced_arcs(const AdjList &adjlA,
+    // 			  const AdjList &adjlB,
+    // 			  BoolVec &forcedA, 
+    // 			  BoolVec &forcedB,
+    // 			  bool right,
+    // 			  bool *tight) const;
 	
     /** 
      * bound on all arcmatches to the right (left) from i,j
@@ -487,7 +500,7 @@ protected:
      * other. (The method determines the maximum clique of compatible
      * arc matches by DP.)
      *
-     * @note arc matches with negative scores do never contribute
+     * @note arc matches with negative scores do never contribute!
      */
     template<class AdjList>
     LocARNA::score_t
@@ -541,10 +554,13 @@ protected:
      * @param[out] match_scores   matrix of corrected scores for single matchs i~j
      *
      * @note the matrix considered_ams contains entries (a,b) for
-     * matching the arcs with indices a and b. If the arc is still
+     * matching the arcs with indices a and b. If the arc match is still
      * "considered", the entry is the score of the arcmatch and 0
      * otherwise. "considered" means that the score contribution
      * is not reflected in match_scores.
+     *
+     * @note this method also removes negative arc match scores, 
+     * since negative arc matches are never considered
      */
     void
     prune_decided_arc_matches(ScoreMatrix &considered_ams, ScoreMatrix &match_scores);

@@ -1,7 +1,44 @@
-Implement model and propagator
-Optimize propagator
-Visualization of solutions in gist search
-(V0.1)
+2014-11-05 -- generally ignore arc matches with negative scores (bug fix)
+
+2014-10-15 -- V1.2.6
+Adapt to LocARNA 1.7.18 (api 1.3)
+Change defaults: --min-prob 0.01, --time-limit 300000
+
+2014-01-28 -- V1.2.5
+Adapt to LocARNA 1.7.13
+
+2013-10-04 -- V1.2.3
+Adapt to gecode 4.2.0 and LocARNA 1.7.10
+
+2013-02-19 -- V1.2.2
+Make compatible with Gecode 3.7.3
+
+2012-11-13 -- V1.2.1
+Clean up
+Adapt to new LocARNA code
+Drastically increase version number to fit web server
+
+2012-01-12 -- V0.4
+More bugfixes in branching heuristic and tight run optimization
+
+2012-01-05 -- V0.3
+Modify handling of time-limit, such that a first solution is always
+searched and written, i.e. the search will never be interrupted by time-out
+before first solution.
+Fix bug in branching strategy
+Change enumeration, such that traces that yield new lower bounds immediately generate solutions
+
+2011-12-05 -- V0.2.3
+Add alifold-consensus-dp option
+Add noLP option
+Some bug fixes
+110511 - Martin Mann - fix of gecode lib order for linking
+110511 - Martin Mann - fix of size_type namespace
+
+2011-08-18 -- V0.2.2
+Bugfix in propagator traceback
+
+2011-04-21 -- V0.2
 Use Gecode 3.5.0
 Use LocARNA library
 Reorganize Code
@@ -9,34 +46,8 @@ Add affine gap cost in propagator
 Add max-diff heuristic
 Add anchor constraints
 Make gist/graphics support optional, configurable by --disable-gist
-(V0.2)
-110511 - Martin Mann - fix of gecode lib order for linking
-110511 - Martin Mann - fix of size_type namespace
-Bugfix in propagator traceback
-(V0.2.2)
-Add alifold-consensus-dp option
-Add noLP option
-Some bug fixes
-(V0.2.3)
-Modify handling of time-limit, such that a first solution is always
-searched and written, i.e. the search will never be interrupted by time-out
-before first solution.
-(V0.2.4)
-Fix bug in branching strategy
-Change enumeration, such that traces that yield new lower bounds immediately generate solutions
-(V0.3)
-More bugfixes in branching heuristic and tight run optimization
-(V0.4)
-Clean up
-Adapt to new LocARNA code
-Drastically increase version number to fit web server
-(V1.2.1)
-Make compatible with Gecode 3.7.3
-(V1.2.2)
-Adapt to gecode 4.2.0 and LocARNA 1.7.10
-(V1.2.3)
-Adapt to LocARNA 1.7.13
-(V1.2.5)
-Adapt to LocARNA 1.7.18 (api 1.3)
-Change defaults: --min-prob 0.01, --time-limit 300000
-(V1.2.6)
+
+2009-12-02 -- V0.1
+Implement model and propagator
+Optimize propagator
+Visualization of solutions in gist search

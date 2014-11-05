@@ -1,6 +1,8 @@
 #ifndef ROW_RANGE_MATRIX_HH
 #define ROW_RANGE_MATRIX_HH
 
+#include <iostream>
+
 // ----------------------------------------
 //! matrix class with range for each row.
 //
@@ -127,6 +129,32 @@ public:
     set(size_type i,size_type j, const elem_t &x) {
 	mat_[addr(i,j)]=x;
     }
+    
+    template<class T>
+    friend
+    std::ostream &
+    operator << (std::ostream &out, const RowRangeMatrix<T> &m);
 };
+
+template <class elem_t>
+std::ostream &
+operator << (std::ostream &out, const RowRangeMatrix<elem_t> &m) {
+    #ifndef NDEBUG
+    size_t i=0;
+    for(typename std::vector<typename RowRangeMatrix<elem_t>::size_pair_type>::const_iterator it=m.ranges.begin();
+	m.ranges.end()!=it;
+	++it) {
+	out << i <<" [ "<< it->first << "-" << it->second << "] : "; 
+	for(size_t j=it->first; j<=it->second; ++j) {
+	    out <<m.get(i,j)<<" ";
+	}
+	out << std::endl;
+	i++;
+    }
+    #else
+    std::cerr << "RowRangeMatrix::operator << : Turn on debugging."<<std::endl; 
+    #endif
+    return out;
+}
 
 #endif

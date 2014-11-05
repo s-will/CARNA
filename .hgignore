@@ -14,13 +14,12 @@ depcomp
 missing
 install-sh
 src/.deps
-src/RNAalignment
 Utils/carna.pl
-src/LocARNA/.#scoring.cc
 src/carna
 CP-draft/cpRNAalignment.{aux,log,pdf}
-Draft/constraintRNAalignment.{aux,log,out,pdf}
-src/Obsolete
+_build
+_inst
+
 
 syntax: regexp
 (.*/)?\#[^/]*\#$

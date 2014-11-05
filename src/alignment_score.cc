@@ -11,7 +11,7 @@
 using namespace LocARNA;
 
 const bool debug_out=false;
-// const bool debug_out=true;
+//const bool debug_out=true;
 
 
 // DETAIL: for the upper bound in ub_match, arc match scores to the
@@ -119,41 +119,6 @@ AlignmentScore::cost(const Gecode::Space& home, const Gecode::ModEventDelta& med
 }
 
 template<class AdjList>
-void
-AlignmentScore::determine_forced_arcs(const AdjList &adjlA,
-				      const AdjList &adjlB,
-				      BoolVec &forcedA, 
-				      BoolVec &forcedB,
-				      bool right,
-				      bool *tight) const {
-    // for all pairs of arcs in A and B that have right ends i and j,
-    // respectively
-    //
-    size_t i=1;
-    for (typename AdjList::const_iterator arcA=adjlA.begin();
-	 arcA!=adjlA.end() ; ++arcA, ++i) {
-	
-	size_t j=1;
-	for (typename AdjList::const_iterator arcB=adjlB.begin();
-	     arcB!=adjlB.end() ; ++arcB, ++j) {
-	    
-	    size_t k=(right)?arcA->left():arcA->right();
-	    size_t l=(right)?arcB->left():arcB->right();
-	    
-	    bool forced = match_forced(k,l);
-
-	    if ( (!forced) && match_arrow_allowed(k,l) ) { // if the match
-		// is allowed, but not forced
-		*tight = false; // the bound will not be tight
-	    }
-	    
-	    forcedA[i] = forcedA[i] | forced;
-	    forcedB[j] = forcedB[j] | forced;
-	}
-    }
-}
-
-template<class AdjList>
 score_t
 AlignmentScore::bound_arcmatches(const AdjList &adjlA,
 				 const AdjList &adjlB,
@@ -222,6 +187,8 @@ AlignmentScore::bound_arcmatches(const AdjList &adjlA,
     }
 
     score_t bound = MAT[adjlB.size()].finite_value();
+
+    assert(bound>=0);
     
     // RETURN bound
     // maximal bound for arcs matches to the left is in MAT[adjlB.size()] 
@@ -236,7 +203,9 @@ AlignmentScore::ub_match(size_type i, size_type j,
 			 const ScoreMatrix &match_scores,
 			 bool *tight_ptr) const {
     //std::cout << "AlignmentScore::ub_match "<<i<< " "<<j<<std::endl;
-  
+    
+    //std::cout << considered_ams<<std::endl;
+
     // compute upper bound for the contribution of matching positions i
     // and j of respective sequences A and B
     // by summing over all possible base pair matchs
@@ -244,9 +213,7 @@ AlignmentScore::ub_match(size_type i, size_type j,
     // when selecting a certain structure: maximize over possible base pair matchs
     
     score_t bound=0;
-    
-    //std::cout << bound<<std::endl;
-        
+            
     bound += 
 	bound_arcmatches(arc_matches.get_base_pairsA().right_adjlist(i),
 			 arc_matches.get_base_pairsB().right_adjlist(j),
@@ -259,6 +226,8 @@ AlignmentScore::ub_match(size_type i, size_type j,
 			 considered_ams,
 			 false);
     
+    assert(bound>=0);
+
     // when is the bound TIGHT? A: if there are no considered arc matches
     // contributing to the bound.
     // Since arc matches with negative score do never contribute,
@@ -272,7 +241,7 @@ AlignmentScore::ub_match(size_type i, size_type j,
     
     bound += match_scores(i,j);
 
-    //std::cout << "end AlignmentScore::ub_match "<<i<< " "<<j<<" "<<bound<<std::endl;
+    //std::cout << "end AlignmentScore::ub_match "<<i<< " "<<j<<" "<<bound<<" ; tight="<<tight<<std::endl;
     
     return bound;
 }
@@ -1103,7 +1072,7 @@ AlignmentScore::fix_tight_runs(Gecode::Space &home,
 	    run_is_tight=true;
 	    
 	} else { // within a run
-	    // the run is tight at i if only if all possible matches
+	    // the run is tight at i if and only if all possible matches
 	    // of i with some value val are tight
 	    if (M[i].in(1)) { // if match is possible
 		for (int val=MD[i].min(); run_is_tight && val<=MD[i].max(); val++) {
@@ -1170,22 +1139,30 @@ AlignmentScore::prune_decided_arc_matches(ScoreMatrix &considered_ams, ScoreMatr
 		    
 		    if (!match_arrow_allowed(k,l)) continue;
 		    
-		    bool forced_kl=match_forced(k,l);
+		    score_t am_score=scoring.arcmatch(am);
 		    
+		    if (am_score<=0) {
+			// don't consider arc matches with non-positive scores
+			considered_ams.set(arcA.idx(),arcB.idx(),0);
+			continue;
+		    }
+		    
+		    bool forced_kl=match_forced(k,l);
+
 		    if ( forced_ij && forced_kl ) {
-			match_scores(i,j) += scoring.arcmatch(am);
-			match_scores(k,l) += scoring.arcmatch(am);
+			match_scores(i,j) += am_score;
+			match_scores(k,l) += am_score;
 			considered_ams.set(arcA.idx(),arcB.idx(),0); // don't consider arc match anymore
 		    }
 		    else if ( forced_ij && !forced_kl ) {
-			match_scores(k,l) += 2 * scoring.arcmatch(am);
+			match_scores(k,l) += 2 * am_score;
 			considered_ams.set(arcA.idx(),arcB.idx(),0); // don't consider arc match anymore
 		    }
 		    else if ( !forced_ij && forced_kl ) {
-			match_scores(i,j) += 2 * scoring.arcmatch(am);
+			match_scores(i,j) += 2 * am_score;
 			considered_ams.set(arcA.idx(),arcB.idx(),0); // don't consider arc match anymore
 		    } else {
-			considered_ams.set(arcA.idx(),arcB.idx(),scoring.arcmatch(am)); // consider arc match
+			considered_ams.set(arcA.idx(),arcB.idx(),am_score); // consider arc match
 		    }
 		}
 	    }
@@ -1306,7 +1283,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
     forward_algorithm(home,Fwd,FwdA,FwdB,UBM);
     
-    //if (debug_out) {std::cout << "Fwd"<<std::endl<<Fwd <<std::endl;}
+    if (debug_out) {std::cout << "Fwd"<<std::endl<<Fwd <<std::endl;}
     
     // the forward algorithm yields an upper bound
     // ==> constrain the score variable
