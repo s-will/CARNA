@@ -680,6 +680,7 @@ AlignmentScore::prune(Gecode::Space& home,
 		if ( (!ub.is_finite()) || (ub.finite_value() < Score.min())) {
 		    ret |= MD[i].nq(home,(int)j);
 		    //std::cerr << "MD["<<i<<"].nq(home,(int)"<<j<<") "<< ret << " " << Fwd(i,j)+Bwd(i,j) << std::endl;
+		    //std::cerr <<i<<"!~"<<j<<" "<< ret << " " << Fwd(i,j)+Bwd(i,j) << std::endl;
 		}
 	    }
 	}
@@ -693,7 +694,7 @@ AlignmentScore::prune(Gecode::Space& home,
 	bool del=false; // is deletion possible?
 	size_t minj = min_col(i);
 	size_t maxj = max_col(i);
-	for(size_type j=minj; !del && j<=maxj; j++) {
+	for(size_type j=minj; j<=maxj; j++) {
 	    
 	    // upper bound for deletion of i after j
 	    TaintedInftyInt ubd = FwdA(i,j)+Bwd(i,j);
@@ -704,6 +705,7 @@ AlignmentScore::prune(Gecode::Space& home,
 	    
 	    if ( ubd.is_finite() && (ubd.finite_value() >= Score.min())) {
 		del=true;
+		break;
 	    }
 	}
 	if (!del) {
@@ -717,21 +719,21 @@ AlignmentScore::prune(Gecode::Space& home,
 	bool match=false; // is match possible?
 	size_t minj = std::max((size_t)1,min_col(i));
 	size_t maxj = max_col(i);
-	for(size_type j=minj; !match && j<=maxj; j++) {
+	for(size_type j=minj; j<=maxj; j++) {
 	    
 	    if (match_arrow_allowed(i,j)) {
 		// upper bound for match i~j (Note: we don't need the matrices
 		// FwdA,FwdB,BwdA,BwdB here, since i~j and Bwd(i,j) is general)
 		infty_score_t ubm = Fwd(i-1,j-1)+UBM(i,j)+Bwd(i,j);
-		
 		if ( ubm.is_finite() && (ubm.finite_value() >= Score.min())) {
 		    match = true; // match is possible
+		    break;
 		}
 	    }
 	}
 	if (!match) {
+	    //std::cerr << "M["<<i<<"].nq(home,1) "<<ret<<" "<< MD[i] << " " << M[i] <<" " << MD[i+1] << " " << M[i+1] <<std::endl;
 	    ret |= M[i].nq(home,1); // match of i not possible
-	    // std::cerr << "M["<<i<<"].nq(home,1) "<<ret<<std::endl;
 	}
     }
     
@@ -1063,7 +1065,7 @@ AlignmentScore::fix_tight_runs(Gecode::Space &home,
 		}
 		std::cout << std::endl;
 		*/
-		//if (debug_out) std::cerr << "fix "<<(last_assigned+1)<<"-"<<(i-1)<<std::endl;
+		if (debug_out) std::cerr << "fix "<<(last_assigned+1)<<"-"<<(i-1)<<std::endl;
 		ret |= fix_vars_to_trace(home,last_assigned+1,i-1,traceA,traceB);
 	       
 	    }
@@ -1164,6 +1166,11 @@ AlignmentScore::prune_decided_arc_matches(ScoreMatrix &considered_ams, ScoreMatr
 		    } else {
 			considered_ams.set(arcA.idx(),arcB.idx(),am_score); // consider arc match
 		    }
+		    /*
+		    if (considered_ams(arcA.idx(),arcB.idx()) != 0) {
+			std::cout << "considered am " << arcA << " " << arcB << " "
+				  << considered_ams(arcA.idx(),arcB.idx()) <<std::endl;
+				  }*/
 		}
 	    }
 	    // else: for !allowed_match(i,j) nothing is to do
@@ -1333,7 +1340,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	rahome.choice_data.best_traceB=traceB;
 	rahome.choice_data.best_trace_score=trace_score;	
     }
-
+    
     if (Gecode::me_failed(Score.gq(home,(int)trace_score))) {
      	if (debug_out) std::cout << "Setting of new lower bound failed."<<std::endl;
       	return Gecode::ES_FAILED;
@@ -1349,7 +1356,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     InftyScoreRRMatrix BwdB(ranges);
 
     backward_algorithm(home,Bwd,BwdA,BwdB,UBM);
-    //if (debug_out) {std::cout << "Bwd"<<std::endl<<Bwd <<std::endl;}
+    if (debug_out) {std::cout << "Bwd"<<std::endl<<Bwd <<std::endl;}
 
     if(debug_out && Fwd(n,m).is_finite() && Bwd(0,0).is_finite() && Fwd(n,m).finite_value()!=Bwd(0,0).finite_value()) {
 	std::cerr << "Clash"<<std::endl;
@@ -1394,6 +1401,7 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	std::cout << "After Pruning:"<<std::endl;
 	print_vars(std::cout);
     }
+
     if (Gecode::me_failed(ret)) {
 	if (debug_out) std::cout << "Fail when pruning."<<std::endl;
 	return Gecode::ES_FAILED;
@@ -1402,11 +1410,13 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
     // test whether all vars fixed, then subsume (can we subsume earlier?)
     if ( all_vars_fixed() ) {
+	if (debug_out) std::cout << "return subsumed"<<std::endl; 
 	return home.ES_SUBSUMED(*this);
     }
 
     // -------------------- select CHOICE for the space
     if (!Gecode::me_modified(ret)) {
+	if (debug_out) std::cout << "determine choice"<<std::endl; 
 	// don't call choice if propagate will be called again anyway (due to modifications)
 	choice(static_cast<RnaAlignment&>(home),Fwd,Bwd,traceA,traceB,trace_score,UBM,match_scores);
     }
@@ -1415,5 +1425,11 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
     
 
     // -------------------- return
-    return Gecode::me_modified(ret)?Gecode::ES_NOFIX:Gecode::ES_FIX;
+    if (Gecode::me_modified(ret)) {
+	if (debug_out) std::cout << "return no fix"<<std::endl; 
+	return Gecode::ES_NOFIX;
+    } else {
+	if (debug_out) std::cout << "return fix"<<std::endl; 
+	return Gecode::ES_FIX;
+    }
 }

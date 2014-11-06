@@ -283,14 +283,28 @@ fix_vars_from_trace(Gecode::Space& home,
     
     int last=0;
     
+
+    // note: here, we set only non-assigned variables according to the
+    // trace!  Otherwise, this could result in inconsistencies if
+    // parts of the alignment has been fixed to equally scoring
+    // subalignments (which can legally happen if different traces
+    // were derived).
     for (size_t i=1; i<traceA.size(); i++) {
 	if (traceA[i]!=0) { // match i
-	    ret |= Gecode::Int::IntView(s.MD[i]).eq(home,(int)traceA[i]);
-	    ret |= Gecode::Int::BoolView(s.M[i]).eq(home,1);
+	    if (!s.MD[i].assigned()) {
+		ret |= Gecode::Int::IntView(s.MD[i]).eq(home,(int)traceA[i]);
+	    }
+	    if (!s.M[i].assigned()) {
+		ret |= Gecode::Int::BoolView(s.M[i]).eq(home,1);
+	    }
 	    last=traceA[i];
 	} else { // deletion of i
-	    ret |= Gecode::Int::IntView(s.MD[i]).eq(home,last);
-	    ret |= Gecode::Int::BoolView(s.M[i]).eq(home,0);
+	    if (!s.MD[i].assigned()) {
+		ret |= Gecode::Int::IntView(s.MD[i]).eq(home,last);
+	    }
+	    if (!s.M[i].assigned()) {
+		ret |= Gecode::Int::BoolView(s.M[i]).eq(home,0);
+	    }
 	}
     }
     return ret;
@@ -318,6 +332,10 @@ RnaAlignment::RnaAlignBrancher::commit(Gecode::Space& home,
 	    ret = Gecode::Int::IntView(s.Score).eq(home, (int) cd.best_trace_score);
 	    
 	    ret |= fix_vars_from_trace(home,cd.best_traceA,cd.best_traceB);
+	    
+	    // if (Gecode::me_failed(ret)) {
+	    // 	std::cout <<" ... failed."<<std::endl;
+	    // }
 	    
 	} else {
 	    ret = Gecode::Int::IntView(s.Score).gr(home, (int) cd.best_trace_score);
