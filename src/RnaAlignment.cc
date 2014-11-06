@@ -219,13 +219,10 @@ RnaAlignment::to_alignment() const {
 void
 RnaAlignment::print(std::ostream& out) const {
 
-    size_t width=60;
-
     if (all_assigned()) {
 	LocARNA::Alignment alignment=to_alignment();
 	MultipleAlignment ma(alignment, false);
-	ma.write(out,width);
-
+	ma.write(out,params.output_width_);
     } else {
 	out << "Matches/Deletions:    ";
 	for (size_t i=0; i<=params.seqA_->length(); i++) {

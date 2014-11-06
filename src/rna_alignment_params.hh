@@ -15,6 +15,7 @@ protected:
     int lower_score_bound_;
     int upper_score_bound_;
     bool gist_;
+    size_t output_width_;
     
     /** 
      * Construct with default parameters
@@ -51,7 +52,14 @@ public:
      */
     RnaAlignmentParams &
     gist(bool gist) {gist_=gist; return *this;}
-        
+
+    /**
+     * @brief set output width
+     * @param width the output width
+     */
+    RnaAlignmentParams &
+    output_width(size_t output_width) {output_width_=output_width; return *this;}
+    
 };
 
 

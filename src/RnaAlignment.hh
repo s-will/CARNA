@@ -45,7 +45,7 @@ protected:
     
     const size_t n;
     const size_t m;
-    
+
 public:
     
     //! choice class for the brancher RnaAlignBranch. Confer commit
@@ -171,13 +171,12 @@ public:
 
     //! print solution in clustal format 
     void
-    print_clustal_format(std::ostream& out_s, size_t output_width) const;
+    print_clustal_format(std::ostream& out_s) const;
 
     //! print solution in pp format
     void 
     print_pp_format(std::ostream& out_s,
 		    const LocARNA::RnaData& rna_dataA, const LocARNA::RnaData& rna_dataB, 
-		    const size_t output_width,
 		    bool alifold_consensus_dp,
 		    double min_prob,
 		    double exp_probA,

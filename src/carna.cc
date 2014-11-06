@@ -507,6 +507,7 @@ main(int argc, char* argv[]) {
 	. lower_score_bound(opt_lower_bound?lower_score_bound:Gecode::Int::Limits::min)
 	. upper_score_bound(opt_upper_bound?upper_score_bound:Gecode::Int::Limits::max)
 	. gist(opt_gist)
+	. output_width(output_width)
 	;
         
     RnaAlignment *rna_alignment_space = 
