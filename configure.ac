@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([carna], [1.2.6], [])
+AC_INIT([carna], [1.2.7], [])
 
 AM_INIT_AUTOMAKE
 
@@ -55,21 +55,20 @@ AC_LANG_CPLUSPLUS
 # Checks for header files.
 AC_HEADER_STDC
 
-
 ##################
 # Debug option
 #
 AC_MSG_CHECKING([whether to build with debug information])
-debuger=no
+debugger=no
 AC_ARG_ENABLE([debug],
     AC_HELP_STRING(
         [--enable-debug],
         [enable debug data generation (def=no)]
     ),
-    debuger="$enableval"
+    debugger="$enableval"
 )
-AC_MSG_RESULT($debuger)
-if test x"$debuger" = x"yes"; then
+AC_MSG_RESULT($debugger)
+if test x"$debugger" = x"yes"; then
     AC_DEFINE([DEBUG], [], [Define to 1 for turning on debugging])
     CPPFLAGS="$CPPFLAGS -g -Wall"
 else
@@ -90,7 +89,7 @@ AC_ARG_ENABLE([gist],
 AC_MSG_RESULT([$ENABLE_GIST])
 
 # turn off deprecated warnings 
-CPPFLAGS="$CPPFLAGS -Wno-deprecated"
+CPPFLAGS="$CPPFLAGS -Wno-deprecated -Wno-unused-local-typedefs"
 
 # configure for use of LocARNA library
 PKG_CHECK_MODULES([DEPS], [LocARNA-1.3 >= 1.7.18])

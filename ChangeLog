@@ -1,4 +1,7 @@
-2014-11-05 -- generally ignore arc matches with negative scores (bug fix)
+2014-11-06 -- V1.2.7
+Support --width parameter completely (also for print to screen and in gist)
+Bug fix: set only non-assigned vars to trace in branching
+Generally ignore arc matches with negative scores (bug fix)
 
 2014-10-15 -- V1.2.6
 Adapt to LocARNA 1.7.18 (api 1.3)
