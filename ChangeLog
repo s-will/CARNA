@@ -1,3 +1,8 @@
+2014-11-13 -- V1.2.8
+Change configure behavior if gist is enabled, but
+requirements are not met: warn and compile without gist
+Update INSTALL and README
+
 2014-11-06 -- V1.2.7
 Support --width parameter completely (also for print to screen and in gist)
 Bug fix: set only non-assigned vars to trace in branching

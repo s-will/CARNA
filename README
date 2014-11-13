@@ -1,30 +1,74 @@
-CARNA 0.1 (Constraint Alignment of RNA)
+CARNA 1.2.8 (Constraint Alignment of RNA)
 =======================================
 
-Compile 
-=======
+SYNOPSIS
+--------
 
-Carna requires Gecode 3.5 and the CImg library. To install Carna,
-get these first. Make sure to build Gecode with qt-support
-(i.e. configure --enable-qt)
+CARNA aligns multiple RNAs without any restrictions on the base
+pairing dependencies in the RNA structure ensembles. Typical RNA
+alignment tools (like FoldAlign or LocARNA) consider only non-crossing
+interactions or predict non-crossing structures simultaneously to
+finding the optimal alignments. In contrast, CARNA considers all
+interactions in the input at the same time and without
+restrictions. This allows finding optimal alignments that take
+pseudoknots and even structural alternatives into account.  While
+typical RNA analysis tools have to limit base pairing interactions for
+reasons of computational complexity, CARNA tackles the problem by
+advanced constraint programming methods. 
 
-If gecode library and headers are not in the default path, you need to
-set the gecode installation directory and gecode source directory
-explicitly.
+INSTALLATION
+------------
 
-Compile Carna by
+For *installation instructions*, see INSTALL.
 
-./configure --prefix=<installation-path> GECODE_HOME=<path-to-gecode-installation-dir> GECODE_SRC_HOME=<path-to-gecode-src-dir>
+CARNA HELP
+----------
+A tool for pairwise Alignment of RNA.
 
-make
+Usage: _inst/bin/carna <options> [<file 1>] [<file 2>]
 
+Scoring parameters:
+    -m,--match=<score>(50)            Match score
+    -M,--mismatch=<score>(0)          Mismatch score
+    --ribosum-file=<f>(RIBOSUM85_60)  Ribosum file
+    --use-ribosum=<bool>(true)        Use ribosum scores
+    -i,--indel=<score>(-350)          Indel score
+    --indel-opening=<score>(-500)     Indel opening score
+    -s,--struct-weight=<score>(200)   Maximal weight of 1/2 arc match
+    -e,--exp-prob=<prob>              Expected probability
+    -t,--tau=<factor>(0)              Tau factor in percent
 
-If the configure cannot find your CImg library, you can add it to
-CXXFLAGS-variable like this example
+Controlling output:
+    --gist                            Use gist for interactive/graphical search.
+    -w,--width=<columns>(120)         Output width
+    --clustal=<file>                  Clustal output
+    --pp=<file>                       PP output
+    --write-structure                 Write guidance structure in output
 
-export CXXFLAGS=-I/usr/local/include/CImg/1.3.2/
+Heuristics for speed accuracy trade off:
+    -p,--min-prob=<prob>(0.01)        Minimal probability
+    --max-bps-length-ratio=<factor>(0.0) Maximal ratio of #base pairs divided by sequence length (default: no effect)
+    -D,--max-diff-am=<diff>(-1)       Maximal difference for sizes of matched arcs
+    -d,--max-diff=<diff>(-1)          Maximal difference for alignment cuts
+    --max-diff-at-am=<diff>(-1)       Maximal difference for alignment traces, only at arc match positions
 
-You might also need to set LD_LIBRARY_PATH to point to the folder,
-where the gecode library is installed, like
+Constraints:
+    --noLP                            No lonely pairs (only used when predicing ensemble porobabilities and for compatibility with locarna; otherwise no effect)
+    --anchorA=<string>()              Anchor constraints sequence A.
+    --anchorB=<string>()              Anchor constraints sequence B.
+    --ignore-constraints              Ignore constraints in pp-file
+    --lb=<score>                      Lower score bound
+    --ub=<score>                      Upper score bound
 
-export LD_LIBRARY_PATH=/FOO/BAR/lib
+Controlling Gecode:
+    --c_d=<distance>(1)               Recomputation distance
+    --time-limit=<time>(300000)       Time limit in ms (always search first solution; turn off by 0).
+
+Standard options:
+    -h,--help                         This help
+    -V,--version                      Version info
+    -v,--verbose                      Verbose
+
+RNA sequences and pair probabilities:
+    <file 1>                          Input file 1  ;; input files can be fasta, dotplot, pp, or aln files
+    <file 2>                          Input file 2  ;; and can speficy structure and anchor constraints.

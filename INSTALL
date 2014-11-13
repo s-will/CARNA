@@ -1,1 +1,43 @@
-/usr/share/automake-1.14/INSTALL
+CARNA 1.2.8 (Constraint Alignment of RNA)
+=======================================
+
+Compile and Install
+===================
+
+Carna requires the Vienna RNA package >=2.1.1, LocARNA >=1.8.0 , and
+Gecode >=4.2.0. Please get those packages, and install prior to
+CARNA. If you need graphic search (gist), make sure that Gecode builds
+with qt and gist support (check configure messages).
+
+Carna can be installed by the typical sequence ./configure; make; make
+install However, if required packages are installed to non-standard
+locations, you will have to specify them:
+
+If gecode library and headers are not in the default path, you need to
+set the gecode installation directory (<path-to-gecode-inst-dir>)
+explicitly. Thus, call
+export GECODE_HOME=<path-to-gecode-inst-dir>
+
+Similarily, it can be necessary to set the path to the
+pkgconfig directory of the locarna library
+(<path-to-locarna-lib-pkgcfg>). For example, if locarna was installed
+to $LOCARNA_HOME, this is $LOCARNA_HOME/lib/pkgconfig and contains
+LocARNA-1.3.pc.
+Thus, call
+export PKG_CONFIG_PATH=<path-to-locarna-lib-pkgcfg>
+
+Typically, it also is necessary to set LD_LIBRARY_PATH to the folder(s),
+where the gecode and locarna libraries are installed, like:
+export LD_LIBRARY_PATH=/FOO/BAR/lib
+
+
+Finally, compile Carna and install to <installation-path> by
+
+./configure --prefix=<installation-path>
+make
+make install
+
+
+If you need gist and the configure cannot find the installed CImg library, one
+can specify its path by:
+export CXXFLAGS=-I/usr/local/include/CImg/1.3.2/

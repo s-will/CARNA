@@ -282,8 +282,6 @@ main(int argc, char* argv[]) {
     if (opt_help) {
 	cout << VERSION_STRING<<endl;
 
-	cout << "Copyright Alessandro Dal Palu, Mathias Moehl, Sebastian Will, 2005-2009"<<endl<<endl;
-
 	cout << "A tool for pairwise Alignment of RNA."<<endl<<endl;
 
 	print_help(argv[0],my_options);
