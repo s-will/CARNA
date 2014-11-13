@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([carna], [1.2.7], [])
+AC_INIT([carna], [1.2.8], [])
 
 AM_INIT_AUTOMAKE
 
@@ -11,46 +11,6 @@ AC_PROG_CXX
 AC_PROG_CC
 
 AC_LANG_CPLUSPLUS
-
-# may be useful later
-# AC_PATH_PROGS([PERL],[perl perl5.004 perl5.003 perl5.002 perl5.001 perl5])
-# AC_PATH_PROG([HELP2MAN],[help2man],false)
-# AC_PATH_PROG([POD2MAN],[pod2man],false)
-
-# ----------------------------------------
-# Vienna RNA package library path support, if not installed in standard directory/path
-#AC_ARG_WITH([vrna],
-#    AC_HELP_STRING(
-#        [--with-vrna=PREFIX],
-#        [Installation directory of the Vienna RNA library]
-#      )
-#) 
-
-#AC_ARG_VAR([RNAfold],[RNAfold name (def=RNAfold)])
-#AC_ARG_VAR([RNAplfold],[RNAplfold name (def=RNAplfold)])
-#AC_ARG_VAR([RNAalifold],[RNAalifold name (def=RNAalifold)])
-
-
-#if test "$with_vrna" = "" ; then
-#   AC_PATH_PROG([RNAfold],[RNAfold],[false])
-#   AC_PATH_PROG([RNAplfold],[RNAplfold],[false])
-#   AC_PATH_PROG([RNAalifold],[RNAalifold],[false])
-#else
-#   AC_PATH_PROG([RNAfold],[RNAfold],[false],[$with_vrna/bin])
-#   AC_PATH_PROG([RNAplfold],[RNAplfold],[false],[$with_vrna/bin])
-#   AC_PATH_PROG([RNAalifold],[RNAalifold],[false],[$with_vrna/bin])  
-#fi
-
-
-# error output if ViennaRNA not found
-#VRNA_OK=true;
-#if test "$RNAfold" = "false" -o "$RNAplfold" = "false" -o "$RNAalifold" = "false" ; then
-#    VRNA_OK=false
-#fi
-
-# end checking for Vienna package and program paths
-# ----------------------------------------
-
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -108,14 +68,16 @@ AC_MSG_RESULT([$GECODE_HOME])
 
 GECODE_LIBFLAGS="-lgecodesearch -lgecodeminimodel -lgecodeint -lgecodeset -lgecodesupport -lgecodekernel"
 
-if test $ENABLE_GIST = "yes" ; then
-   GECODE_LIBFLAGS="-lgecodegist -lX11 $GECODE_LIBFLAGS"
-fi
-
- # add GECODE libraries to list of libs for linking
+# add GECODE libraries to list of libs for linking
 LIBS="$LIBS $GECODE_LIBFLAGS"
 
+if test "$ENABLE_GIST" = "yes" ; then
+   AC_CHECK_LIB([gecodegist],[main],[HAVE_LIBGECODEGIST="yes"])
+   AC_CHECK_LIB([X11],[main],[HAVE_LIBX11="yes"])
+   LIBS="$LIBS -lgecodegist -lX11"
+fi
 
+if test "$ENABLE_GIST" = "yes" ; then
 #####################
 ## Check for CImg library
 AC_CHECK_HEADER(CImg.h,
@@ -136,6 +98,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
   [CIMG_CORRECT_VERSION="yes"],
   [CIMG_CORRECT_VERSION="no"])
 AC_MSG_RESULT([$CIMG_CORRECT_VERSION])
+fi
 
 
 ####################
@@ -165,57 +128,52 @@ AC_TYPE_SIZE_T
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 
-#AC_FUNC_MALLOC
 
+## ------------------------------------------------------------
+# If gist is enabled, check whether prerequisites are met.
+# Otherwise, warn and turn off.
+#
 
-## ----------------------------------------
-## Give information in case Vienna package missing
-##
-
-# if test "$VRNA_OK" = "false" ; then
-#   AC_MSG_NOTICE([============================================================]#)
-#   AC_MSG_NOTICE()
-#     if test "$with_vrna" != "" ; then
-#        AC_MSG_NOTICE(Cannot find Vienna RNA package in given path '$with_vrna'.)
-#     else
-#        AC_MSG_NOTICE(Cannot find Vienna RNA package in standard path, for non-standard path use --with-vrna=PREFIX.)
-#     fi
-#    AC_MSG_NOTICE()
-#    AC_MSG_NOTICE(The Vienna RNA package is required for full functionality (use version >= 1.8.*).)
-#    AC_MSG_NOTICE(It can be obtained from http://www.tbi.univie.ac.at/~ivo/RNA/.)
-#    AC_MSG_NOTICE()
-# fi
-
-
-## ----------------------------------------
-## Complain if gist enabled but CImg.h missing or wrong version
-
+     
 if test "$ENABLE_GIST" = "yes" ; then
+   AC_MSG_NOTICE([----------------------------------------])
+   gist_ok="yes"
+
    if test "$CIMG_AVAILABE" = "no" ; then
-     AC_MSG_NOTICE([])
-     AC_MSG_NOTICE([----------------------------------------])
-     AC_MSG_NOTICE([ERROR: "CImg could not be found. Please install CImg library."])
-     exit -1
+     AC_MSG_NOTICE([CImg could not be found.])
+     AC_MSG_NOTICE([Please install CImg could not be found, if you need Gist.])
+     gist_ok="no"
    else
       if test $CIMG_CORRECT_VERSION = "no" ; then
-         AC_MSG_NOTICE([])
-     	 AC_MSG_NOTICE([----------------------------------------])
-     	 AC_MSG_NOTICE([ERROR: "Wrong CImg version please use >=1.3.2"])
-	 exit -1
+     	 AC_MSG_NOTICE([Wrong CImg version please use >=1.3.2. Please update, if you need Gist.])
+	 gist_ok="no"
       fi
    fi
    
-   # define HAVE_GIST, such that we can use this flag for conditional
-   # compilation
-   AC_DEFINE([HAVE_GIST],[],[Whether gist is available])
-   AC_MSG_NOTICE([])
+   if test "$HAVE_LIBGECODEGIST" != "yes" ; then
+     AC_MSG_NOTICE([Cannot find library gecodegist.])
+     AC_MSG_NOTICE([Likely Gecode was compiled without Gist support.])
+     AC_MSG_NOTICE([If you need Gist, please enable it in Gecode."])
+     gist_ok="no"
+   fi
+
+   if test "$HAVE_LIBX11" != "yes" ; then
+     AC_MSG_NOTICE([Cannot find library X11, which is required for Gist.])
+     AC_MSG_NOTICE([Please provide the library, if you need Gist.])
+     gist_ok="no"
+   fi
+
+   if test "$gist_ok" = "yes" ; then
+     # define HAVE_GIST, such that we can use this flag for conditional
+     # compilation
+     AC_DEFINE([HAVE_GIST],[],[Whether gist is available])
+     AC_MSG_NOTICE([Gist enabled.])
+   else
+     AC_MSG_NOTICE([Gist disabled. (If you don't know it, you don't need it.)])
+   fi
    AC_MSG_NOTICE([----------------------------------------])
-   AC_MSG_NOTICE([Gist support enabled])
-else
-   AC_MSG_NOTICE([])
-   AC_MSG_NOTICE([----------------------------------------])
-   AC_MSG_NOTICE([Gist support disabled])
 fi
 
 
 AC_OUTPUT([src/Makefile Utils/Makefile])
+
