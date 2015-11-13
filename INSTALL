@@ -1,43 +1,90 @@
-CARNA 1.2.8 (Constraint Alignment of RNA)
+CARNA 1.3.0 (Constraint Alignment of RNA)
 =======================================
 
 Compile and Install
 ===================
 
-Carna requires the Vienna RNA package >=2.1.1, LocARNA >=1.8.0 , and
-Gecode >=4.2.0. Please get those packages, and install prior to
-CARNA. If you need graphic search (gist), make sure that Gecode builds
-with qt and gist support (check configure messages).
+This document describes howto install CARNA from source
+code. Currently, there are no binary distributions or precompiled
+packages available.
 
-Carna can be installed by the typical sequence ./configure; make; make
-install However, if required packages are installed to non-standard
-locations, you will have to specify them:
+CARNA has depenencies to the Vienna RNA package, the LocARNA package
+and Gecode. This release of CARNA was adapted to work with Vienna RNA
+package 2.1.9, LocARNA 1.8.6, and Gecode 4.4.0. While other vesrsions
+may work, please use exactly the same software versions to avoid
+incompatibilities.
 
-If gecode library and headers are not in the default path, you need to
-set the gecode installation directory (<path-to-gecode-inst-dir>)
-explicitly. Thus, call
-export GECODE_HOME=<path-to-gecode-inst-dir>
+As a special feature, CARNA supports interactive graphical search via
+Gecode's gist, which has additional requirements. Since this feature
+is NOT necessary for computing alignments with CARNA, it is disabled
+in the standard installation. Unless gist support is required, one can
+ignore the steps indicated by GIST ONLY.
 
-Similarily, it can be necessary to set the path to the
-pkgconfig directory of the locarna library
-(<path-to-locarna-lib-pkgcfg>). For example, if locarna was installed
-to $LOCARNA_HOME, this is $LOCARNA_HOME/lib/pkgconfig and contains
-LocARNA-1.3.pc.
-Thus, call
-export PKG_CONFIG_PATH=<path-to-locarna-lib-pkgcfg>
+1) Install the Vienna RNA package
 
-Typically, it also is necessary to set LD_LIBRARY_PATH to the folder(s),
-where the gecode and locarna libraries are installed, like:
-export LD_LIBRARY_PATH=/FOO/BAR/lib
+   The package is available at http://www.tbi.univie.ac.at/RNA/
+   Precompiled packages are provided for many platforms.
 
+2) Install LocARNA 1.8.6
+  
+  The LocARNA package is available at
+  http://www.bioinf.uni-freiburg.de/Software/LocARNA/
 
-Finally, compile Carna and install to <installation-path> by
+  Please follow the installation instructions to compile and install via        
+ ./configure; make; make install.
 
-./configure --prefix=<installation-path>
-make
-make install
+3) Install Gecode
 
+  The site http://www.gecode.org/download.html provides packages and
+  source. When installing from source (via ./configure; make; make
+  install), one can avoid the dependency to Qt by deactivating gist
+  (configure option --disable-gist.)
+        
+  GIST ONLY: when installing from a package, make sure that it
+  includes Qt/Gist-support. When installing from source, keep gist
+  activated (default); this requires to have Qt installed.
 
-If you need gist and the configure cannot find the installed CImg library, one
-can specify its path by:
-export CXXFLAGS=-I/usr/local/include/CImg/1.3.2/
+4) Install CARNA
+
+  GIST ONLY: for gist support, make sure to have CImg
+   (http://cimg.eu/) and libX11 installed. These libraries can be
+   installed from packages on most platforms (e.g. packages cimg-dev
+   and libx11-dev on Ubuntu 15.10).
+        
+  To install CARNA from source, get CARNA-X.Y.Z.tar.gz from
+  http://www.bioinf.uni-leipzig.de/~will/Software/CARNA and run the
+  commands
+
+        tar xzf CARNA-X.Y.Z.tar.gz
+        cd CARNA-X.Y.Z
+        ./configure
+        make
+        make install
+
+  Unless gist support is required, please ignore respective warnings
+  or configure with option --disable-gist.
+
+  Non-standard installation paths:
+  -------------------------------  
+    Usually, these commands are sufficient if all required packages
+    are installed in standard locations and CARNA shall be installed
+    to /usr/local/.
+  
+    Otherwise, one has to provide specific options to the ./configure
+    command and/or set environment variables. This is described below:
+
+    If gecode library and headers are not in the default path, one
+    needs to set the gecode installation directory
+    (<path-to-gecode-inst-dir>) explicitly. Thus, call export
+    GECODE_HOME=<path-to-gecode-inst-dir>
+
+    Similarily, it can be necessary to set the path to the pkgconfig
+    directory of the locarna library
+    (<path-to-locarna-lib-pkgcfg>). For example, if locarna was
+    installed to $LOCARNA_HOME, this is $LOCARNA_HOME/lib/pkgconfig
+    and contains LocARNA-1.3.pc.  Thus, call export
+    PKG_CONFIG_PATH=<path-to-locarna-lib-pkgcfg>
+
+    Finally, it can be necessary to set LD_LIBRARY_PATH to the
+    folder(s), where the gecode and locarna libraries are installed,
+    like: export LD_LIBRARY_PATH=/FOO/BAR/lib
