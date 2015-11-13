@@ -15,8 +15,6 @@
 
 #include "alignment_score.hh"
 
-#include "locarna.hh"
-
 #include "LocARNA/params.hh"
 
 #include "rna_alignment_params.hh"

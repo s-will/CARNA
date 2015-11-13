@@ -1,6 +1,10 @@
 #include "RnaAlignment.hh"
 
 #include <LocARNA/rna_ensemble.hh>
+#include <LocARNA/alignment.hh>
+#include <LocARNA/anchor_constraints.hh>
+#include <LocARNA/trace_controller.hh>
+#include <LocARNA/arc_matches.hh>
 
 using namespace LocARNA;
 
