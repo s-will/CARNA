@@ -23,8 +23,23 @@
 
 #include <limits>
 
-// get all locarna headers
-#include <locarna.hh>
+#include "LocARNA/sequence.hh"
+#include "LocARNA/scoring.hh"
+#include "LocARNA/basepairs.hh"
+#include "LocARNA/alignment.hh"
+#include "LocARNA/aligner.hh"
+#include "LocARNA/rna_data.hh"
+#include "LocARNA/arc_matches.hh"
+#include "LocARNA/match_probs.hh"
+#include "LocARNA/ribosum.hh"
+#include "LocARNA/ribofit.hh"
+#include "LocARNA/anchor_constraints.hh"
+//#include "LocARNA/sequence_annotation.hh"
+#include "LocARNA/trace_controller.hh"
+#include "LocARNA/ribosum85_60.icc"
+#include "LocARNA/global_stopwatch.hh"
+#include "LocARNA/pfold_params.hh"
+#include "LocARNA/rna_ensemble.hh"
 
 namespace LocARNA {
 #include <LocARNA/ribosum85_60.icc>
@@ -142,6 +157,10 @@ bool opt_gist;
 std::string ribosum_file;
 bool use_ribosum;
 
+// use estimated ribosum-like base and arc match scores adapted
+// to sequence indentity; overrides use_ribosum and ribosum_file
+bool opt_ribofit; 
+    
 // bool opt_probcons_file;
 // std::string probcons_file;
 
@@ -256,6 +275,12 @@ LocARNA::option_def my_options[] = {
 
     {"",0,0,O_SECTION,0,O_NODEFAULT,"","RNA sequences and pair probabilities"},
 
+
+    {"",0,0,O_SECTION_HIDE,0,O_NODEFAULT,"","Hidden Options"},
+    {"ribofit",0,0,O_ARG_BOOL,&opt_ribofit,"false","bool","Use Ribofit base and arc match scores (overrides ribosum)"},
+    
+    {"",0,0,O_SECTION,0,O_NODEFAULT,"","Input_files RNA sequences and pair probabilities"},
+
     {"",0,0,O_ARG_STRING,&fileA,O_NODEFAULT,"file 1","Input file 1  ;; input files can be fasta, dotplot, pp, or aln files"},
     {"",0,0,O_ARG_STRING,&fileB,O_NODEFAULT,"file 2","Input file 2  ;; and can speficy structure and anchor constraints."},
     {"",0,0,0,0,O_NODEFAULT,"",""}
@@ -334,22 +359,27 @@ main(int argc, char* argv[]) {
     // BEGIN construct parameter classes from command line options
     //
 
-    // ----------------------------------------
+    // ----------------------------------------  
     // Ribosum matrix
     //
     LocARNA::RibosumFreq *ribosum=NULL;
-
+    LocARNA::Ribofit *ribofit=NULL;
+    
+    if (opt_ribofit) {
+	ribofit = new LocARNA::Ribofit_will2014;
+    }
+    
     if (use_ribosum) {
 	if (ribosum_file == "RIBOSUM85_60") {
 	    if (opt_verbose) {
-		std::cout <<"Use built-in ribosum."<<std::endl;
+                std::cout <<"Use built-in ribosum."<<std::endl;
 	    }
-	    ribosum = new LocARNA::Ribosum85_60();
+	    ribosum = new LocARNA::Ribosum85_60;
 	} else {
 	    ribosum = new LocARNA::RibosumFreq(ribosum_file);
 	}
     }
-
+    
     // ------------------------------------------------------------
     // Get input data and generate data objects
     //
@@ -454,7 +484,8 @@ main(int argc, char* argv[]) {
 		       indel_score, // = indel loop score (not used by CARNA)
 		       indel_opening_score,
 		       indel_opening_score, // = indel loop opening score (not used by CARNA)
-		       ribosum,
+                       ribosum,
+                       ribofit,
 		       0, // unpaired penalty (not configurable in CARNA)
 		       struct_weight,
 		       tau_factor,
