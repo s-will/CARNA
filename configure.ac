@@ -1,23 +1,26 @@
-# -*- Autoconf -*-
-# Process this file with autoconf to produce a configure script.
+dnl -*- Autoconf -*-
+dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([carna], [1.2.8], [])
+AC_INIT([carna], [1.3.0], [])
 
 AM_INIT_AUTOMAKE
 
-# Checks for programs.
+dnl Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
 
 AC_LANG_CPLUSPLUS
 
-# Checks for header files.
+dnl Checks for header files.
 AC_HEADER_STDC
 
-##################
-# Debug option
-#
+dnl Set directory for m4 macro files 
+AC_CONFIG_MACRO_DIR([m4])
+
+dnl --------------------
+dnl Debug option
+
 AC_MSG_CHECKING([whether to build with debug information])
 debugger=no
 AC_ARG_ENABLE([debug],
@@ -35,8 +38,8 @@ else
     AC_DEFINE([NDEBUG], [], [Define to 1 for turning off debugging])
 fi
 
-####################
-## enable/disable graphical search with gist
+dnl --------------------
+dnl enable/disable graphical search with gist
 AC_MSG_CHECKING([whether to build with gist support])
 ENABLE_GIST=yes
 AC_ARG_ENABLE([gist],
@@ -48,14 +51,13 @@ AC_ARG_ENABLE([gist],
 )
 AC_MSG_RESULT([$ENABLE_GIST])
 
-# turn off deprecated warnings 
+dnl turn off deprecated warnings 
 CPPFLAGS="$CPPFLAGS -Wno-deprecated -Wno-unused-local-typedefs"
 
-# configure for use of LocARNA library
-PKG_CHECK_MODULES([DEPS], [LocARNA-1.3 >= 1.7.18])
+dnl configure for use of LocARNA library
+PKG_CHECK_MODULES([DEPS], [LocARNA-1.4 >= 1.8.6])
 
-## where are GECODE libs and includes
-##
+dnl where are GECODE libs and includes
 
 AC_MSG_CHECKING([Where are GECODE libs and headers])
 if test "$GECODE_HOME" != "" ; then
@@ -68,7 +70,7 @@ AC_MSG_RESULT([$GECODE_HOME])
 
 GECODE_LIBFLAGS="-lgecodesearch -lgecodeminimodel -lgecodeint -lgecodeset -lgecodesupport -lgecodekernel"
 
-# add GECODE libraries to list of libs for linking
+dnl add GECODE libraries to list of libs for linking
 LIBS="$LIBS $GECODE_LIBFLAGS"
 
 if test "$ENABLE_GIST" = "yes" ; then
@@ -78,8 +80,8 @@ if test "$ENABLE_GIST" = "yes" ; then
 fi
 
 if test "$ENABLE_GIST" = "yes" ; then
-#####################
-## Check for CImg library
+dnl --------------------
+dnl Check for CImg library
 AC_CHECK_HEADER(CImg.h,
 	[CIMG_AVAILABLE="yes"],
         [CIMG_AVAILABLE="no"],
@@ -89,10 +91,10 @@ AC_MSG_CHECKING([whether CImg has correct version])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
   [[#include <CImg.h>
   #ifndef cimg_version 
-  # error cimg not defined
+  #  error cimg not defined
   #endif
   #if cimg_version < 132
-  # error wrong version
+  #  error wrong version
   #endif
   ]])],
   [CIMG_CORRECT_VERSION="yes"],
@@ -100,10 +102,18 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 AC_MSG_RESULT([$CIMG_CORRECT_VERSION])
 fi
 
+dnl --------------------
+dnl add linker options for POSIX threads
+dnl (necessary for linking Gecode) 
+AX_PTHREAD
+AC_MSG_NOTICE([pthread: $PTHREAD_CFLAGS, $PTHREAD_LIBS])
+LIBS="$PTHREAD_LIBS $LIBS"
+dnl CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+LDFLAGS="$PTHREAD_CFLAGS $LDFLAGS"
 
-####################
-# Static linking
-#
+dnl --------------------
+dnl Static linking
+
 AC_MSG_CHECKING([whether to link statically])
 static_linkage=no
 AC_ARG_ENABLE([static],
@@ -119,7 +129,7 @@ if test x"$static_linkage" = x"yes"; then
 fi
 
 
-# Checks for typedefs, structures, and compiler characteristics.
+dnl Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
 AC_C_CONST
 AC_TYPE_SIZE_T
@@ -129,24 +139,23 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 
 
-## ------------------------------------------------------------
-# If gist is enabled, check whether prerequisites are met.
-# Otherwise, warn and turn off.
-#
+dnl ------------------------------------------------------------
+dnl If gist is enabled, check whether prerequisites are met.
+dnl Otherwise, warn and turn off.
 
      
 if test "$ENABLE_GIST" = "yes" ; then
    AC_MSG_NOTICE([----------------------------------------])
-   gist_ok="yes"
+   GIST_OK="yes"
 
-   if test "$CIMG_AVAILABE" = "no" ; then
+   if test "$CIMG_AVAILABLE" != "yes" ; then
      AC_MSG_NOTICE([CImg could not be found.])
-     AC_MSG_NOTICE([Please install CImg could not be found, if you need Gist.])
-     gist_ok="no"
+     AC_MSG_NOTICE([Please install CImg (cimg-dev), if you need Gist.])
+     GIST_OK="no"
    else
-      if test $CIMG_CORRECT_VERSION = "no" ; then
+      if test $CIMG_CORRECT_VERSION != "yes" ; then
      	 AC_MSG_NOTICE([Wrong CImg version please use >=1.3.2. Please update, if you need Gist.])
-	 gist_ok="no"
+	 GIST_OK="no"
       fi
    fi
    
@@ -154,18 +163,18 @@ if test "$ENABLE_GIST" = "yes" ; then
      AC_MSG_NOTICE([Cannot find library gecodegist.])
      AC_MSG_NOTICE([Likely Gecode was compiled without Gist support.])
      AC_MSG_NOTICE([If you need Gist, please enable it in Gecode."])
-     gist_ok="no"
+     GIST_OK="no"
    fi
 
    if test "$HAVE_LIBX11" != "yes" ; then
      AC_MSG_NOTICE([Cannot find library X11, which is required for Gist.])
-     AC_MSG_NOTICE([Please provide the library, if you need Gist.])
-     gist_ok="no"
+     AC_MSG_NOTICE([Please provide the library (libx11-dev), if you need Gist.])
+     GIST_OK="no"
    fi
 
-   if test "$gist_ok" = "yes" ; then
-     # define HAVE_GIST, such that we can use this flag for conditional
-     # compilation
+   dnl if GIST_OK, then define HAVE_GIST, such that we can use this
+   dnl flag for conditional compilation
+   if test "$GIST_OK" = "yes" ; then
      AC_DEFINE([HAVE_GIST],[],[Whether gist is available])
      AC_MSG_NOTICE([Gist enabled.])
    else
