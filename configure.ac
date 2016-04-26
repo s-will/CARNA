@@ -68,7 +68,7 @@ AC_ARG_VAR(GECODE_HOME,[Home of GECODE installation (libs and headers)])
 AC_MSG_RESULT([$GECODE_HOME])
 
 
-GECODE_LIBFLAGS="-lgecodesearch -lgecodeminimodel -lgecodeint -lgecodeset -lgecodesupport -lgecodekernel"
+GECODE_LIBFLAGS="-lgecodesearch -lgecodeminimodel -lgecodeint -lgecodeset -lgecodesupport -lgecodekernel -lgecodefloat"
 
 dnl add GECODE libraries to list of libs for linking
 LIBS="$LIBS $GECODE_LIBFLAGS"
