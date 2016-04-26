@@ -1,4 +1,7 @@
-2015-110-30 -- V1.3.0
+2016-04-26 -- V1.3.1
+Minor changes for compilation with LocARNA 1.8.9
+
+2015-11-30 -- V1.3.0
 Update installation instructions for public release
 Check compatibility to gecode 4.4.0 and clang compiler
 Adapt to LocARNA 1.8.6 (api 1.4)
