@@ -2,7 +2,7 @@ dnl -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([carna], [1.3.1], [])
+AC_INIT([carna], [1.3.2], [])
 
 AM_INIT_AUTOMAKE
 
@@ -55,23 +55,26 @@ dnl turn off deprecated warnings
 CPPFLAGS="$CPPFLAGS -Wno-deprecated -Wno-unused-local-typedefs"
 
 dnl configure for use of LocARNA library
-PKG_CHECK_MODULES([DEPS], [LocARNA-1.4 >= 1.8.6])
+PKG_CHECK_MODULES([LOCARNA], [LocARNA-1.5 >= 1.8.11])
+
+dnl set rpath for LocARNA lib directories (rather hackish by 'duplicating' -L entries)
+LOCARNA_LIBS=[`echo $LOCARNA_LIBS |sed 's/-L\([^ ]*\)/-L\1 -Wl,-rpath \1 /g'`]
 
 dnl where are GECODE libs and includes
 
 AC_MSG_CHECKING([Where are GECODE libs and headers])
 if test "$GECODE_HOME" != "" ; then
-   LDFLAGS="$LDFLAGS -L$GECODE_HOME/lib"
+   LDFLAGS="$LDFLAGS -L$GECODE_HOME/lib -Wl,-rpath $GECODE_HOME/lib"
    CPPFLAGS="$CPPFLAGS -I$GECODE_HOME/include"
 fi
 AC_ARG_VAR(GECODE_HOME,[Home of GECODE installation (libs and headers)])
 AC_MSG_RESULT([$GECODE_HOME])
 
 
-GECODE_LIBFLAGS="-lgecodesearch -lgecodeminimodel -lgecodeint -lgecodeset -lgecodesupport -lgecodekernel -lgecodefloat"
+GECODE_LIBS="-lgecodesearch -lgecodeminimodel -lgecodeint -lgecodeset -lgecodesupport -lgecodekernel -lgecodefloat"
 
 dnl add GECODE libraries to list of libs for linking
-LIBS="$LIBS $GECODE_LIBFLAGS"
+LIBS="$LIBS $GECODE_LIBS"
 
 if test "$ENABLE_GIST" = "yes" ; then
    AC_CHECK_LIB([gecodegist],[main],[HAVE_LIBGECODEGIST="yes"])

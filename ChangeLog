@@ -1,3 +1,7 @@
+2016-04-26 -- V1.3.2
+Compilation with LocARNA 1.8.10 / libLocARNA-1.5
+Set paths to dynamic libs (-rpath) in binary
+
 2016-04-26 -- V1.3.1
 Minor changes for compilation with LocARNA 1.8.9
 
