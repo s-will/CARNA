@@ -2,7 +2,7 @@ dnl -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([carna], [1.3.2], [])
+AC_INIT([carna], [1.3.3], [])
 
 AM_INIT_AUTOMAKE
 
@@ -55,7 +55,7 @@ dnl turn off deprecated warnings
 CPPFLAGS="$CPPFLAGS -Wno-deprecated -Wno-unused-local-typedefs"
 
 dnl configure for use of LocARNA library
-PKG_CHECK_MODULES([LOCARNA], [LocARNA-1.5 >= 1.8.11])
+PKG_CHECK_MODULES([LOCARNA], [LocARNA-1.6 >= 1.9.1])
 
 dnl set rpath for LocARNA lib directories (rather hackish by 'duplicating' -L entries)
 LOCARNA_LIBS=[`echo $LOCARNA_LIBS |sed 's/-L\([^ ]*\)/-L\1 -Wl,-rpath \1 /g'`]

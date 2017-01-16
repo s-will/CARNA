@@ -1,3 +1,6 @@
+2017-01-16 -- V1.3.3
+Adapt to LocARNA 1.9.1; support maxBPspan and new strict anchor semantics
+
 2016-04-26 -- V1.3.2
 Compilation with LocARNA 1.8.10 / libLocARNA-1.5
 Set paths to dynamic libs (-rpath) in binary
