@@ -17,6 +17,7 @@ protected:
     bool gist_;
     size_t output_width_;
     
+public:
     /** 
      * Construct with default parameters
      */
@@ -28,7 +29,6 @@ protected:
 	  gist_(false)
     {}
     
-public:
     
     // specific parameters set methods:
     

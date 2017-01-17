@@ -24,11 +24,11 @@ const bool debug_out=false;
 
 
 
-AlignmentScore::AlignmentScore(Gecode::Space& home,
+AlignmentScore::AlignmentScore(Gecode::Home home,
 			       const Sequence &seqA_,
 			       const Sequence &seqB_, 
 			       const ArcMatches &arc_matches_,
-			       const AlignerParams &params_,
+			       const RnaAlignmentParams &params_,
 			       const Scoring &scoring_,
 			       IntViewArray &MD_,
 			       BoolViewArray &M_,
@@ -67,32 +67,22 @@ AlignmentScore::AlignmentScore(Gecode::Space& home,
 
 AlignmentScore::~AlignmentScore() {}
 
+
 Gecode::ExecStatus
 AlignmentScore::
-post(Gecode::Space& home,
+post(Gecode::Home home,
      const Sequence &seqA,
      const Sequence &seqB,
      const ArcMatches &arc_matches,
-     const AlignerParams &params,
+     const RnaAlignmentParams &params,
      const Scoring &scoring,
-     Gecode::IntVarArray &MD,
-     Gecode::BoolVarArray &M,
-     Gecode::IntVar &Score
+     IntViewArray &MD,
+     BoolViewArray &M,
+     Gecode::Int::IntView &Score
      )
 {
 
-    // the post method converts Vars to Views and constructs a new
-    // propagator in the home-space
-
-    // translate vars/var arrays to views/view arrays
-	
-    Gecode::Int::IntView ScoreView = Score;
-      
-    Gecode::VarArgArray<Gecode::IntVar> MDArg = MD;
-    IntViewArray MDView = IntViewArray(home,MDArg);
-    
-    Gecode::VarArgArray<Gecode::BoolVar> MArg = M;
-    BoolViewArray MView = BoolViewArray(home, MArg);
+    // construct a new propagator in the home-space
         
     new (home) AlignmentScore(home,
 			      seqA,
@@ -100,10 +90,21 @@ post(Gecode::Space& home,
 			      arc_matches,
 			      params,
 			      scoring,
-			      MDView,MView,
-			      ScoreView);
-    
+			      MD,
+                              M,
+			      Score);
+
     return Gecode::ES_OK;
+}
+
+
+size_t
+AlignmentScore::dispose(Gecode::Space &home) {
+    MD.cancel(home,*this,Gecode::Int::PC_INT_DOM);
+    M.cancel(home,*this,Gecode::Int::PC_INT_DOM);
+    Score.cancel(home,*this,Gecode::Int::PC_INT_BND);
+    (void) Propagator::dispose(home);
+    return sizeof(*this);
 }
 
 Gecode::Actor*
@@ -117,6 +118,14 @@ AlignmentScore::cost(const Gecode::Space& home, const Gecode::ModEventDelta& med
 				    (unsigned int) (seqA.length() * seqB.length())
 				    );
 }
+
+void
+AlignmentScore::reschedule(Gecode::Space &home) {
+    MD.reschedule(home,*this,Gecode::Int::PC_INT_DOM);
+    M.reschedule(home,*this,Gecode::Int::PC_INT_DOM);
+    Score.reschedule(home,*this,Gecode::Int::PC_INT_BND);
+}
+
 
 template<class AdjList>
 score_t
@@ -1432,4 +1441,42 @@ AlignmentScore::propagate(Gecode::Space& home, const Gecode::ModEventDelta&) {
 	if (debug_out) std::cout << "return fix"<<std::endl; 
 	return Gecode::ES_FIX;
     }
+}
+
+
+void
+alignment_score(Gecode::Home home,
+                const LocARNA::Sequence &seqA,
+                const LocARNA::Sequence &seqB,
+                const LocARNA::ArcMatches &arc_matches,
+                const LocARNA::AlignerParams &params,
+                const LocARNA::Scoring &scoring,
+                Gecode::IntVarArray MD,
+                Gecode::BoolVarArray M,
+                Gecode::IntVar Score) {
+
+    if (home.failed()) return;
+
+    Gecode::PostInfo pi(home);
+
+    // convert vars/var arrays to views/view
+
+    Gecode::VarArgArray<Gecode::IntVar> MDArg = MD;
+    IntViewArray MDView = IntViewArray(home,MDArg);
+
+    Gecode::VarArgArray<Gecode::BoolVar> MArg = M;
+    BoolViewArray MView = BoolViewArray(home, MArg);
+
+    Gecode::Int::IntView ScoreView = Score;
+
+    GECODE_ES_FAIL(AlignmentScore
+                   ::post(home,
+                          seqA,
+                          seqB,
+                          arc_matches,
+                          params,
+                          scoring,
+                          MDView,
+                          MView,
+                          ScoreView));
 }

@@ -134,17 +134,17 @@ RnaAlignment::RnaAlignment(const RnaAlignmentParams &ap)
 	    rel(*this,M[i],Gecode::IRT_EQ,0); // M[i]:=0
 	}
     }
-    
-    
 
-    AlignmentScore::post(*this,
-			 *params.seqA_,
-			 *params.seqB_,
-			 *params.arc_matches_,
-			 params,
-			 *params.scoring_,
-			 MD,M,Score);
-	
+    alignment_score(*this,
+                    *params.seqA_,
+                    *params.seqB_,
+                    *params.arc_matches_,
+                    params,
+                    *params.scoring_,
+                    MD,
+                    M,
+                    Score);
+
     // simple relations
 	
     for (size_t i=1; i<=n; i++) {

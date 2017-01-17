@@ -63,6 +63,10 @@
 #include <LocARNA/basepairs.hh>
 
 class RnaAlignment;
+class RnaAlignmentParams;
+
+typedef Gecode::ViewArray<Gecode::Int::IntView> IntViewArray;
+typedef Gecode::ViewArray<Gecode::Int::BoolView> BoolViewArray;
 
 
 /**
@@ -71,10 +75,7 @@ class RnaAlignment;
  */
 class AlignmentScore : public Gecode::Propagator {
 public:
-    typedef Gecode::ViewArray<Gecode::Int::IntView> IntViewArray;
     // typedef Gecode::ViewArray<Gecode::Set::SetView> SetViewArray;
-    typedef Gecode::ViewArray<Gecode::Int::BoolView> BoolViewArray;
-    
     typedef size_t size_type;
 
     typedef std::vector<bool> BoolVec;
@@ -123,11 +124,11 @@ protected:
      * @param M constraint variables defining whether MD refers to match (or deletion)
      * @param Score constraint variable for alignment score
     */
-    AlignmentScore(Gecode::Space& home,
+    AlignmentScore(Gecode::Home home,
 		   const LocARNA::Sequence &seqA,
 		   const LocARNA::Sequence &seqB, 
 		   const LocARNA::ArcMatches &arcmatches,
-		   const LocARNA::AlignerParams &params,
+		   const RnaAlignmentParams &params,
 		   const LocARNA::Scoring &scoring,
 		   IntViewArray &MD,
 		   BoolViewArray &M,
@@ -580,16 +581,28 @@ public:
      * @param M constraint variables defining whether MD refers to match (or deletion)
      * @param Score constraint variable for alignment score
     */
-    static Gecode::ExecStatus post(Gecode::Space& home,
+    static Gecode::ExecStatus post(Gecode::Home home,
 				   const LocARNA::Sequence &seqA,
 				   const LocARNA::Sequence &seqB,
 				   const LocARNA::ArcMatches &arc_matches,
-				   const LocARNA::AlignerParams &params,
+				   const RnaAlignmentParams &params,
 				   const LocARNA::Scoring &scoring,
-				   Gecode::IntVarArray &MD,
-				   Gecode::BoolVarArray &M,
-				   Gecode::IntVar &Score
+				   IntViewArray &MD,
+				   BoolViewArray &M,
+				   Gecode::Int::IntView &Score
 				   );
+
+
+
+    /**
+     * @brief Disposal of propagator
+     *
+     * @param home the home space
+     *
+    */
+    virtual
+    size_t
+    dispose(Gecode::Space &home);
     
     /** 
      * Copy propagator during cloning
@@ -610,7 +623,16 @@ public:
      * @return cost of propagation
      */
     virtual Gecode::PropCost cost(const Gecode::Space& home, const Gecode::ModEventDelta& med) const;
-    
+
+    /**
+     * Reschedule
+     *
+     * @param home home space
+     */
+    virtual
+    void
+    reschedule(Gecode::Space &home);
+
     /** 
      * Perform propagation
      * 
@@ -619,7 +641,19 @@ public:
      * @return Gecode execution status
      */
     virtual Gecode::ExecStatus propagate(Gecode::Space& home, const Gecode::ModEventDelta&);
+
 };
 
+//! @brief constraint post function of AlignmentScore
+void
+alignment_score(Gecode::Home home,
+                const LocARNA::Sequence &seqA,
+                const LocARNA::Sequence &seqB,
+                const LocARNA::ArcMatches &arcmatches,
+                const LocARNA::AlignerParams &params,
+                const LocARNA::Scoring &scoring,
+                Gecode::IntVarArray MD,
+                Gecode::BoolVarArray M,
+                Gecode::IntVar Score);
 
 #endif // ALIGNMENT_SCORE_HH
