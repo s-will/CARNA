@@ -1,4 +1,7 @@
-2017-01-16 -- V1.3.3
+2019-11-22 -- V1.3.4
+Adapt to LocARNA 1.9.2.x
+
+2017-01-22 -- V1.3.3
 Adapt to LocARNA 1.9.1; support maxBPspan and new strict anchor semantics
 
 2016-04-26 -- V1.3.2

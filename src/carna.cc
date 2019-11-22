@@ -185,11 +185,6 @@ struct command_line_parameters {
 
     // int match_prob_method;
 
-
-
-    //double min_am_prob; // only matched arc-pair with a probability of at least min_am_prob are taken into account
-    //double min_bm_prob; // only matched base-pair with a probability of at least min_bm_prob are taken into account
-
     // int kbest_k;
 
     bool opt_ignore_constraints;
@@ -541,8 +536,6 @@ main(int argc, char* argv[]) {
 	 . max_diff_am(clp.max_diff_am)
 	 . max_diff_at_am(clp.max_diff_at_am)
 	 . trace_controller(trace_controller)
-	 . min_am_prob(0)
-	 . min_bm_prob(0)
 	 . stacking(false)
 	 . constraints(seq_constraints)
 	 )

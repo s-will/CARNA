@@ -23,7 +23,7 @@ operator >> (Gecode::Archive &e, std::vector<T> &v) {
     unsigned int size;
     e >> size;
     v.resize(size);
-    
+
     for (size_t i=0; i<size; i++) e >> v[i];
     return e;
 }
@@ -54,9 +54,9 @@ operator >> (Gecode::Archive &e, RnaAlignment::ChoiceData &cd) {
       >> cd.best_traceB
       >> bts;
     cd.best_trace_score=bts;
-    
+
     return e;
-} 
+}
 
 RnaAlignment::RnaAlignment(const RnaAlignmentParams &ap)
     :
@@ -70,42 +70,51 @@ RnaAlignment::RnaAlignment(const RnaAlignmentParams &ap)
     //, discrepancy(0)
 {
 #  ifdef HAVE_GIST
-    if (params.gist_) 
+    if (params.gist_)
 	wind=new WinHandler(n+1,m+1,"Display variables status");
     else {
 	wind=NULL;
     }
 #  endif // HAVE_GIST
 
-    std::cout << "n: "<< n << std::endl; 
-    std::cout << "m: "<< m << std::endl; 
-    
+    std::cout << "n: "<< n << std::endl;
+    std::cout << "m: "<< m << std::endl;
+
     //ignore MD_0 and M_0
     rel(*this,MD[0],Gecode::IRT_EQ,0);
     rel(*this,M[0],Gecode::IRT_EQ,1);
-	
-    // impose anchor constaints
-    for(size_t i=1;i<=n; i++){
-	int j=params.constraints_->match_to_a(i);
-	if (j>0) {
-	    // there is an anchor i~j
-	    rel(*this,MD[i],Gecode::IRT_EQ,j);
-	    rel(*this,M[i],Gecode::IRT_EQ,1);
+
+    // impose anchor constraints
+    size_t last_j=0;
+    for(size_t i=1;i<=n; i++) {
+	if (params.constraints_->is_anchored_a(i)) {
+            // find corresponding anchor position j
+            for (int j=last_j+1; j<=m; ++j) {
+                if (params.constraints_->is_anchored_b(j)
+                    &&
+                    params.constraints_->get_name_a(i)==params.constraints_->get_name_b(j) ) {
+                    // there is an anchor i~j
+	            rel(*this,MD[i],Gecode::IRT_EQ,j);
+	            rel(*this,M[i],Gecode::IRT_EQ,1);
+                    last_j=j;
+                    break;
+                }
+            }
 	}
     }
-    
+
     /* restrict domains according to TraceController
-       
+
        The trace controller gives information about the possible
        trace cells in each row of the alignment matrix.
-    
+
        We show the relation of trace controller and domains by example:
        Assume in rows i-1 and i, we have the trace cells as marked by +
-    
+
           |0123456789
        i-1|   ++++
        i  |     ++++
-       
+
        I.e., tc.min_col(i-1)=3, tc.max_col(i-1)=6, tc.min_col(i)=5, tc.max_col(i)=8
        We conclude that
        dom(MD[i]) = [5..7] ! ( there is no deletion or match of i after or with j=8
@@ -115,7 +124,7 @@ RnaAlignment::RnaAlignment(const RnaAlignmentParams &ap)
           |0123456789
        i-1|  +++
        i  |     ++++
-       
+
        we conclude that
        dom(MD[i])={5} and dom(M[i])={1}
     */
@@ -126,7 +135,7 @@ RnaAlignment::RnaAlignment(const RnaAlignmentParams &ap)
 	rel(*this,MD[i],Gecode::IRT_GQ,tc.min_col(i));
 	// MD[i] :<= tc.max_col(i-1)+1
 	rel(*this,MD[i],Gecode::IRT_LQ,tc.max_col(i-1));
-	
+
 	if (tc.max_col(i-1)==tc.min_col(i)+1) {
 	    rel(*this,M[i],Gecode::IRT_EQ,1); // M[i]:=1
 	}
@@ -146,37 +155,37 @@ RnaAlignment::RnaAlignment(const RnaAlignmentParams &ap)
                     Score);
 
     // simple relations
-	
+
     for (size_t i=1; i<=n; i++) {
 	// the MD variables are sorted
 	rel(*this,MD[i],Gecode::IRT_GQ,MD[i-1]);
-	    
+
 	// M[i] implies M[i]>M[i-1]
 	Gecode::BoolVar greater(*this,0,1);
 	rel(*this,MD[i],Gecode::IRT_GR,MD[i-1],greater);
 	rel(*this,M[i],Gecode::IRT_LQ,greater); // M[i] implies greater
     }
-	
-	
+
+
     // test the case where a good score is known
     //rel(*this,Score,Gecode::IRT_GR, 33592);
-	
+
     if (custom_branching) {
 	RnaAlignBrancher::post(*this);
     } else {
 	//  first enumerate MD, then the rest
-	    
+
 	// resort MD vector, such that we start enumerating in the middle
 	// Ideally sort like balanced binary tree in array
 	Gecode::IntVarArgs MD_resorted(MD.size());
-	for (size_t i=0; i<(size_t)MD.size(); i++) { 
+	for (size_t i=0; i<(size_t)MD.size(); i++) {
 	    MD_resorted[i] = MD[(i+MD.size()/2)%MD.size()];
 	}
 	Gecode::branch(*this, MD_resorted, Gecode::INT_VAR_SIZE_MAX(), Gecode::INT_VAL_MED());
     }
-	
+
     Gecode::branch(*this, M, Gecode::INT_VAR_SIZE_MAX(), Gecode::INT_VAL_MAX());
-	
+
 }
 
 
@@ -281,9 +290,9 @@ fix_vars_from_trace(Gecode::Space& home,
     RnaAlignment& s = static_cast<RnaAlignment&>(home);
 
     Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
-    
+
     int last=0;
-    
+
 
     // note: here, we set only non-assigned variables according to the
     // trace!  Otherwise, this could result in inconsistencies if
@@ -310,34 +319,34 @@ fix_vars_from_trace(Gecode::Space& home,
     }
     return ret;
 }
-					       
 
-Gecode::ExecStatus 
-RnaAlignment::RnaAlignBrancher::commit(Gecode::Space& home, 
+
+Gecode::ExecStatus
+RnaAlignment::RnaAlignBrancher::commit(Gecode::Space& home,
 			     const Gecode::Choice& _c,
 			     unsigned int a) {
     RnaAlignment& s = static_cast<RnaAlignment&>(home);
     const Choice& c = static_cast<const Choice&>(_c);
-    
+
     Gecode::ModEvent ret = Gecode::ME_GEN_NONE;
-	    
+
     const RnaAlignment::ChoiceData &cd=c.cd;
-	    
+
     if (cd.new_lower_bound) {
 	s.choice_data.new_lower_bound=false;
-	
+
 	if (a==0) {
 	    //std::cout << "Commit to new better trace: "
 	    //<< cd.best_trace_score << " " << s.Score << std::endl;
-	
+
 	    ret = Gecode::Int::IntView(s.Score).eq(home, (int) cd.best_trace_score);
-	    
+
 	    ret |= fix_vars_from_trace(home,cd.best_traceA,cd.best_traceB);
-	    
+
 	    // if (Gecode::me_failed(ret)) {
 	    // 	std::cout <<" ... failed."<<std::endl;
 	    // }
-	    
+
 	} else {
 	    ret = Gecode::Int::IntView(s.Score).gr(home, (int) cd.best_trace_score);
 	}
@@ -349,15 +358,15 @@ RnaAlignment::RnaAlignBrancher::commit(Gecode::Space& home,
 	    ret = Gecode::Int::BoolView(s.M[cd.pos]).eq(home, 0);
 	}
     } else {
-		
+
 	//Gecode::Iter::Ranges::Singleton r((int)cd.minval,(int)cd.maxval);
-		
-	// note the const cast is necessary due to an ill specified Gecode interface.  
+
+	// note the const cast is necessary due to an ill specified Gecode interface.
 	// &cd.values[0] points to the array encapsulated by the vector,
 	// this is a HACK, since it depends on the stl implementation.
 	// However, I would rather blame Gecode to require an C-style array here:)
 	Gecode::Iter::Values::Array values_iter(const_cast<int *>(&cd.values[0]),cd.values.size());
-	
+
 	// std::cerr << "minval "<<cd.minval<<std::endl;
 	// std::cerr << "maxval "<<cd.maxval<<std::endl;
 	// for (size_t i=0; i<cd.values.size(); i++)
@@ -370,14 +379,14 @@ RnaAlignment::RnaAlignBrancher::commit(Gecode::Space& home,
 	} else {
 	    //ret = Gecode::Int::IntView(s.MD[cd.pos]).minus_r(home, r, false);
 	    ret = Gecode::Int::IntView(s.MD[cd.pos]).minus_v(home, values_iter, false);
-		    
+
 	    // EXPERIMENTAL limiting of discrepancy
 	    // s.discrepancy++;
-	    // if (s.discrepancy>discrepancy_limit) { return Gecode::ES_FAILED; } 
+	    // if (s.discrepancy>discrepancy_limit) { return Gecode::ES_FAILED; }
 	}
 	//std::cerr << "after MD["<<cd.pos<<"] " << s.MD[cd.pos]<<std::endl;
     }
-	
+
     return Gecode::me_failed(ret)
 	? Gecode::ES_FAILED
 	: Gecode::ES_OK;

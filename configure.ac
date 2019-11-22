@@ -2,7 +2,10 @@ dnl -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([carna], [1.3.3], [])
+AC_INIT([carna], [1.3.4], [])
+
+dnl Set directory for m4 macro files
+AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE
 
@@ -10,13 +13,14 @@ dnl Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
 
-AC_LANG_CPLUSPLUS
-
 dnl Checks for header files.
 AC_HEADER_STDC
 
-dnl Set directory for m4 macro files 
-AC_CONFIG_MACRO_DIR([m4])
+dnl language C++
+AC_LANG_CPLUSPLUS
+
+dnl require c++14
+AX_CXX_COMPILE_STDCXX_14([noext],[mandatory])
 
 dnl --------------------
 dnl Debug option
@@ -51,11 +55,11 @@ AC_ARG_ENABLE([gist],
 )
 AC_MSG_RESULT([$ENABLE_GIST])
 
-dnl turn off deprecated warnings 
+dnl turn off deprecated warnings
 CPPFLAGS="$CPPFLAGS -Wno-deprecated -Wno-unused-local-typedefs"
 
 dnl configure for use of LocARNA library
-PKG_CHECK_MODULES([LOCARNA], [LocARNA-1.6 >= 1.9.1])
+PKG_CHECK_MODULES([LOCARNA], [LocARNA-1.6 >= 1.9.2])
 
 dnl set rpath for LocARNA lib directories (rather hackish by 'duplicating' -L entries)
 LOCARNA_LIBS=[`echo $LOCARNA_LIBS |sed 's/-L\([^ ]*\)/-L\1 -Wl,-rpath \1 /g'`]
@@ -79,7 +83,9 @@ LIBS="$LIBS $GECODE_LIBS"
 if test "$ENABLE_GIST" = "yes" ; then
    AC_CHECK_LIB([gecodegist],[main],[HAVE_LIBGECODEGIST="yes"])
    AC_CHECK_LIB([X11],[main],[HAVE_LIBX11="yes"])
-   LIBS="$LIBS -lgecodegist -lX11"
+   if test "$HAVE_LIBGECODEGIST" = "yes" -a "$HAVE_LIBX11" = "yes"; then
+     LIBS="$LIBS -lgecodegist -lX11"
+   fi
 fi
 
 if test "$ENABLE_GIST" = "yes" ; then
@@ -93,7 +99,7 @@ AC_CHECK_HEADER(CImg.h,
 AC_MSG_CHECKING([whether CImg has correct version])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
   [[#include <CImg.h>
-  #ifndef cimg_version 
+  #ifndef cimg_version
   #  error cimg not defined
   #endif
   #if cimg_version < 132
@@ -107,7 +113,7 @@ fi
 
 dnl --------------------
 dnl add linker options for POSIX threads
-dnl (necessary for linking Gecode) 
+dnl (necessary for linking Gecode)
 AX_PTHREAD
 AC_MSG_NOTICE([pthread: $PTHREAD_CFLAGS, $PTHREAD_LIBS])
 LIBS="$PTHREAD_LIBS $LIBS"
@@ -146,7 +152,7 @@ dnl ------------------------------------------------------------
 dnl If gist is enabled, check whether prerequisites are met.
 dnl Otherwise, warn and turn off.
 
-     
+
 if test "$ENABLE_GIST" = "yes" ; then
    AC_MSG_NOTICE([----------------------------------------])
    GIST_OK="yes"
@@ -161,7 +167,7 @@ if test "$ENABLE_GIST" = "yes" ; then
 	 GIST_OK="no"
       fi
    fi
-   
+
    if test "$HAVE_LIBGECODEGIST" != "yes" ; then
      AC_MSG_NOTICE([Cannot find library gecodegist.])
      AC_MSG_NOTICE([Likely Gecode was compiled without Gist support.])
